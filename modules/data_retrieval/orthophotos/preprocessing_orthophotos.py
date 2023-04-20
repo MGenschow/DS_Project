@@ -11,7 +11,7 @@ import yaml
 
 
 # Load configuration file
-with open('config.yml', 'r') as f:
+with open('/home/tu/tu_tu/tu_zxmav84/DS_Project/modules/config.yml', 'r') as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 
 
