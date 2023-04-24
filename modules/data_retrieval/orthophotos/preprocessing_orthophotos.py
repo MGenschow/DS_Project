@@ -11,12 +11,14 @@ import yaml
 
 
 # Load configuration file
-with open('/home/tu/tu_tu/tu_zxmav84/DS_Project/modules/config.yml', 'r') as f:
+#config_path = '/home/tu/tu_tu/tu_zxmav84/DS_Project/modules/config.yml'
+config_path = '/Users/maltegenschow/Documents/Uni/SoSe23/Data Science Project/DS_Project/modules/config.yml'
+with open(config_path, 'r') as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 
 
 
-class orthophoto_indexer():
+class OrthophotoIndexer():
 
     def __init__(self, data_dir=config['data']['orthophotos']):
         self.data_dir = data_dir
@@ -227,3 +229,126 @@ class orthophoto_indexer():
             return polygon_25832, polygon_4326
         else:
             raise ValueError(f'Filename {filename} does not adhere to the pattern 32ddd_dddd.tif')
+
+
+class OrthophotoLoader:
+    """
+    A class to load and download relevant orthophoto tiles for a given bounding box polygon.
+
+    Args:
+        data_dir (str): Path to the directory where orthophoto data is stored.
+        bbox (Polygon): A Polygon object representing the bounding box of the area of interest.
+        download (bool, optional): Whether to download missing tiles or not. Defaults to True.
+    
+    Methods:
+        get_relevant_tiles():
+            Checks if index file exists, reads in index file and returns tiles that intersect with bbox.
+        _check_intersection(bbox, polygon):
+            Checks if bbox intersects with a given polygon.
+        get_missing_tiles(relevant_tiles=None):
+            Returns the tiles that are missing from the relevant_tiles.
+        _print_report(relevant_tiles):
+            Prints a report containing number of relevant and missing tiles, and their total size.
+        download_missing_tiles(relevant_tiles=None):
+            Downloads the missing tiles from the internet and saves them to the data directory.
+    """
+    def __init__(self, data_dir, bbox:Polygon, download=True):
+        """
+        Initialize orthophoto_loader class.
+        """
+        self.data_dir = data_dir
+        self.bbox = bbox
+        self.download = download
+
+    def get_relevant_tiles(self):
+        """
+        Checks if index file exists, reads in index file and returns tiles that intersect with bbox.
+        
+        Returns:
+            Pandas DataFrame: Relevant tiles with intersect column added.
+        """
+        bbox = self.bbox
+        # Check if index file exists
+        index_path = os.path.join(self.data_dir, 'metalink_files', 'complete_index.pkl')
+        if not os.path.exists(index_path):
+            print('Index file does not exist. Running index file creation now')
+            indexer = preprocessing_orthophotos.orthophoto_indexer()
+            indexer.create_complete_index()
+        
+        # Read in index_file
+        df = pd.read_pickle(index_path)
+
+        # Check intersection of bbox with all polygons
+        df['intersects'] = df['polygon_4326'].apply(lambda x: self._check_intersection(bbox, x))
+        relevant_tiles = df[df.intersects == True]
+        return relevant_tiles
+    
+    def _check_intersection(self, bbox, polygon):
+        """
+        Checks if bbox intersects with a given polygon.
+
+        Args:
+            bbox (Polygon): A Polygon object representing the bounding box of the area of interest.
+            polygon (Polygon): A Polygon object representing a tile's bounding box.
+
+        Returns:
+            bool: True if bbox intersects with the polygon, False otherwise.
+        """
+        return bbox.intersects(polygon)
+    
+    def get_missing_tiles(self, relevant_tiles=None):
+        """
+        Returns the tiles that are missing from the relevant_tiles.
+
+        Args:
+            relevant_tiles (Pandas DataFrame, optional):  Defaults to None.
+                                                         
+        Returns:
+            list: List of missing tiles.
+        """
+        relevant_tiles = relevant_tiles if relevant_tiles is not None else self.get_relevant_tiles()
+        # Check which tiles are missing
+        missing_tiles = []
+        for index, row in relevant_tiles.iterrows():
+            tile_path = os.path.join(self.data_dir, 'raw_tiles', row['tile_name'])
+            if not os.path.exists(tile_path):
+                missing_tiles.append(row['tile_name'])
+        return missing_tiles
+    
+    def _print_report(self, relevant_tiles):
+        """
+        Prints a report containing number of relevant and missing tiles, and their total size.
+
+        Args:
+            relevant_tiles (Pandas DataFrame): Relevant tiles with intersect column added.
+        """
+        print(f'Number of relevant tiles: {len(relevant_tiles)}') 
+        print(f'Total size of potential downloads: {round(relevant_tiles["size_mb"].sum()/1000,2)} GB')
+        missing_tiles = self.get_missing_tiles(relevant_tiles)
+        print(f'Number of missing tiles: {len(missing_tiles)}')
+        print(f'Total size of missing tiles: {round(relevant_tiles[relevant_tiles.tile_name.isin(missing_tiles)]["size_mb"].sum()/1000,2)} GB')
+
+    def download_missing_tiles(self, relevant_tiles=None):
+        """
+        Downloads the missing tiles from the orthophoto dataset based on the provided bounding box and data directory.
+
+        Args:
+            relevant_tiles (pd.DataFrame, optional): A pandas DataFrame containing information about the relevant tiles, such as their names and sizes. If not provided, it will be computed by calling the `get_relevant_tiles()` method.
+                
+        Returns:
+            None.
+        """
+        if self.download == False:
+            print('Download is set to False. No tiles will be downloaded')
+            return
+        relevant_tiles = relevant_tiles if relevant_tiles is not None else self.get_relevant_tiles()
+        missing_tiles = self.get_missing_tiles(relevant_tiles)
+        if len(missing_tiles) == 0:
+            print('No missing tiles')
+            return
+        base_url = 'https://download1.bayernwolke.de/a/dop40/data/'
+        for tile in missing_tiles:
+            url = base_url + tile
+            print(f'Downloading {tile}')
+            urllib.request.urlretrieve(url, os.path.join(self.data_dir, 'raw_tiles', tile))
+

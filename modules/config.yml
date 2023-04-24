@@ -1,9 +1,9 @@
 
 # Paths to data files
 data:
-  workspace: /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/
-  data: /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data
-  orthophotos: /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/orthophotos
+  workspace:  #/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/
+  data: /Users/maltegenschow/Documents/Uni/SoSe23/Data Science Project/data #/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data
+  orthophotos: /Users/maltegenschow/Documents/Uni/SoSe23/Data Science Project/data/orthophotos #/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/orthophotos
 
 # Bounding Boxes for locations we analyze
 bboxes: 
