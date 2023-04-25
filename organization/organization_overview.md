@@ -32,12 +32,12 @@ git clone https://github.com/MGenschow/DS_Project.git
 - I installed the latest conda version in the workspace in folder `/conda`
 - To use conda, you need to first source it using
 ```bash
-    `source /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/conda/bin/activate`
+    source /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/conda/bin/activate
 ```
 - Alternatively, add this path to your .bashrc/.zshrc file to automatically source when logging into the cluster
 - After conda is sourced, you can activate the environment for our project using 
 ```bash
-    `conda activate ds_project`
+    conda activate ds_project
 ```
 - Keep in mind to only use conda when installing packages (e.g. `conda install pandas`) and not pip
 
