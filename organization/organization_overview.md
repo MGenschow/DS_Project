@@ -21,10 +21,39 @@
 
 ### GitHub Repository:
 - I created a repository and added all of you as collaborators
-- Clone this in your $home directory using
+- Clone this in your $home directory (`cd ~`) using
 ```bash
 git clone https://github.com/MGenschow/DS_Project.git
 ```
+- The caveat of cloning via HTTPS is that Github will ask for user name and PAT (personal access token) whenever communicating with the remote repository. Using SSH Authentication (i.e. SSH keys) one gets rid of this problem. The following instructions cover how to create SSH keys in the home directory on the cluster and deposit them in Github.
+    - Generate SSH key on Cluster. Make sure that you are in your home directory (`cd ~`) and make sure you use the emai address that is associated with your Github account.
+    ```bash
+    ssh-keygen -t ed25519 -C "stefan.glaisner@student.uni-tuebingen.com"
+    ```
+    - You will then be asked in which file you want to save the key. But you can simply press Enter to accept the default file location.
+    - You will then also be asked to enter a passphrase but this can also be neglected by pressing Enter (twice).
+    - Start the the ssh-agent.
+    ```bash
+    eval "$(ssh-agent -s)"
+    ```
+    - Add your SSH private key to the ssh-agent.
+    ```bash
+    ssh-add ~/.ssh/id_ed25519
+    ```
+    - Print the contents of the id_ed25519.pub file.
+    ```bash
+    cat ~/.ssh/id_ed25519.pub
+    ```
+    - Copy the content to your clipboard.
+    - Go to Github and click on your profile picture.
+    - Navigate to Settings > Access > SSH and GPG keys.
+    - Click "New SSH key".
+    - Choose a title of your choice.
+    - Insert the contents of your clipboard into the "Key" pane and click "Add SSH key".
+    - After your first `git pull` command you will be asked if you are sure you want to continue connecting. Simply type "yes".
+    - Now you should be all set and not be asked for your Github credentials any more.
+
+- For further information, click through this [Github page](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account) and/or this [YouTube video](https://www.youtube.com/watch?v=WgZIv5HI44o).
 
 ---
 
@@ -43,7 +72,7 @@ git clone https://github.com/MGenschow/DS_Project.git
 
 ---
 
-## Using JupyterHub on the cluster:
+### Using JupyterHub on the cluster:
 It is in general possible to use JupyterHub easily on the cluster without going through terminal and SSH. However, using our shared conda environment is not striaghforward here. I advise to rather use code-server (see below)
 - Go to this link: [https://uc2-jupyter.scc.kit.edu/](https://uc2-jupyter.scc.kit.edu/)
 - Log in via Uni Tuebingen, verify OTP
@@ -53,7 +82,7 @@ It is in general possible to use JupyterHub easily on the cluster without going 
 
 --- 
 
-## Local VSCode Installation:
+### Local VSCode Installation:
 In general, you can use your local VSCode installation and connect the cluster via SSH. 
 
 But: 
@@ -64,7 +93,7 @@ But:
 
 --- 
  
-## Using VS Code using Code-Server
+### Using VS Code using Code-Server
 
 - [https://www.nhr.kit.edu/userdocs/horeka/debugging_codeserver/](https://www.nhr.kit.edu/userdocs/horeka/debugging_codeserver/)
 - Code-server allows to run VSCode server on any machine
@@ -80,7 +109,7 @@ But:
     
 2. Allocate Resources
 
-Adapt this to the needs that you have.  
+    Adapt this to the needs that you have.  
 
 See here for  documentation: https://wiki.bwhpc.de/e/BwUniCluster2.0/Slurm
     
@@ -90,9 +119,9 @@ See here for  documentation: https://wiki.bwhpc.de/e/BwUniCluster2.0/Slurm
     
 3. Load code-server module and start code-server
 
-port can be chosen freely in the unprivileged range above 1024
+    port can be chosen freely in the unprivileged range above 1024
 
-You may need to adapt the port if 8081 is already in use by another user
+    You may need to adapt the port if 8081 is already in use by another user
     
     ```bash
     module load devel/code-server
@@ -108,6 +137,11 @@ You may need to adapt the port if 8081 is already in use by another user
 5. Go to your browser and access code-server at (maybe adjust to another port)
     
     [http://127.0.0.1:8081/](http://127.0.0.1:8081/)
+    
+    
+Steps 2 & 3 can alternatively be done using a so-called slurm batch script (see for example [organization/server.sh](https://github.com/MGenschow/DS_Project/blob/main/organization/server.sh)). Here the requested resources can similarly be specified (replaces so to speak the `salloc` command). In addition, the commands `module load devel/code-server`  as well as `PASSWORD=test code-server --bind-addr 0.0.0.0:8081 --auth password` have to be integrated into the batch script as well to finally start code-server. The major advantage of this approach is that the terminal from which code-server has been initialized does not have to remain open for the entire job but can be closed after successful batch submission.
+
+When the requested resources have been allocated (check by `squeue`), one can continue with step 5 & 6.
 
 ---
 
