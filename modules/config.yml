@@ -4,7 +4,7 @@ data:
   workspace:  #/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/
   data: /Users/maltegenschow/Documents/Uni/SoSe23/Data Science Project/data #/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data
   orthophotos: /Users/maltegenschow/Documents/Uni/SoSe23/Data Science Project/data/orthophotos #/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/orthophotos
-
+  building_boxes: /Users/maltegenschow/Documents/Uni/SoSe23/Data Science Project/data/building_boxes
 # Bounding Boxes for locations we analyze
 bboxes: 
   munich: [[[11.3589406916,47.9954751264],[11.8363322352,47.9954751264],[11.8363322352,48.2838537733],[11.3589406916,48.2838537733],[11.3589406916,47.9954751264]]]
