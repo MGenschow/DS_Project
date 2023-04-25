@@ -20,18 +20,18 @@
 ---
 
 ### GitHub Repository:
-- I created a repository and added all of you as collaborators
-- Clone this in your $home directory (`cd ~`) using
+- I created a repository and added all of you as collaborators.
+- To quickly clone the remote repository in your "local" $home directory (`cd ~`) on the cluster, you can use:
 ```bash
 git clone https://github.com/MGenschow/DS_Project.git
 ```
-- The caveat of cloning via HTTPS is that Github will ask for user name and PAT (personal access token) whenever communicating with the remote repository. Using SSH Authentication (i.e. SSH keys) one gets rid of this problem. The following instructions cover how to create SSH keys in the home directory on the cluster and deposit them in Github.
-    - Generate SSH key on Cluster. Make sure that you are in your home directory (`cd ~`) and make sure you use the emai address that is associated with your Github account.
+- However, the caveat of cloning via HTTPS is that git will always ask for user name and PAT (personal access token) whenever communicating with the remote repository. By relying on SSH Authentication (i.e. SSH keys) one gets rid of this problem. The following instructions cover how to create SSH keys in the home directory on the cluster and deposit them in Github.
+    - Generate SSH key on Cluster. Make sure that you are in your home directory (`cd ~`) and make sure you use the email address that is associated with your Github account.
     ```bash
     ssh-keygen -t ed25519 -C "stefan.glaisner@student.uni-tuebingen.com"
     ```
-    - You will then be asked in which file you want to save the key. But you can simply press Enter to accept the default file location.
-    - You will then also be asked to enter a passphrase but this can also be neglected by pressing Enter (twice).
+    - You will then be asked in which file you want to save the key. But you can simply press **Enter** to accept the default file location. Accordingly, this command creates a a new directory .ssh in your home directory with a private and a public key inside.
+    - You will then also be asked to enter a passphrase but this can also be neglected by pressing **Enter** (twice).
     - Start the the ssh-agent.
     ```bash
     eval "$(ssh-agent -s)"
@@ -44,14 +44,21 @@ git clone https://github.com/MGenschow/DS_Project.git
     ```bash
     cat ~/.ssh/id_ed25519.pub
     ```
-    - Copy the content to your clipboard.
-    - Go to Github and click on your profile picture.
+    - Copy the output to your clipboard.
+    - Go to *Github* and click on your profile picture.
     - Navigate to Settings > Access > SSH and GPG keys.
-    - Click "New SSH key".
-    - Choose a title of your choice.
-    - Insert the contents of your clipboard into the "Key" pane and click "Add SSH key".
-    - After your first `git pull` command you will be asked if you are sure you want to continue connecting. Simply type "yes".
-    - Now you should be all set and not be asked for your Github credentials any more.
+    - Click *New SSH key*.
+    - Choose a title of your choice (e.g. bwUniCluster).
+    - Insert the contents of your clipboard into the *Key* pane and click *Add SSH key*.
+    - If you had not cloned the repository before (via HTTPS), you can do this now using SSH:
+    ```bash
+    git clone git@github.com:MGenschow/DS_Project.git
+    ```
+    - If you already cloned the repository via HTTPS, you can change to SSH using the following command:
+    ```bash
+    git remote set-url origin git@github.com:MGenschow/DS_Project.git
+    ```
+    - Now you should be all set and not be asked for your Github credentials any more. After your first `git pull` exectution you will be asked if you are sure you want to continue connecting. This can be ignored. Hence, simply type "yes".
 
 - For further information, click through this [Github page](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account) and/or this [YouTube video](https://www.youtube.com/watch?v=WgZIv5HI44o).
 
