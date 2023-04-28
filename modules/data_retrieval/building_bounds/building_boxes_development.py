@@ -7,6 +7,7 @@ from shapely.geometry import box, mapping, Polygon
 import rasterio.warp
 from rasterio.crs import CRS
 import matplotlib.pyplot as plt
+import pickle
 
 # %%
 import yaml
@@ -15,64 +16,20 @@ with open(config_path, 'r') as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 config
 
-# %% [markdown]
-# ### Load Building Boxes from OpenData Portal
-
 # %%
-urls = {
-    'Unterfanken':'https://geodaten.bayern.de/odd/m/3/daten/hausumringe/bezirk/data/20221130_096_Unterfranken_Hausumringe.zip', 
-    'Oberfranken':'https://geodaten.bayern.de/odd/m/3/daten/hausumringe/bezirk/data/20221130_094_Oberfranken_Hausumringe.zip',
-    'Schwaben':'https://geodaten.bayern.de/odd/m/3/daten/hausumringe/bezirk/data/20221130_097_Schwaben_Hausumringe.zip', 
-    'Mittelfranken':'https://geodaten.bayern.de/odd/m/3/daten/hausumringe/bezirk/data/20221130_095_Mittelfranken_Hausumringe.zip', 
-    'Oberpfalz':'https://geodaten.bayern.de/odd/m/3/daten/hausumringe/bezirk/data/20221130_093_Oberpfalz_Hausumringe.zip', 
-    'Niederbayern':'https://geodaten.bayern.de/odd/m/3/daten/hausumringe/bezirk/data/20221130_092_Niederbayern_Hausumringe.zip', 
-    'Oberbayern':'https://geodaten.bayern.de/odd/m/3/daten/hausumringe/bezirk/data/20221130_091_Oberbayern_Hausumringe.zip'
-}
-
-# %%
-url = urls['Oberbayern']
-path = os.path.join(config['data']['building_boxes'], 'Oberbayern.zip')
-urllib.request.urlretrieve(url, path)
-
-# TODO: Add unzip functionality, check for existing files
+bbox = box(*[11.55, 48.16, 11.56, 48.17])
 
 # %% [markdown]
-# ###  Read Data and Project CRS
-
-# %%
-# Import necessary modules
-import geopandas as gpd
-
-# Set filepath (fix path relative to yours)
-fp = os.path.join(config['data']['building_boxes'], 'Oberbayern', 'hausumringe.shp')
-
-# Read file using gpd.read_file()
-data = gpd.read_file(fp)
-
-# %%
-data['geometry_4326'] = data['geometry'].to_crs(epsg=4326)
-
-# %% [markdown]
-# ### Subset Data to relevant bbox
-
-# %%
-# Define bbox for the area of interest
-bbox = [11.55, 48.16, 11.56, 48.17]
-bbox = box(*bbox)
-
-# %%
-def polygon_intersects(bbox, polygon:Polygon):
-    return bbox.intersects(polygon)
-
-data['intersects'] = data['geometry_4326'].apply(polygon_intersects, args=(bbox,))
-subset = data[data['intersects'] == True]
+# ###  Read Data 
+data = pickle.load(open(os.path.join(config['data']['building_boxes'],'processed_building_boxes', 'building_boxes.pkl'), 'rb'))
+data
 
 # %% [markdown]
 # ### Plot Building Boxes on Map
 
 # %%
 features = []
-for polygon in subset['geometry_4326']: 
+for polygon in data['geometry_4326']: 
     features.append({
             'type': 'Feature',
             'geometry': mapping(polygon),
@@ -99,7 +56,7 @@ folium.GeoJson(geojson).add_to(m)
 import rioxarray
 import numpy as np
 
-dst = rioxarray.open_rasterio('../orthophotos/test.tif')
+dst = rioxarray.open_rasterio('/Users/maltegenschow/Documents/Uni/SoSe23/Data Science Project/data/orthophotos/raw_tiles/32689_5337.tif')
 dst = dst.rio.reproject('EPSG:4326')
 img = np.dstack((dst.values[0], dst.values[1], dst.values[2]))
 
@@ -119,18 +76,18 @@ m
 # ### Test Subsetting of image to one rooftop
 
 # %%
-subset['area'] = subset['geometry_4326'].area
-subset.nlargest(3, 'area')
+data['area'] = data['geometry_4326'].area
+data.nlargest(3, 'area')
 
 # %%
-roof = subset.nlargest(1, 'area')['geometry'].iloc[0]
+roof = data.nlargest(1, 'area')['geometry'].iloc[0]
 roof
 
 # %%
 roof.wkt
 
 # %%
-with rasterio.open('../orthophotos/test.tif') as src:
+with rasterio.open('/Users/maltegenschow/Documents/Uni/SoSe23/Data Science Project/data/orthophotos/raw_tiles/32689_5337.tif') as src:
     out_image, out_transform = rasterio.mask.mask(src, [roof], crop=True)
     out_meta = src.meta
 
