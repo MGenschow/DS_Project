@@ -8,11 +8,12 @@ import rasterio
 import rasterio.warp
 from shapely.geometry import Polygon
 import yaml
+from tqdm import tqdm
 
 
 # Load configuration file
-#config_path = '/home/tu/tu_tu/tu_zxmav84/DS_Project/modules/config.yml'
-config_path = '/Users/maltegenschow/Documents/Uni/SoSe23/Data Science Project/DS_Project/modules/config.yml'
+config_path = '/home/tu/tu_tu/tu_zxmav84/DS_Project/modules/config.yml'
+#config_path = '/Users/maltegenschow/Documents/Uni/SoSe23/Data Science Project/DS_Project/modules/config.yml'
 with open(config_path, 'r') as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 
@@ -84,28 +85,30 @@ class OrthophotoIndexer():
         self.download_metalink_per_regierungsbezirk(override=False)
 
         out_path=os.path.join(self.data_dir, 'metalink_files', 'complete_index.pkl')
-        
-        # Create a list of dictionaries to store the file attributes
-        file_list = []
+        if os.path.exists(out_path):
+            print('Index File already exists')
+        else: 
+            # Create a list of dictionaries to store the file attributes
+            file_list = []
 
-        # Iterate through the metalink files and extract the attributes
-        for file in os.listdir(os.path.join(self.data_dir, 'metalink_files')):
-            if file.endswith('.meta4'):
-                file_list.append(file)
-        # Parse all files and create a DataFrame
-        complete_index = pd.DataFrame()
-        for file in file_list:
-            print(f'Parsing file {file}')
-            temp_df = self.parse_meta4_file(os.path.join(self.data_dir, 'metalink_files', file))
-            complete_index = pd.concat([complete_index, temp_df], ignore_index=True)
-        
-        # Save file to disk
-        complete_index.to_pickle(out_path)
-        print(f'Successfully created complete index and saved it to {out_path}')
-        
+            # Iterate through the metalink files and extract the attributes
+            for file in os.listdir(os.path.join(self.data_dir, 'metalink_files')):
+                if file.endswith('.meta4'):
+                    file_list.append(file)
+            # Parse all files and create a DataFrame
+            complete_index = pd.DataFrame()
+            for file in file_list:
+                print(f'Parsing file {file}')
+                temp_df = self.parse_meta4_file(os.path.join(self.data_dir, 'metalink_files', file))
+                complete_index = pd.concat([complete_index, temp_df], ignore_index=True)
+            
+            # Save file to disk
+            complete_index.to_pickle(out_path)
+            print(f'Successfully created complete index and saved it to {out_path}')
+            
 
-        if print_summary:
-            self._print_summary(complete_index)
+            if print_summary:
+                self._print_summary(complete_index)
 
     def _print_summary(self, df):
         """
@@ -155,7 +158,7 @@ class OrthophotoIndexer():
         file_list = []
 
         # Iterate through the file elements and extract the attributes
-        for file_elem in root.iter('{urn:ietf:params:xml:ns:metalink}file'):
+        for file_elem in tqdm(root.iter('{urn:ietf:params:xml:ns:metalink}file')):
             file_dict = {}
             file_dict['tile_name'] = file_elem.get('name')
             file_dict['size'] = int(file_elem.find('{urn:ietf:params:xml:ns:metalink}size').text)
@@ -315,13 +318,15 @@ class OrthophotoLoader:
                 missing_tiles.append(row['tile_name'])
         return missing_tiles
     
-    def _print_report(self, relevant_tiles):
+    def print_report(self, relevant_tiles=None):
         """
         Prints a report containing number of relevant and missing tiles, and their total size.
 
         Args:
             relevant_tiles (Pandas DataFrame): Relevant tiles with intersect column added.
         """
+        if relevant_tiles == None: 
+            relevant_tiles = self.get_relevant_tiles()
         print(f'Number of relevant tiles: {len(relevant_tiles)}') 
         print(f'Total size of potential downloads: {round(relevant_tiles["size_mb"].sum()/1000,2)} GB')
         missing_tiles = self.get_missing_tiles(relevant_tiles)
@@ -346,9 +351,15 @@ class OrthophotoLoader:
         if len(missing_tiles) == 0:
             print('No missing tiles')
             return
-        base_url = 'https://download1.bayernwolke.de/a/dop40/data/'
-        for tile in missing_tiles:
-            url = base_url + tile
-            print(f'Downloading {tile}')
-            urllib.request.urlretrieve(url, os.path.join(self.data_dir, 'raw_tiles', tile))
+        else: 
+            dir = os.path.join(self.data_dir, 'raw_tiles')
+            if not os.path.exists(dir):
+                os.mkdir(dir)
+            print('Downloading mmissing tiles...')
+            base_url = 'https://download1.bayernwolke.de/a/dop40/data/'
+            for tile in tqdm(missing_tiles):
+                url = base_url + tile
+                #print(f'Downloading {tile}')
+                urllib.request.urlretrieve(url, os.path.join(dir, tile))
+            
 

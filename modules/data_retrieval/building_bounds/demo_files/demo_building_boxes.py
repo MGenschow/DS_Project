@@ -11,7 +11,7 @@ import pickle
 
 # %%
 import yaml
-config_path = '/Users/maltegenschow/Documents/Uni/SoSe23/Data Science Project/DS_Project/modules/config.yml'
+config_path = '/home/tu/tu_tu/tu_zxmav84/DS_Project/modules/config.yml'
 with open(config_path, 'r') as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 config
@@ -56,7 +56,7 @@ folium.GeoJson(geojson).add_to(m)
 import rioxarray
 import numpy as np
 
-dst = rioxarray.open_rasterio('/Users/maltegenschow/Documents/Uni/SoSe23/Data Science Project/data/orthophotos/raw_tiles/32689_5337.tif')
+dst = rioxarray.open_rasterio('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/orthophotos/raw_tiles/32689_5337.tif')
 dst = dst.rio.reproject('EPSG:4326')
 img = np.dstack((dst.values[0], dst.values[1], dst.values[2]))
 
@@ -87,7 +87,7 @@ roof
 roof.wkt
 
 # %%
-with rasterio.open('/Users/maltegenschow/Documents/Uni/SoSe23/Data Science Project/data/orthophotos/raw_tiles/32689_5337.tif') as src:
+with rasterio.open('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/orthophotos/raw_tiles/32689_5337.tif') as src:
     out_image, out_transform = rasterio.mask.mask(src, [roof], crop=True)
     out_meta = src.meta
 
@@ -99,12 +99,11 @@ out_meta.update({"driver": "GTiff",
 with rasterio.open("masked_roof.tif", "w", **out_meta) as dest:
     dest.write(out_image)
 
-# %%
 roof_picture = rioxarray.open_rasterio('masked_roof.tif')
 img = np.dstack((roof_picture.values[0], roof_picture.values[1], roof_picture.values[2]))
-
-# %%
 plt.imshow(img)
+
+os.remove('masked_roof.tif')
 
 
 

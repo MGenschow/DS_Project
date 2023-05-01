@@ -15,14 +15,13 @@ import rioxarray
 
 # %%
 import yaml
-config_path = '/Users/maltegenschow/Documents/Uni/SoSe23/Data Science Project/DS_Project/modules/config.yml'
+config_path = '/home/tu/tu_tu/tu_zxmav84/DS_Project/modules/config.yml'
 with open(config_path, 'r') as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 
 # %%
-tiles = [elem for elem in os.listdir(os.path.join(config['data']['orthophotos'], 'raw_tiles')) if elem .endswith('.tif')]
-tiles = [os.path.join(config['data']['orthophotos'], 'raw_tiles', elem) for elem in tiles]
-tiles
+tile_names = ['32689_5337.tif', '32689_5338.tif']
+tiles = [os.path.join(config['data']['orthophotos'], 'raw_tiles', tile) for tile in tile_names]
 
 # %%
 import rasterio
@@ -30,7 +29,7 @@ from rasterio.merge import merge
 from rasterio.plot import show
 
 # Open the two raster files
-with rasterio.open(tiles[0]) as src1, rasterio.open(tiles[2]) as src2:
+with rasterio.open(tiles[1]) as src1, rasterio.open(tiles[0]) as src2:
     # Merge the two datasets and get the transform and shape of the output file
     mosaic, out_trans = merge([src1, src2])
 
@@ -52,6 +51,7 @@ with rasterio.open(tiles[0]) as src1, rasterio.open(tiles[2]) as src2:
 # Open the merged output file and display it
 with rasterio.open('test.tif') as dst:
     show(dst)
+
 
 
 # %%
@@ -83,3 +83,6 @@ folium.raster_layers.ImageOverlay(
 
 m
 
+
+# %%
+os.remove('test.tif')

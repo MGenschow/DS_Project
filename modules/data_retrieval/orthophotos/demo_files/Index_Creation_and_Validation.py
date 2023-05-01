@@ -10,11 +10,17 @@ import rasterio.warp
 from shapely.geometry import Polygon
 from shapely.geometry import mapping
 
-
+# Make sure imports from modules in parent directory will work
+import os
+import sys
+import inspect
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0, parentdir) 
 import preprocessing_orthophotos
 
 import yaml
-config_path = '/Users/maltegenschow/Documents/Uni/SoSe23/Data Science Project/DS_Project/modules/config.yml'
+config_path = '/home/tu/tu_tu/tu_zxmav84/DS_Project/modules/config.yml'
 with open(config_path, 'r') as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 

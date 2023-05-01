@@ -8,7 +8,7 @@ import shutil
 from shapely.geometry import box
 
 import yaml
-config_path = '/Users/maltegenschow/Documents/Uni/SoSe23/Data Science Project/DS_Project/modules/config.yml'
+config_path = '/home/tu/tu_tu/tu_zxmav84/DS_Project/modules/config.yml'
 with open(config_path, 'r') as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 
@@ -76,8 +76,9 @@ class BuildingBoxDownloader():
 
             # Read shape files and subset to regierungsbezirke
             df = gpd.read_file(os.path.join(dir, 'verwaltungsgebiete', 'ALKIS-Vereinfacht'))
-            df['geometry_4326'] = df['geometry'].to_crs(epsg=4326)
             bezirke = df[df.art == 'Regierungsbezirk']
+
+            bezirke['geometry_4326'] = bezirke['geometry'].to_crs(epsg=4326)
             pickle.dump(bezirke, open(os.path.join(dir, 'bezirke.pkl'), 'wb'))
 
             # Delete initial shapefile
@@ -172,10 +173,4 @@ class BuildingBoxDownloader():
             os.makedirs(dir)
             pickle.dump(building_boxes, open(os.path.join(dir, 'building_boxes.pkl'), 'wb'))
         
-
-
-#bbox = box(*[11.55, 48.16, 11.56, 48.17])
-#building_box_downloader = BuildingBoxDownloader(bbox)
-#building_box_downloader.prepare_relevant_building_boxes()
-
 

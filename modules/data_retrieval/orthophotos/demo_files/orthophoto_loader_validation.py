@@ -1,4 +1,10 @@
 # %%
+import os
+import sys
+import inspect
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0, parentdir) 
 import preprocessing_orthophotos
 
 from shapely.geometry import box, Polygon, mapping
@@ -6,7 +12,7 @@ import pandas as pd
 
 # %%
 import yaml
-config_path = '/Users/maltegenschow/Documents/Uni/SoSe23/Data Science Project/DS_Project/modules/config.yml'
+config_path = '/home/tu/tu_tu/tu_zxmav84/DS_Project/modules/config.yml'
 with open(config_path, 'r') as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 config
@@ -46,7 +52,7 @@ folium.GeoJson(bbox.__geo_interface__, style_function=lambda x:style2).add_to(m)
 m
 
 # %%
-loader._print_report(relevant_tiles)
+loader.print_report()
 
 # %%
 loader.download_missing_tiles()
@@ -54,3 +60,5 @@ loader.download_missing_tiles()
 
 
 
+
+# %%
