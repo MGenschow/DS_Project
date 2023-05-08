@@ -12,6 +12,7 @@ from time import sleep
 import zipfile
 import glob
 import os
+from bs4 import BeautifulSoup
 # %% Access to API
 # r = requests.get('https://dwd.api.proxy.bund.dev/v30/stationOverviewExtended?stationIds=10865')
 # %% Set url
@@ -56,7 +57,7 @@ muenchen = stations[(stations['geoBreite'] > 47.99) &
 # Aceess url 
 r = requests.get(url)
 # Parse html
-soup = BeautifulSoup(r.content, 'html5lib')
+soup = BeautifulSoup(r.content, 'html.parser')
 # Select all hrefs
 hrefs = [a['href'] for a in soup.find_all('a', href=True)]
 # %% Create final data frame
@@ -90,7 +91,7 @@ for i in muenchen.Stations_id:
     station_data = pd.read_csv(file[0],
                                sep=';',
                                parse_dates = ['MESS_DATUM'],
-                               date_format='%Y%m%d%H')
+                               date_format=f'%Y%m%d%H')
     # Rename columns
     station_data.rename({cols[0]:[c + '_' + str(station_data.STATIONS_ID.iloc[0]) for c in cols][0],
                          cols[1]:[c + '_' + str(station_data.STATIONS_ID.iloc[0]) for c in cols][1]},
@@ -124,4 +125,3 @@ plt.title('Temperature in Munich in August 2022')
 plt.xlabel('Date')
 plt.ylabel('Temperature in °C')
 plt.show()
-
