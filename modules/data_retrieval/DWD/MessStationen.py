@@ -1,20 +1,22 @@
 #%% Import packages
 import pandas as pd
 import folium
-from folium.plugins import MarkerCluster
 import matplotlib.pyplot as plt
 import numpy as np
 import datetime
 import requests
 import json
-from random import randint
-from time import sleep
 import zipfile
 import glob
 import os
+import re
+import shutil
 from bs4 import BeautifulSoup
-# %% Access to API
-# r = requests.get('https://dwd.api.proxy.bund.dev/v30/stationOverviewExtended?stationIds=10865')
+from folium.plugins import MarkerCluster
+from random import randint
+from time import sleep
+# %% Set working directory
+os.chdir('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/DWD/temp')
 # %% Set url
 url = 'https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/hourly/air_temperature/historical/'
 # %% Download TU_Stundenwerte_Beschreibung_Stationen.txt from url and save it as txt file
@@ -54,11 +56,8 @@ muenchen = stations[(stations['geoBreite'] > 47.99) &
                     (stations['geoLaenge'] > 11.18) &
                     (stations['geoLaenge'] < 12.0)]
 # %% Select all href from url and save them as list
-# Aceess url 
 r = requests.get(url)
-# Parse html
 soup = BeautifulSoup(r.content, 'html.parser')
-# Select all hrefs
 hrefs = [a['href'] for a in soup.find_all('a', href=True)]
 # %% Create final data frame
 # Set time period
@@ -67,50 +66,45 @@ end_date = datetime.datetime(2022, 12, 31, 23)
 # Create date range
 dates = pd.date_range(start_date, end_date, freq='H')
 # Create empty data frame
-stations_temp = pd.DataFrame({'MESS_DATUM': dates})
-# %%
+station_filter = pd.DataFrame({'MESS_DATUM': dates})
+# %% filter scraped info
 # Define relevant columns from stations data
 cols = ['TT_TU', 'RF_TU']
-#  Loop over all stations in and around Munich
-for i in muenchen.Stations_id:
-    # Select filename from hrefs
-    filename = [h for h in hrefs if h.startswith('stundenwerte_TU_' + str(i).rjust(5,'0'))][0]
-    # Unzip file from url + hrefs[0] and save it as txt file
-    r = requests.get(url + filename)
+
+station_temp = pd.DataFrame()
+
+stations_id = muenchen.Stations_id.tolist()
+stations_id = [str(s).rjust(5,'0') for s in stations_id]
+j_stations_id = '|'.join(stations_id)
+reg = 'stundenwerte_TU_' + j_stations_id + '_[0-9]{8}_20221231_hist.zip'
+hrefs_final = list(filter(lambda x: re.findall(reg, x), hrefs))
+# %% loop through chosen stations
+for i in range(len(hrefs_final)):
+    filename = hrefs_final[i]
+    r = requests.get(url + filename, stream=True)
     # Save zip file
     with open(filename, 'wb') as f:
         f.write(r.content)
     # Unzip file
     with zipfile.ZipFile(filename, 'r') as zip_ref:
         zip_ref.extractall(filename.replace('.zip',''))
-    # Delete zip file
-    os.remove(filename) 
     # Access txt file
     file = glob.glob(filename.replace('.zip','') + '/produkt_tu_stunde*')
     # Read txt file and save it as pandas dataframe
-    station_data = pd.read_csv(file[0],
-                               sep=';',
-                               parse_dates = ['MESS_DATUM'],
-                               date_format=f'%Y%m%d%H')
-    # Rename columns
-    station_data.rename({cols[0]:[c + '_' + str(station_data.STATIONS_ID.iloc[0]) for c in cols][0],
-                         cols[1]:[c + '_' + str(station_data.STATIONS_ID.iloc[0]) for c in cols][1]},
-                         axis=1,
-                         inplace=True)
-    # Merge data frame with station data
-    stations_temp = (
-        stations_temp.
-        merge(station_data[['MESS_DATUM',
-                            [c + '_' + str(station_data.STATIONS_ID.iloc[0]) for c in cols][0],
-                            [c + '_' + str(station_data.STATIONS_ID.iloc[0]) for c in cols][1]]],
-              how='left',
-              on='MESS_DATUM')
-              )
-    # 
+    station_data = pd.read_csv(file[0], sep = ';')[["STATIONS_ID","MESS_DATUM","TT_TU","RF_TU"]]
+    station_data['MESS_DATUM'] = pd.to_datetime(station_data['MESS_DATUM'], format='%Y%m%d%H')
+    # Restrict to pre-specified time frame
+    station_data = station_data.merge(station_filter, how="right", on='MESS_DATUM')
+    # Append to data
+    station_temp = pd.concat([station_temp, station_data])
+    # Delete files
+    shutil.rmtree(filename.replace('.zip',''))
+    os.remove(filename)
+    # Pause request
     sleep(randint(1,5))
-
-# %% Replace all values below -100 in stations_temp with NaN
-stations_temp[stations_temp.iloc[:, 1:] < -100] = np.nan
+# %% Data cleaning
+station_temp[station_temp['RF_TU'] < 0]['RF_TU'] = np.nan
+station_temp[station_temp['TT_TU'] < -50]['TT_TU'] = np.nan
 #%% Create mask for August 2022
 mask = (stations_temp['MESS_DATUM'].dt.year == 2022) & (stations_temp['MESS_DATUM'].dt.month == 8)
 # %% Select data for August 2022
