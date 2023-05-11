@@ -1,18 +1,22 @@
 #%% import packages
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
-import yaml
-import statsmodels.tsa.stattools as s
+import statsmodels.tsa.stattools as stattools
+from statsmodels.tsa.arima_process import arma_generate_sample
 from statsmodels.tsa.arima.model import ARIMA
-config_path = '/home/tu/tu_tu/tu_zxmny46/DS_Project/modules/config.yml'
+import yaml
+# config_path = '/home/tu/tu_tu/tu_zxmny46/DS_Project/modules/config.yml'
+config_path = 'C:/Users/stefan/OneDrive - bwedu/04_semester/DS_Project/DS_Project/modules/config.yml'
 with open(config_path, 'r') as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
-#%% time series analysis
-dwd = pd.read_csv(config['data']['dwd']+'/dwd.csv')
-dwd['MESS_DATUM'] = pd.to_datetime(dwd['MESS_DATUM'], format='%Y-%m-%d %H')
+#%% data import
+# dwd = pd.read_csv(config['data']['dwd']+'/dwd.csv')
+dwd = pd.read_csv('C:/Users/stefan/OneDrive - bwedu/04_semester/DS_Project/dwd.csv')
+# dwd['MESS_DATUM'] = pd.to_datetime(dwd['MESS_DATUM'], format='%Y-%m-%d %H')
+dwd['MESS_DATUM'] = pd.to_datetime(dwd['MESS_DATUM'], format='ISO8601')
 dwd.head()
-#%% functions
+#%% standard functions
 def apparent_temperature_nws(r):
     if r['TT_TU_FA'] <= 40:
         HIF = r['TT_TU_FA']
@@ -44,66 +48,62 @@ def fahrenheit(c):
 
 def celcius(f):
     return (f - 32)*(5/9)
-#%%
+#%% application of functions
 dwd['TT_TU_FA'] = dwd.apply(lambda x: fahrenheit(x['TT_TU']), axis=1)
-# %%
 dwd['TA_STD_FA'] = dwd.apply(apparent_temperature_std, axis=1)
 dwd['TA_NWS_FA'] = dwd.apply(apparent_temperature_nws, axis=1)
-# %%
 dwd['TA_STD'] = dwd.apply(lambda x: celcius(x['TA_STD_FA']), axis=1)
 dwd['TA_NWS'] = dwd.apply(lambda x: celcius(x['TA_NWS_FA']), axis=1)
-#%% kysely
+#%% data preparation for base kysely
 t_max = 30
 t_min = 25
-mcity = dwd[(dwd['STATIONS_ID'] == 3379) & (dwd['MESS_DATUM'].dt.year == 2022)].groupby([dwd['MESS_DATUM'].dt.date], as_index=False).max()[['MESS_DATUM', 'TT_TU']]
-mcity['GTMAX'] = mcity['TT_TU'] >= t_max
-mcity['GTMIN'] = mcity['TT_TU'] >= t_min
-mcity['DAYSMAX'] = mcity['GTMAX'].rolling(window=3).sum()
-#%% kysely
-h = [0]*mcity.shape[0]
+f = dwd[(dwd['STATIONS_ID'] == 3379) & (dwd['MESS_DATUM'].dt.year == 2022)].groupby([dwd['MESS_DATUM'].dt.date], as_index=False).max()[['MESS_DATUM', 'TT_TU']]
+f['GTMAX'] = f['TT_TU'] >= t_max
+f['GTMIN'] = f['TT_TU'] >= t_min
+#%% base kysely
+n = f.shape[0]
+h = [0]*n
 days_max = 0
 days_min = 0
-#%% kysely
-for i in range(mcity.shape[0]):
-    if (mcity['GTMIN'].iloc[i] == False) & (days_max < 3):
+for i in range(n):
+    if (f['GTMIN'].iloc[i] == False) & (days_max < 3):
         days_max = 0
         days_min = 0
-    elif (mcity['GTMAX'].iloc[i] == True):
+    elif (f['GTMAX'].iloc[i] == True):
         days_max += 1
-    elif (mcity['GTMAX'].iloc[i] == False) & (days_max >= 3):
-        avg = mcity['TT_TU'].iloc[(i-(days_max + days_min)+1):(i+1)].mean()
-        if (avg >= t_max) & (mcity['GTMIN'].iloc[i] == True):
+    elif (f['GTMAX'].iloc[i] == False) & (days_max >= 3):
+        avg = f['TT_TU'].iloc[(i-(days_max + days_min)):(i+1)].mean()
+        if (avg >= t_max) & (f['GTMIN'].iloc[i] == True):
             days_min += 1
         else:
-            if mcity['GTMAX'].iloc[(i-days_max):(i-days_min+1)].to_list() == [True, True, True]:
+            if np.all(f['GTMAX'].iloc[(i-(days_max + days_min)):(i-days_min)]) == True:
                 h[(i-(days_max + days_min)):(i)] = [1 for i in range((days_max + days_min))]
             days_max = 0
             days_min = 0
-mcity["HEATWAVE"] = h
-# %%
+f["HEATWAVE"] = h
+# %% time series kysely data prepration
 tseries = dwd[(dwd['STATIONS_ID'] == 3379) & (dwd['MESS_DATUM'].dt.year.isin([2019,2020,2021,2022]))].groupby([dwd['MESS_DATUM'].dt.date], as_index=False).max()[['MESS_DATUM', 'TT_TU']]
 tseries_train = tseries[tseries['MESS_DATUM'].dt.year <= 2021]
 tseries_train.set_index('MESS_DATUM', inplace=True)
 tseries_test = tseries[tseries['MESS_DATUM'].dt.year == 2022]
 tseries_test.set_index('MESS_DATUM', inplace=True)
-
-
 # %%
+tt_test = tseries_test.diff(1)
+tt_test = tt_test.fillna(method="bfill")
 plt.figure(figsize=(20,10))
-tseries_test.diff(1).plot()
-# %%
-plt.figure(figsize=(20,10))
-tseries_train.diff(1).plot()
+tt_test.plot()
 # %%
 tt = tseries_train.diff(1)
 tt = tt.fillna(method="bfill")
-# %%
-s.adfuller(
+plt.figure(figsize=(20,10))
+tt.plot()
+# %% dickey fuller test
+stattools.adfuller(
     tt,
     regression="c",
     autolag="AIC"
 )
-# %%
+# %% arma model
 arma_mod = ARIMA(tt, order=(2,0,2)).fit()
 # %%
 print(arma_mod.summary())
@@ -113,22 +113,11 @@ ma = arma_mod.maparams
 ar = np.r_[1, -ar]
 ma = np.r_[1, ma]
 # %%
-t_sample = arp.arma_generate_sample(ar, ma, nsample=365)
-pd.Series(t_sample).plot()
-# %%
 mat = np.empty([1000,365])
 for i in range(1000):
-    mat[i,:] = arp.arma_generate_sample(ar, ma, nsample=365)
-# %%
-tt_test = tseries_test.diff(1)
-tt_test = tt_test.fillna(method="bfill")
-# %%
+    mat[i,:] = arma_generate_sample(ar, ma, nsample=365)
 result = np.empty([1000,365])
 for i in range(1000):
     result[i,:] = np.reshape(np.where(tt_test > np.reshape(mat[i,:],[-1,1]),1,0),[365,])
-# %%
-i = 1
-np.where(tt_test > np.reshape(mat[i,:],[-1,1]),1,0)
-# %%
 means = result.mean(axis=0)
-# %%
+pd.Series(means).plot(kind="bar")
