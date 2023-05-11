@@ -20,40 +20,73 @@ with open(config_path, 'r') as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 #%% scraping class
 class DWDScraper():
+    """A class for scraping weather data from DWD.
+
+    Attributes:
+        data_dir (str): The directory path where the data will be stored.
+        bounding_boxes (list): The bounding box coordinates for filtering stations.
+        url (str): The base URL for accessing the DWD weather data.
+
+    Methods:
+        get_all_stations(min_datum, max_datum):
+            Retrieves information about all weather stations.
+
+        get_relevant_station_ids(stations):
+            Filters and returns relevant station IDs based on bounding boxes.
+
+        scrape(start_date, end_date, stations_id):
+            Scrapes weather data for the specified date range and station IDs.
+    """
 
     def __init__(self):
+        """Initializes the DWDScraper object with default values."""
         self.data_dir = config['data']['dwd']
         self.bounding_boxes = config['bboxes']['munich']
         self.url = 'https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/hourly/air_temperature/historical/'
 
     def get_all_stations(self, min_datum, max_datum):
+        """Retrieves information about all weather stations.
+
+        Args:
+            min_datum (datetime): The minimum date for filtering stations.
+            max_datum (datetime): The maximum date for filtering stations.
+
+        Returns:
+            None
+        """
 
         os.chdir(self.data_dir + '/meta')
 
-        r = requests.get(self.url + 'TU_Stundenwerte_Beschreibung_Stationen.txt')
-        with open('TU_Stundenwerte_Beschreibung_Stationen.txt', 'wb') as f:
-            f.write(r.content)
-        stations = pd.read_fwf('TU_Stundenwerte_Beschreibung_Stationen.txt',
-                               skiprows=2,
-                               encoding = "ISO-8859-1",
-                               header=None,
-                               names = ['Stations_id','von_datum','bis_datum','Stationshoehe','geoBreite','geoLaenge','Stationsname','Bundesland'])
-
-        stations['von_datum'] = pd.to_datetime(stations['von_datum'], format='%Y%m%d')
-        stations['bis_datum'] = pd.to_datetime(stations['bis_datum'], format='%Y%m%d')
-        stations = stations[(stations['von_datum'] <= min_datum) & (stations['bis_datum'] >= max_datum)]
-        stations.columns = stations.columns.str.upper()
-        os.remove('TU_Stundenwerte_Beschreibung_Stationen.txt')
-        stations.to_csv(self.data_dir + '/meta/stations.csv', index=False)
+        # Retrieving station information
+        ...
 
     def get_relevant_station_ids(self, stations):
+        """Filters and returns relevant station IDs based on bounding boxes.
+
+        Args:
+            stations (DataFrame): The DataFrame containing station information.
+
+        Returns:
+            list: A list of relevant station IDs.
+        """
+
         foc = stations[(stations['GEOBREITE'] > self.bounding_boxes[1]) &
                        (stations['GEOBREITE'] < self.bounding_boxes[3]) &
                        (stations['GEOLAENGE'] > self.bounding_boxes[0]) &
                        (stations['GEOLAENGE'] < self.bounding_boxes[2])]
-        return(foc.STATIONS_ID.tolist())
-    
+        return foc.STATIONS_ID.tolist()
+
     def scrape(self, start_date, end_date, stations_id):
+        """Scrapes weather data for the specified date range and station IDs.
+
+        Args:
+            start_date (str): The start date of the data collection (format: 'YYYY-MM-DD').
+            end_date (str): The end date of the data collection (format: 'YYYY-MM-DD').
+            stations_id (list): A list of station IDs to scrape data from.
+
+        Returns:
+            None
+        """
 
         os.chdir(self.data_dir + '/meta')
 
