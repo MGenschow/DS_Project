@@ -130,4 +130,8 @@ dmypy.json
 *.DS_Store
 *.tif
 
+
 *api_keys.yml
+
+#modules/data_retrieval/Ecostress/config.py
+*config.py
