@@ -639,12 +639,5 @@ plt.show()
 #    data[k] = {}
 #    for sub_key in f[k].keys():
 #        data[k][sub_key] = [f[k][sub_key].size, f[k][sub_key].nbytes]
-# %% 
-import rasterio
-from rasterio.plot import show
-# %%
-fp = r'test.tif'
-img = rasterio.open(fp)
-show(img)
 # %%
 '''
