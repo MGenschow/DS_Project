@@ -135,3 +135,4 @@ dmypy.json
 
 #modules/data_retrieval/Ecostress/config.py
 *config.py
+*credentials.yml

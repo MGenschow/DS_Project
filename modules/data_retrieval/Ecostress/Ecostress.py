@@ -4,7 +4,7 @@ import json
 from io import BytesIO
 import rasterio
 import rioxarray
-import wget
+# import wget
 import h5py
 import subprocess 
 import numpy as np
@@ -17,14 +17,16 @@ from rasterio.plot import show
 from osgeo import gdal, gdal_array, gdalconst, osr
 from PIL import Image
 import os
-# Import credentials
-import config
+import yaml 
 # Import function(s) from utils
 from utils import *
+# %% Import credentials from credentials.yml file 
+with open("/home/tu/tu_tu/tu_zxoul27/DS_Project/modules/credentials.yml", "r") as file: 
+    credentials = yaml.safe_load(file)
+# %% Set parameters (USGS/ERS login)
+login_ERS = {'username' : credentials["username"],'password' : credentials["password_ERS"]}
 # %% Set API URL
 api_url = 'https://m2m.cr.usgs.gov/api/api/json/stable/'
-# %% Set parameters (USGS/ERS login)
-login_ERS = {'username' : config.username,'password' : config.password_ERS}
 # %% Request and store token
 # Request token
 response = requests.post(api_url + 'login', data=json.dumps(login_ERS))
@@ -34,19 +36,22 @@ key = response.json()['data']
 headers = {'X-Auth-Token':key}
 # %% Set temporal filter; TODO variable dates
 temporalFilter = {'start':'2022-08-01 00:00:00', 'end':'2022-08-31 00:00:00'}
+# %% Import bounding boxes for Munich from config.yml file
+with open("/home/tu/tu_tu/tu_zxoul27/DS_Project/modules/config.yml", "r") as file: 
+    config = yaml.safe_load(file)
 # %% Set spatial filter; TODO variable bounds
 spatialFilter =  {'filterType' : "mbr",
-                  'lowerLeft' : {'latitude' : config.latMin, 'longitude' : config.longMin},
-                  'upperRight' : { 'latitude' : config.latMax, 'longitude' : config.longMax}}
+                  'lowerLeft' : {'latitude' : config["bboxes"]["munich"][1], 'longitude' : config["bboxes"]["munich"][0]},
+                  'upperRight' : { 'latitude' : config["bboxes"]["munich"][3], 'longitude' : config["bboxes"]["munich"][2]}}
 # %% Store filepaths
-filepaths = downloadH5(headers, temporalFilter, spatialFilter, 10)
+filepaths = downloadH5(credentials, headers, temporalFilter, spatialFilter, 1)
 # And extract the lists from filepath
 geo_files = filepaths['geo_paths']
 cloud_files = filepaths['cld_paths']
 lst_files = filepaths['ste_paths']
 # %% 
 # NOTE: Choose the file to plot here
-lst_path = lst_files[5]
+lst_path = lst_files[0]
 # Extract unique identifier for the case that e.g the 6. lst-h5 does not 
 # correspond to the 6. geo or cld file
 unique_idf = lst_path.replace("ECOSTRESS_L2_LSTE_", "").rsplit('_', 1)[0]
@@ -54,7 +59,8 @@ unique_idf = lst_path.replace("ECOSTRESS_L2_LSTE_", "").rsplit('_', 1)[0]
 geo_path = [f_geo for f_geo in geo_files if unique_idf in f_geo][0]
 cld_path = [f_cld for f_cld in cloud_files if unique_idf in f_cld][0]
 # Create tifs
-tif_paths = createTif(geo_path, lst_path, cld_path)
+ws_path = "/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/raw_h5"
+tif_paths = createTif(ws_path+'/'+geo_path, ws_path+'/'+lst_path, ws_path+'/'+cld_path,config)
 
 # %% Plot LST tiff for munich
 img_lst_MU = rasterio.open(tif_paths[0])
@@ -70,7 +76,7 @@ image_cld.show()
 print(f'{np.mean(img_cld_MU.read()[0])*100:.2f}% of the picture are covered with clouds')
 
 # %%
-'''
+
 # %% Calculate cloud coverage
 #cldX = rioxarray.open_rasterio(tif_paths[1], masked = True)
 #print(f'{np.mean(img_cld.read()[0])*100:.2f}% of the picture are covered with clouds')
@@ -96,9 +102,9 @@ plt.show()
 #lst = 'ECOSTRESS_L2_LSTE_23529_005_20220830T064558_0601_02.h5'
 #lst = 'ECOSTRESS_L2_CLOUD_23529_005_20220830T064558_0601_02.h5'
 i = 0
-lst = lst_files[i]
-geo = geo_files[i]
-cld = cloud_files[i]
+lst = ws_path+'/'+lst_files[i]
+geo = ws_path+'/'+geo_files[i]
+cld = ws_path+'/'+cloud_files[i]
 # Read in .h5 file 
 f_lst = h5py.File(lst)
 # Store paths of elements in list
@@ -301,7 +307,7 @@ gt = [areaDef.area_extent[0], ps, 0, areaDef.area_extent[3], 0, -ps]
 #LSTgeo[LSTgeo == fv *  sf + add_off] = fv  # Set Fill Value;  NOTE: Fills zero with zero?! 
 # Set up dictionary of arrays to export
 outFiles = {'LST': LSTgeo, 'Cloud': Cldgeo}
-outDir = '/Users/aaronlay/Documents/University/2_MSc_DataScience/4_SoSe_23/DataScienceProject/Ecostress'
+outDir = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/geoTiff/'
 outNames = []
 # 
 fv = np.nan
@@ -310,9 +316,9 @@ fv = np.nan
 # %%  Loop through each item in dictionary created above
 for file in outFiles:
     if file == 'LST':
-        ecoName = lst.split('.h5')[0]
+        ecoName = lst.split('.h5')[0].rsplit('/')[-1]
     if file == 'Cloud':
-        ecoName = cld.split('.h5')[0]
+        ecoName = cld.split('.h5')[0].rsplit('/')[-1]
     # Set up output name using output directory and filename
     outName = join(outDir, '{}_{}.tif'.format(ecoName, file))
     outNames.append(outName)
@@ -427,9 +433,8 @@ arr = img_lst.read()
 
 
 
-
 # %%
-
+'''
 # %% Open tif
 fp = outName
 img = rasterio.open(fp)

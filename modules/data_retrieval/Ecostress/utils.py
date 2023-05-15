@@ -7,16 +7,101 @@ import numpy as np
 from osgeo import gdal, gdal_array, gdalconst, osr
 from os.path import join
 import rioxarray
-import config
 import os
 import requests
 import json
 import subprocess
 import rasterio
 import matplotlib.pyplot as plt
+# Define function to download hierarchichal files
+def downloadH5(credentials, header, tempFilter, spatialFilter, NumberofScenes):
+     ws_path = "/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/raw_h5"
+     # Set api_url
+     api_url = 'https://m2m.cr.usgs.gov/api/api/json/stable/'
+     # Set empty dictionaries for filenames
+     filenames = {}
+     # Store relevant datasets
+     datasets = ['ecostress_eco1bgeo', 'ecostress_eco2cld', 'ecostress_eco2lste']
+     #
+     for dataset in datasets:
+         # Define payload 
+         payload = {'datasetName' : dataset,
+                    'spatialFilter' : spatialFilter,
+                    'acquisitionFilter':  tempFilter}
+         # Requests scenes for the filtered time and area
+         scenes_lste = requests.post(api_url + 'scene-search',
+                                     data=json.dumps({'datasetName' : dataset,
+                                                      'metadataType': 'full',
+                                                      'sortDirection': 'DESC',
+                                                      'sceneFilter' : payload}),
+                                                      headers=header)
+         # Store scenes as json
+         scenes_lste = scenes_lste.json()['data']['results']
+         # Create empty list for filenames
+         #filenames = []
+         list_name = dataset[-3:]+'_paths'
+         #
+         filenames[list_name] = []
+         #locals()[list_name] = []
+         #
+         i = 0
+         # Loop over scenes
+         for scenes in scenes_lste:
+             if i == NumberofScenes:
+                 break
+             # Get download options
+             options = requests.post(api_url + 'download-options',
+                                     data=json.dumps({'datasetName' : dataset,
+                                                      'entityIds': scenes['entityId']}),
+                                                      headers=header)
+             # Extract HDF5
+             infoH5=[dic for dic in options.json()['data'] if dic['productName'] == 'HDF5'][0]
+             # Skip unaivalable scenes
+             if not infoH5['available']:
+                 i += 1
+                 continue
+             # Request Download
+             downloadRequest = requests.post(api_url + 'download-request',
+                                             data=json.dumps({"downloads" : [{'entityId' : infoH5['entityId'],
+                                                                              'productId': infoH5['id']}]}),
+                                                                              headers=header)
+             # Store URL
+             url = downloadRequest.json()["data"]["availableDownloads"][0]["url"]
+             # Extract filename 
+             filename = url.rsplit('/',1)[1]
+             filenames[list_name].append(filename)
+             # If file already exist, dont download it again
+             if os.path.exists(ws_path + '/' + filename):
+                 i += 1
+                 continue
+             # Set command for terminal
+             command = ("wget" + " -P " + ws_path  + " --no-verbose" +  " --user=" + credentials["username"] + " --password='" + credentials["password_URS"] + "' " + url)
+             # Download the data
+             subprocess.run(command, shell=True,text=False)
+             # Increase i for early stopping
+             i += 1
+     return filenames
+
+# Create function to scale data and transfer to celcius
+#def kelToCel(x):
+#    if np.isnan(x):
+#        return np.nan
+#    elif x == 0:
+#        return 0
+#    else:
+#        return round(((x * 0.02) - 273.15))
+# Vectorize function
+#kelToCel = np.vectorize(kelToCel)
+
+#  Encode the cloud coverage as function
+#def get_bit(x):
+#    return int('{0:08b}'.format(x)[-3])
+# Vectorize function
+# get_zero_vec = np.vectorize(get_bit)
+
 # Function get path name for the geo file and the cloud lste file, produces to 
 # tiff files and returns their path name; TODO: Only works for first file
-def createTif(fileNameGeo, fileNameLST, fileNameCld):
+def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
     # Read in lst file
     f_lst = h5py.File(fileNameLST)
     # Store relative paths of elements in list
@@ -37,8 +122,7 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld):
     tempMax = (tempMax + 273.15) / 0.02
     # Set "wrong values" to 0
     lst_SD[(lst_SD < tempMin) | (lst_SD > tempMax)] = 0
-    # Create function to scale data and transfer to celcius
-    def kelToCel(x): # TODO: Define externally
+    def kelToCel(x):
         if np.isnan(x):
             return np.nan
         elif x == 0:
@@ -47,6 +131,8 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld):
             return round(((x * 0.02) - 273.15))
     # Vectorize function
     kelToCel = np.vectorize(kelToCel)
+    # Vectorize function
+    # kelToCel = np.vectorize(kelToCel)
     # Calculate temp to celcius
     lst_SD = kelToCel(lst_SD)
     # Read in lst file
@@ -62,7 +148,6 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld):
     cld_SDS = [dataset for dataset in cld_SDS if dataset.endswith(tuple(sds))]
     # Extrcact dataset
     cld_SD = f_cld[cld_SDS[0]][()]
-    #  Encode the cloud coverage as function; TODO: Define externally
     def get_bit(x):
         return int('{0:08b}'.format(x)[-3])
     # Vectorize function
@@ -143,7 +228,7 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld):
     gt = [areaDef.area_extent[0], ps, 0, areaDef.area_extent[3], 0, -ps]
     # Set up dictionary of arrays to export
     outFiles = {'LST': LSTgeo, 'Cloud': Cldgeo}
-    outDir = '/Users/aaronlay/Documents/University/2_MSc_DataScience/4_SoSe_23/DataScienceProject/Ecostress'
+    outDir = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/geoTiff/'
     outNames = []
     # Set fill value
     fv = np.nan
@@ -190,11 +275,11 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld):
         {
             'type': 'Polygon',
             'coordinates': [[
-                [config.longMin, config.latMin],
-                [config.longMin,config.latMax],
-                [config.longMax, config.latMax],
-                [config.longMax, config.latMin],
-                [config.longMin, config.latMin]
+                [config['bboxes']['munich'][0], config['bboxes']['munich'][1]],
+                [config['bboxes']['munich'][0], config['bboxes']['munich'][3]],
+                [config['bboxes']['munich'][2], config['bboxes']['munich'][3]],
+                [config['bboxes']['munich'][2], config['bboxes']['munich'][1]],
+                [config['bboxes']['munich'][0], config['bboxes']['munich'][1]]
                 ]]}
                 ]
     # Loop over tif-filenames
@@ -210,73 +295,7 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld):
         clipped_tif.rio.to_raster(name)
     # Return filenames
     return outNames
-# Define function to download hierarchichal files
-def downloadH5(header, tempFilter, spatialFilter, NumberofScenes):
-     # Set api_url
-     api_url = 'https://m2m.cr.usgs.gov/api/api/json/stable/'
-     # Set empty dictionaries for filenames
-     filenames = {}
-     # Store relevant datasets
-     datasets = ['ecostress_eco1bgeo', 'ecostress_eco2cld', 'ecostress_eco2lste']
-     #
-     for dataset in datasets:
-         # Define payload 
-         payload = {'datasetName' : dataset,
-                    'spatialFilter' : spatialFilter,
-                    'acquisitionFilter':  tempFilter}
-         # Requests scenes for the filtered time and area
-         scenes_lste = requests.post(api_url + 'scene-search',
-                                     data=json.dumps({'datasetName' : dataset,
-                                                      'metadataType': 'full',
-                                                      'sortDirection': 'DESC',
-                                                      'sceneFilter' : payload}),
-                                                      headers=header)
-         # Store scenes as json
-         scenes_lste = scenes_lste.json()['data']['results']
-         # Create empty list for filenames
-         #filenames = []
-         list_name = dataset[-3:]+'_paths'
-         #
-         filenames[list_name] = []
-         #locals()[list_name] = []
-         #
-         i = 0
-         # Loop over scenes
-         for scenes in scenes_lste:
-             if i == NumberofScenes:
-                 break
-             # Get download options
-             options = requests.post(api_url + 'download-options',
-                                     data=json.dumps({'datasetName' : dataset,
-                                                      'entityIds': scenes['entityId']}),
-                                                      headers=header)
-             # Extract HDF5
-             infoH5=[dic for dic in options.json()['data'] if dic['productName'] == 'HDF5'][0]
-             # Skip unaivalable scenes
-             if not infoH5['available']:
-                 i += 1
-                 continue
-             # Request Download
-             downloadRequest = requests.post(api_url + 'download-request',
-                                             data=json.dumps({"downloads" : [{'entityId' : infoH5['entityId'],
-                                                                              'productId': infoH5['id']}]}),
-                                                                              headers=header)
-             # Store URL
-             url = downloadRequest.json()["data"]["availableDownloads"][0]["url"]
-             # Extract filename 
-             filename = url.rsplit('/',1)[1]
-             filenames[list_name].append(filename)
-             # If file already exist, dont download it again
-             if os.path.exists(filename):
-                 i += 1
-                 continue
-             # Set command for terminal
-             command = ("wget " + "--user=" + config.username + " --password='" + config.password_URS + "' " + url)
-             # Download the data
-             subprocess.run(command, shell=True,text=False)
-             # Increase i for early stopping
-             i += 1
-     return filenames
+
 # Plot a png with lst/ cloud and a marker for munich
 def plotTiffWithCoordinats(path):
     tif_lrg = rasterio.open(path)
