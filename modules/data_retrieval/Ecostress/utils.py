@@ -13,6 +13,7 @@ import json
 import subprocess
 import rasterio
 import matplotlib.pyplot as plt
+from rasterio.transform import Affine 
 # Define function to download hierarchichal files
 def downloadH5(credentials, header, tempFilter, spatialFilter, NumberofScenes):
      ws_path = "/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/raw_h5"
@@ -236,11 +237,12 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
     # ecoName = lst.split('.h5')[0]
     for file in outFiles:
         if file == 'LST':
-            ecoName = fileNameLST.split('.h5')[0]
+            ecoName = fileNameLST.rsplit('/')[-1].rsplit('.h5')[0]
         if file == 'Cloud':
-            ecoName = fileNameCld.split('.h5')[0]
+            ecoName = fileNameCld.rsplit('/')[-1].rsplit('.h5')[0]
         # Set up output name using output directory and filename
         outName = join(outDir, '{}_{}.tif'.format(ecoName, file))
+        # print(outName)
         outNames.append(outName)
         # print("output file:\n{}\n".format(outName))
         # Get driver, specify dimensions, define and set output geotransform
@@ -284,13 +286,14 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
                 ]
     # Loop over tif-filenames
     for name in outNames:
+        # Plot a png
         plotTiffWithCoordinats(name)
         # Load tif
         tif = rioxarray.open_rasterio(name, masked = True)
         # Crop tif
         clipped_tif = tif.rio.clip(geometries)
         # Delete old very large tif
-        os.remove(name)
+        # os.remove(name)
         # Store new cropped tif
         clipped_tif.rio.to_raster(name)
     # Return filenames
@@ -301,8 +304,7 @@ def plotTiffWithCoordinats(path):
     tif_lrg = rasterio.open(path)
     # Read data
     image = tif_lrg.read(1)
-    # Set Transformer
-    from rasterio.transform import Affine
+    # Set Transformer 
     transform = tif_lrg.transform
     transformer = rasterio.transform.AffineTransformer(transform)
     # Apply transformer
@@ -315,5 +317,5 @@ def plotTiffWithCoordinats(path):
     # Plot Point for Munich
     plt.scatter(col,row, color='red', marker='o')
     plt.axis('off')
-    plt.savefig(path.rsplit('/')[-1].replace('.tif', '')+'_Large')
+    plt.savefig(path.replace('.tif', '') + '_Large')
     plt.close()

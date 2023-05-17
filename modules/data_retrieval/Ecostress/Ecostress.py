@@ -17,7 +17,9 @@ from rasterio.plot import show
 from osgeo import gdal, gdal_array, gdalconst, osr
 from PIL import Image
 import os
-import yaml 
+import yaml
+from os import listdir
+from os.path import isfile, join
 # Import function(s) from utils
 from utils import *
 # %% Import credentials from credentials.yml file; TODO adapat
@@ -59,23 +61,86 @@ lst_files = filepaths['ste_paths']
 # geo_path = [f_geo for f_geo in geo_files if unique_idf in f_geo][0]
 # cld_path = [f_cld for f_cld in cloud_files if unique_idf in f_cld][0]
 # Create tifs
-# ws_path = "/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/raw_h5"
-tif_paths = createTif(geo_files[0], lst_files[0], cloud_files[0], config)
-
+#ws_path = "/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/raw_h5"
+path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/raw_h5'
+onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
+# %%
+unique_keys = []
+for files in onlyfiles:
+    unique_keys.append(files.split('_')[3] + '_' + files.split('_')[4])
+# Reduce on only unique values
+unique_keys = set(unique_keys)
+# %%
+for keys in unique_keys:
+    for files in onlyfiles:
+# %%
+#orbit_files = [f for f in onlyfiles if '23467' in f]
+# %%
+#tif_paths = createTif(geo_files[0], lst_files[0], cloud_files[0], config)
+tif_paths = createTif(
+    path + '/ECOSTRESS_L1B_GEO_23529_005_20220830T064558_0601_01.h5',
+    path + '/ECOSTRESS_L2_LSTE_23529_005_20220830T064558_0601_02.h5',
+    path + '/ECOSTRESS_L2_CLOUD_23529_005_20220830T064558_0601_02.h5',
+    config)
 # %% Plot LST tiff for munich
 img_lst_MU = rasterio.open(tif_paths[0])
 show(img_lst_MU)
-image_lst = Image.open(tif_paths[0].replace('.tif','_Large.png'))
-image_lst.show()
+#image_lst = Image.open(tif_paths[0].replace('.tif','_Large.png'))
+#image_lst.show()
+# %% Overlay over open street map
+from shapely.geometry import box
+dst = rioxarray.open_rasterio(tif_paths[0])
+#dst = dst.rio.reproject('EPSG:4326')
+image_bounds = box(*dst.rio.bounds())
+
+# %%
+img = np.array(dst)[0]
+import matplotlib.pyplot as plt
+plt.imshow(img)
+plt.show()
+# %%
+def colorize(array, cmap='viridis'):
+    normed_data = (array - array.min()) / (array.max() - array.min())    
+    cm = plt.cm.get_cmap(cmap)    
+    return cm(normed_data)  
+
+# %%
+colored_data = colorize(img , cmap='viridis_r')
+
+# %%
+import folium
+m = folium.Map(location=[image_bounds.centroid.y, image_bounds.centroid.x], zoom_start=14)
+folium.GeoJson(image_bounds.__geo_interface__).add_to(m)
+min_x, min_y, max_x, max_y = dst.rio.bounds()
+
+corner_coordinates = [[min_y, min_x], [max_y, max_x]]
+folium.raster_layers.ImageOverlay(
+        colored_data,
+        bounds=corner_coordinates,
+        opacity=1,
+        interactive=True,
+        cross_origin=False,
+        zindex=0.2,
+        colormap='jet' ,
+    ).add_to(m)
+
+m
+
+
+
 
 # %% Plot cloud coverage tiff
 img_cld_MU = rasterio.open(tif_paths[1])
 show(img_cld_MU)
-image_cld = Image.open(tif_paths[1].replace('.tif','_Large.png'))
-image_cld.show()
+#image_cld = Image.open(tif_paths[1].replace('.tif','_Large.png'))
+#image_cld.show()
 print(f'{np.mean(img_cld_MU.read()[0])*100:.2f}% of the picture are covered with clouds')
 
-# %%
+
+
+
+
+'''
 
 # %% Calculate cloud coverage
 #cldX = rioxarray.open_rasterio(tif_paths[1], masked = True)
@@ -434,7 +499,7 @@ arr = img_lst.read()
 
 
 # %%
-'''
+
 # %% Open tif
 fp = outName
 img = rasterio.open(fp)
