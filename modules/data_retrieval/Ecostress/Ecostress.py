@@ -20,8 +20,8 @@ import os
 import yaml 
 # Import function(s) from utils
 from utils import *
-# %% Import credentials from credentials.yml file 
-with open("/home/tu/tu_tu/tu_zxoul27/DS_Project/modules/credentials.yml", "r") as file: 
+# %% Import credentials from credentials.yml file; TODO adapat
+with open('/home/tu/tu_tu/' + os.getcwd().split('/')[6] +'/DS_Project/modules/credentials.yml', 'r') as file:
     credentials = yaml.safe_load(file)
 # %% Set parameters (USGS/ERS login)
 login_ERS = {'username' : credentials["username"],'password' : credentials["password_ERS"]}
@@ -37,30 +37,30 @@ headers = {'X-Auth-Token':key}
 # %% Set temporal filter; TODO variable dates
 temporalFilter = {'start':'2022-08-01 00:00:00', 'end':'2022-08-31 00:00:00'}
 # %% Import bounding boxes for Munich from config.yml file
-with open("/home/tu/tu_tu/tu_zxoul27/DS_Project/modules/config.yml", "r") as file: 
+with open('/home/tu/tu_tu/' + os.getcwd().split('/')[6] + '/DS_Project/modules/config.yml', 'r') as file: 
     config = yaml.safe_load(file)
 # %% Set spatial filter; TODO variable bounds
 spatialFilter =  {'filterType' : "mbr",
                   'lowerLeft' : {'latitude' : config["bboxes"]["munich"][1], 'longitude' : config["bboxes"]["munich"][0]},
                   'upperRight' : { 'latitude' : config["bboxes"]["munich"][3], 'longitude' : config["bboxes"]["munich"][2]}}
 # %% Store filepaths
-filepaths = downloadH5(credentials, headers, temporalFilter, spatialFilter, 1)
+filepaths = downloadH5(credentials, headers, temporalFilter, spatialFilter, 5)
 # And extract the lists from filepath
 geo_files = filepaths['geo_paths']
 cloud_files = filepaths['cld_paths']
 lst_files = filepaths['ste_paths']
 # %% 
 # NOTE: Choose the file to plot here
-lst_path = lst_files[0]
+# lst_path = lst_files[0]
 # Extract unique identifier for the case that e.g the 6. lst-h5 does not 
 # correspond to the 6. geo or cld file
-unique_idf = lst_path.replace("ECOSTRESS_L2_LSTE_", "").rsplit('_', 1)[0]
+# unique_idf = lst_path.replace("ECOSTRESS_L2_LSTE_", "").rsplit('_', 1)[0]
 # Select the geo path and cld path that containing the uniue idf
-geo_path = [f_geo for f_geo in geo_files if unique_idf in f_geo][0]
-cld_path = [f_cld for f_cld in cloud_files if unique_idf in f_cld][0]
+# geo_path = [f_geo for f_geo in geo_files if unique_idf in f_geo][0]
+# cld_path = [f_cld for f_cld in cloud_files if unique_idf in f_cld][0]
 # Create tifs
-ws_path = "/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/raw_h5"
-tif_paths = createTif(ws_path+'/'+geo_path, ws_path+'/'+lst_path, ws_path+'/'+cld_path,config)
+# ws_path = "/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/raw_h5"
+tif_paths = createTif(geo_files[0], lst_files[0], cloud_files[0], config)
 
 # %% Plot LST tiff for munich
 img_lst_MU = rasterio.open(tif_paths[0])

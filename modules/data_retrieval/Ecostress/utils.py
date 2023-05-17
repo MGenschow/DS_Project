@@ -69,7 +69,7 @@ def downloadH5(credentials, header, tempFilter, spatialFilter, NumberofScenes):
              url = downloadRequest.json()["data"]["availableDownloads"][0]["url"]
              # Extract filename 
              filename = url.rsplit('/',1)[1]
-             filenames[list_name].append(filename)
+             filenames[list_name].append(ws_path + '/' + filename)
              # If file already exist, dont download it again
              if os.path.exists(ws_path + '/' + filename):
                  i += 1
