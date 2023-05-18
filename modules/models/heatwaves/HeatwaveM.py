@@ -13,6 +13,19 @@ with open(config_path, 'r') as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 #%% standard functions
 def apparent_temperature_nws(t,h):
+
+    """
+    Calculate the apparent temperature using the NWS formula.
+
+    Args:
+        t (float): The air temperature in degrees Celsius.
+        h (float): The relative humidity in percentage.
+
+    Returns:
+        float: The calculated apparent temperature.
+
+    """
+
     if t <= 40:
         HIF = t
     else:
@@ -30,6 +43,19 @@ def apparent_temperature_nws(t,h):
     return HIF
 
 def apparent_temperature_std(t,h):
+
+    """
+    Calculate the apparent temperature using the Steadman formula.
+
+    Args:
+        t (float): The air temperature in degrees Celsius.
+        h (float): The relative humidity in percentage.
+
+    Returns:
+        float: The calculated apparent temperature.
+
+    """
+
     if t <= 80:
         HIF = t
     elif h <= 40:
@@ -39,12 +65,50 @@ def apparent_temperature_std(t,h):
     return HIF
 
 def fahrenheit(c):
+
+    """
+    Convert a temperature from Celsius to Fahrenheit.
+
+    Args:
+        c (float): The temperature in degrees Celsius.
+
+    Returns:
+        float: The temperature in degrees Fahrenheit.
+
+    """
+
     return (c*(9/5)) + 32
 
 def celcius(f):
+
+    """
+    Convert a temperature from Fahrenheit to Celsius.
+
+    Args:
+        f (float): The temperature in degrees Fahrenheit.
+
+    Returns:
+        float: The temperature in degrees Celsius.
+
+    """
+
     return (f - 32)*(5/9)
 
 def heatwave_ky(temp, t_max, t_min):
+
+    """
+    Identify heatwaves based on temperature thresholds (according to Kysely (2010)).
+
+    Args:
+        temp (pandas.Series): Series containing temperature values.
+        t_max (float): Maximum temperature threshold for heatwave.
+        t_min (float): Minimum temperature threshold for heatwave.
+
+    Returns:
+        pandas.Series: Series indicating the presence of heatwaves (1) or not (0).
+
+    """
+
     gtmax = temp >= t_max
     gtmin = temp >= t_min
     days_max = 0
@@ -69,6 +133,18 @@ def heatwave_ky(temp, t_max, t_min):
     return pd.Series(h)
 
 def indexer(ti):
+
+    """
+    Create an index for heatwave identification.
+
+    Args:
+        ti (pandas.Series): Time index.
+
+    Returns:
+        list: List containing the index values.
+
+    """
+
     n = len(ti)
     f = []
     start = 0
@@ -80,7 +156,23 @@ def indexer(ti):
 # %%
 class HeatwaveM(pd.DataFrame):
 
+    """
+    Custom DataFrame class for heatwave analysis.
+
+    Inherits from pandas.DataFrame.
+
+    """
+
     def  __init__(self,input):
+
+        """
+        Initialize the HeatwaveM object.
+
+        Args:
+            input (pandas.DataFrame): Input DataFrame.
+
+        """
+
         df = input.reset_index(drop=True)
         df.columns = ['STATION_ID','TIME','TEMP','HUMID']
         df['DATE'] = df['TIME'].dt.date
@@ -92,6 +184,15 @@ class HeatwaveM(pd.DataFrame):
         self.apparent = False
  
     def to_apparent_nws(self):
+
+        """
+        Convert temperature values to apparent temperature using the NWS formula.
+
+        Raises:
+            ValueError: If temperature values are already given as apparent temperature.
+
+        """
+
         if not self.apparent:
             self['TEMP']=self.apply(lambda x: apparent_temperature_nws(x['TEMP'],x['HUMID']), axis=1)
             self.apparent = True
@@ -99,6 +200,15 @@ class HeatwaveM(pd.DataFrame):
             raise ValueError('Temperature already given as apparent temperature. Thus, no transformation applied.')
             
     def to_apparent_std(self):
+
+        """
+        Convert temperature values to apparent temperature using the Steadman formula.
+
+        Raises:
+            ValueError: If temperature values are already given as apparent temperature.
+
+        """
+
         if not self.apparent:
             self['TEMP']=self.apply(lambda x: apparent_temperature_std(x['TEMP'],x['HUMID']), axis=1)
             self.apparent = True
@@ -106,6 +216,15 @@ class HeatwaveM(pd.DataFrame):
             raise ValueError('Temperature already given as apparent temperature. Thus, no transformation applied.')
 
     def to_celcius(self):
+
+        """
+        Convert temperature values to degrees Celsius.
+
+        Raises:
+            ValueError: If temperature values are already given in Celsius.
+
+        """
+
         if not self.celcius:
             self['TEMP']=self.apply(lambda x: celcius(x['TEMP']), axis=1)
             self.celcius = True
@@ -113,6 +232,15 @@ class HeatwaveM(pd.DataFrame):
             raise ValueError('Temperature already given in Celcius. Thus, no transformation applied.')
          
     def to_fahrenheit(self):
+
+        """
+        Convert temperature values to degrees Fahrenheit.
+
+        Raises:
+            ValueError: If temperature values are already given in Fahrenheit.
+
+        """
+
         if self.celcius:
             self['TEMP']=self.apply(lambda x: fahrenheit(x['TEMP']), axis=1)
             self.celcius = False
@@ -121,6 +249,15 @@ class HeatwaveM(pd.DataFrame):
 
     
     def check(self,kind="both"):
+
+        """
+        Check the temperature unit and apparent temperature status.
+
+        Args:
+            kind (str): Type of check to perform. Options: "both", "celcius", "apparent".
+
+        """
+
         if kind=="both":
             print("celcius: {}\napparent: {}".format(self.celcius, self.apparent))
         elif kind=="celcius":
@@ -129,6 +266,18 @@ class HeatwaveM(pd.DataFrame):
             print("apparent: {}".format(self.apparent))     
 
     def get_heatwaves_ky(self,station_id=3379,year=[2022],t_max=30,t_min=25):
+
+        """
+        Identify heatwaves based on temperature thresholds (Kentucky method).
+
+        Args:
+            station_id (int): Station ID for heatwave analysis.
+            year (list): List of years for heatwave analysis.
+            t_max (float): Maximum temperature threshold for heatwave.
+            t_min (float): Minimum temperature threshold for heatwave.
+
+        """
+
         n = self[(self['STATION_ID'] == station_id) & (self['TIME'].dt.year.isin(year))]
         sub = n.groupby(n['DATE'], as_index=False).max()[['DATE', 'TEMP']]
         sub['HEATWAVE'] = heatwave_ky(temp=sub['TEMP'], t_max=t_max, t_min=t_min)
@@ -147,6 +296,18 @@ class HeatwaveM(pd.DataFrame):
         super(HeatwaveM, self).__init__(df)
 
     def heatwaves_summary(self):
+
+        """
+        Generate a summary of identified heatwaves.
+
+        Returns:
+            pandas.DataFrame: Summary of heatwaves, including minimum and maximum temperatures.
+
+        Raises:
+            ValueError: If no heatwaves have been identified.
+
+        """
+
         sub = self[self['HEATWAVE'] == 1]
         if sub.empty:
             raise ValueError('Either heatwaves have not yet been identified via `get_heatwaves_ky` or no heatwaves have been found for the specified period.')
@@ -154,6 +315,15 @@ class HeatwaveM(pd.DataFrame):
             return sub.groupby(['IND','DATE']).agg(["min","max"])[['TEMP']]
 
     def save_heatwaves_to_list(self,name='heatwaves.pkl'):
+
+        """
+        Save the dates of identified heatwaves to a pickle file.
+
+        Args:
+            name (str): Name of the output file.
+
+        """
+        
         sub = self[self['HEATWAVE'] == 1]['DATE'].unique().tolist()
         with open(config['data']['dwd'] + '/' + name, 'wb') as f:
             pickle.dump(sub, f)
