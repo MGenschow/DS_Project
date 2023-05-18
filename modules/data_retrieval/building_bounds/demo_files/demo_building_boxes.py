@@ -22,6 +22,7 @@ bbox = box(*[11.55, 48.16, 11.56, 48.17])
 # %% [markdown]
 # ###  Read Data 
 data = pickle.load(open(os.path.join(config['data']['building_boxes'],'processed_building_boxes', 'building_boxes.pkl'), 'rb'))
+data = data[data.geometry_4326.intersects(bbox)]
 data
 
 # %% [markdown]
@@ -80,9 +81,8 @@ data['area'] = data['geometry_4326'].area
 data.nlargest(3, 'area')
 
 # %%
-roof = data.nlargest(1, 'area')['geometry'].iloc[0]
+roof = data[data.index == 1446094]['geometry'].values[0]
 roof
-
 # %%
 roof.wkt
 
@@ -106,5 +106,19 @@ plt.imshow(img)
 os.remove('masked_roof.tif')
 
 
+# %%
+roof_picture = roof_picture.rio.reproject('EPSG:4326')
+img = np.dstack((roof_picture.values[0], roof_picture.values[1], roof_picture.values[2]))
+
+image_bounds = box(*roof_picture.rio.bounds())
+# Plot roof on the map
+m = folium.Map(location = [image_bounds.centroid.y, image_bounds.centroid.x], zoom_start = 15)
+folium.GeoJson(image_bounds.__geo_interface__).add_to(m)
+min_x, min_y, max_x, max_y = roof_picture.rio.bounds()
+
+corner_coordinates = [[min_y, min_x], [max_y, max_x]]
+folium.raster_layers.ImageOverlay(img, bounds=corner_coordinates,opacity=0.9).add_to(m)
+
+m
 
 # %%

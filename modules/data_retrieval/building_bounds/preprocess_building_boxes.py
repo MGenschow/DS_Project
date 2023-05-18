@@ -171,6 +171,7 @@ class BuildingBoxDownloader():
         dir = os.path.join(self.data_dir, 'processed_building_boxes')
         if not os.path.exists(dir):
             os.makedirs(dir)
-            pickle.dump(building_boxes, open(os.path.join(dir, 'building_boxes.pkl'), 'wb'))
+        pickle.dump(building_boxes, open(os.path.join(dir, 'building_boxes.pkl'), 'wb'))
+        print(f"Saved building boxes")
         
 
