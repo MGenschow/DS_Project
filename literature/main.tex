@@ -1,0 +1,97 @@
+% document class
+
+\documentclass[12pt]{article}
+
+
+% use packages
+
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+\usepackage[ddmmyyyy]{datetime}
+\usepackage{color}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{
+colorlinks=true,
+linkcolor=[RGB]{0,51,102},
+citecolor=[RGB]{0,51,102},
+urlcolor=[RGB]{74, 133, 150}
+}
+\usepackage[medium]{titlesec}
+\usepackage{geometry}
+\usepackage{xurl}
+\usepackage{natbib}
+
+
+
+
+% adjust settings
+\bibliographystyle{apalike}
+\setlength{\bibsep}{0pt plus 0.3ex}
+\newcommand\notype[1]{\unskip}
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd{\NAT@citex}
+  {\@citea\NAT@hyper@{%
+     \NAT@nmfmt{\NAT@nm}%
+     \hyper@natlinkbreak{\NAT@aysep\NAT@spacechar}{\@citeb\@extra@b@citeb}%
+     \NAT@date}}
+  {\@citea\NAT@nmfmt{\NAT@nm}%
+   \NAT@aysep\NAT@spacechar\NAT@hyper@{\NAT@date}}{}{}
+\patchcmd{\NAT@citex}
+  {\@citea\NAT@hyper@{%
+     \NAT@nmfmt{\NAT@nm}%
+     \hyper@natlinkbreak{\NAT@spacechar\NAT@@open\if*#1*\else#1\NAT@spacechar\fi}%
+       {\@citeb\@extra@b@citeb}%
+     \NAT@date}}
+  {\@citea\NAT@nmfmt{\NAT@nm}%
+   \NAT@spacechar\NAT@@open\if*#1*\else#1\NAT@spacechar\fi\NAT@hyper@{\NAT@date}}
+  {}{}
+ \makeatother
+\newgeometry{
+lmargin=2.5cm,
+rmargin=2.5cm,
+tmargin=2.5cm,
+bmargin=2.5cm
+}
+\pagenumbering{arabic}
+
+% configure title
+\title{\vspace{-2cm} Data Science Project \\ On the identification of urban heat islands and potential compensation techniques}
+\author{Malte Genschow, Stefan Glaisner, Stefan Grochowski, Aaron Lay}
+\date{\today}
+
+
+ % document
+ 
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+Urban heat islands have become an increasingly important topic given the advent of climate change. It has been scientifically proven that high temperatures are inevitably associated with negative consequences for people's health \citep{anderson2009,basu2002,basu2009}. This project within the context of the module \emph{DS500 Data Science Project} aims at identifying urban heat islands in the city of Munich and also includes a suggestion scheme to counteract this problem using methods to reduce urban overheating.
+
+\section{Why heat islands and heat waves pose a problem}
+
+\section{Identification of heat waves}
+
+When defining heat waves, many researchers draw back on the concept on apparent temperature $T_a$ as defined by \citet{steadman1984}.
+
+\subsection{Annual series method}
+The annual series method has been applied frequently in the context of heat waves identification. One of the first and most prominent applications is the one by {\citet{karl1997}. This method assesses either minimum nighttime temperatures or maximum daytime temperatures. Whether to concentrate on day- or nighttime is a conceptual decision. However, most of the literature deems very warm nights as even more impactful compared to very warm days concerning health risks \citep{mcmichael1996,henschel1969}. 
+
+\subsection{Threshold definition}
+The threshold definition goes back to \citet{huth2000} and was used for the Czech Republic by \citet{kysely2010}.
+
+\subsection{Recurrence probabilities}
+
+
+\section{Accessibility of Results}
+
+
+\newpage
+\pagenumbering{Roman}
+\bibliography{ref}
+
+\end{document}
