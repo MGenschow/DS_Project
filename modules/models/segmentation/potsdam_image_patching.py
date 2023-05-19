@@ -3,6 +3,7 @@ import glob
 from PIL import Image
 import os
 from torchvision.transforms import ToTensor, ToPILImage
+import re
 
 ### Dataset Slicing
 #- The Potsdam dataset consists only of 38 (image, mask) pairs with size 6000x6000. 
@@ -15,13 +16,13 @@ import yaml
 config_path = '/home/tu/tu_tu/tu_zxmav84/DS_Project/modules/config.yml'
 with open(config_path, 'r') as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
-path = config['data']['Potsdam']
+path = config['data']['potsdam']
 
 
 
 # Get the list of files
-mask_files = glob.glob(path+'*label.tif')
-image_files = glob.glob(path+'2_Ortho_RGB/*RGB.tif') 
+mask_files = glob.glob(path+'/*label.tif')
+image_files = glob.glob(path+'/2_Ortho_RGB/*RGB.tif') 
 print(f"Found: \n {len(mask_files)} mask files \n {len(image_files)} image files")
 
 # The tile name can be extracted from each file. Below I create a dictionary to match tile name to a file name for images and masks
@@ -62,13 +63,13 @@ def create_patches(tile_name:str, patch_size:int = 2000):
             patch_target = ToPILImage()(patch_target)
 
             # Save the patches
-            if not os.path.exists(path+"Patched/"):
-                os.makedirs(path+"Patched/")
-            patch_image.save(path+f"Patched/{key}_image_{h}_{w}.tif")
-            patch_target.save(path+f"Patched/{key}_mask_{h}_{w}.tif")
+            if not os.path.exists(path+"/Patched/"):
+                os.makedirs(path+"/Patched/")
+            patch_image.save(path+f"/Patched/{key}_patch_{h}_{w}_image.tif")
+            patch_target.save(path+f"/Patched/{key}_patch_{h}_{w}_mask.tif")
             print(f"\t Saved patch {h}_{w}")
 
 # Create patches for all tiles       
-key = 'top_potsdam_2_10'
 patch_size = 2000
-create_patches(key, patch_size)
+for key in image_files_dict.keys():
+    create_patches(key, patch_size)
