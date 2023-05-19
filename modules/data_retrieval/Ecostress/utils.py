@@ -13,9 +13,10 @@ import json
 import subprocess
 import rasterio
 import matplotlib.pyplot as plt
-from rasterio.transform import Affine 
+from rasterio.transform import Affine
+import datetime
 # Define function to download hierarchichal files
-def downloadH5(credentials, header, tempFilter, spatialFilter, NumberofScenes):
+def downloadH5(credentials, header, tempFilter, spatialFilter):
      ws_path = "/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/raw_h5"
      # Set api_url
      api_url = 'https://m2m.cr.usgs.gov/api/api/json/stable/'
@@ -42,14 +43,14 @@ def downloadH5(credentials, header, tempFilter, spatialFilter, NumberofScenes):
          #filenames = []
          list_name = dataset[-3:]+'_paths'
          #
-         filenames[list_name] = []
+         # filenames[list_name] = []
          #locals()[list_name] = []
          #
-         i = 0
+         # i = 0
          # Loop over scenes
          for scenes in scenes_lste:
-             if i == NumberofScenes:
-                 break
+             # if i == NumberofScenes:
+             #     break
              # Get download options
              options = requests.post(api_url + 'download-options',
                                      data=json.dumps({'datasetName' : dataset,
@@ -59,7 +60,7 @@ def downloadH5(credentials, header, tempFilter, spatialFilter, NumberofScenes):
              infoH5=[dic for dic in options.json()['data'] if dic['productName'] == 'HDF5'][0]
              # Skip unaivalable scenes
              if not infoH5['available']:
-                 i += 1
+                 # i += 1
                  continue
              # Request Download
              downloadRequest = requests.post(api_url + 'download-request',
@@ -70,41 +71,56 @@ def downloadH5(credentials, header, tempFilter, spatialFilter, NumberofScenes):
              url = downloadRequest.json()["data"]["availableDownloads"][0]["url"]
              # Extract filename 
              filename = url.rsplit('/',1)[1]
-             filenames[list_name].append(ws_path + '/' + filename)
+             # filenames[list_name].append(ws_path + '/' + filename)
              # If file already exist, dont download it again
              if os.path.exists(ws_path + '/' + filename):
-                 i += 1
+                 # i += 1
                  continue
              # Set command for terminal
              command = ("wget" + " -P " + ws_path  + " --no-verbose" +  " --user=" + credentials["username"] + " --password='" + credentials["password_URS"] + "' " + url)
              # Download the data
              subprocess.run(command, shell=True,text=False)
              # Increase i for early stopping
-             i += 1
-     return filenames
+             # i += 1
+     #return filenames
 
 # Create function to scale data and transfer to celcius
-#def kelToCel(x):
-#    if np.isnan(x):
-#        return np.nan
-#    elif x == 0:
-#        return 0
-#    else:
-#        return round(((x * 0.02) - 273.15))
+def kelToCel(x):
+    if np.isnan(x):
+        return np.nan
+    elif x == 0:
+        return 0
+    else:
+        return round(((x * 0.02) - 273.15))
 # Vectorize function
-#kelToCel = np.vectorize(kelToCel)
-
+kelToCel = np.vectorize(kelToCel)
 #  Encode the cloud coverage as function
-#def get_bit(x):
-#    return int('{0:08b}'.format(x)[-3])
+def get_bit(x):
+    return int('{0:08b}'.format(x)[-3])
 # Vectorize function
-# get_zero_vec = np.vectorize(get_bit)
+get_zero_vec = np.vectorize(get_bit)
 
 # Function get path name for the geo file and the cloud lste file, produces to 
 # tiff files and returns their path name; TODO: Only works for first file
 def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
+    outDir = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/geoTiff/'
+    if os.path.exists(join(outDir, '{}_{}.tif'.format(fileNameLST.rsplit('/')[-1].rsplit('.h5')[0], 'LST'))):
+        return
+    print('Test')
     # Read in lst file
     f_lst = h5py.File(fileNameLST)
+    # Extract begining datetime
+    beginDate = np.array(f_lst['StandardMetadata']['RangeBeginningDate']).item().decode('utf-8')
+    beginTime = np.array(f_lst['StandardMetadata']['RangeBeginningTime']).item().decode('utf-8')
+    # Combine time and date
+    beginDateTime = datetime.datetime.strptime(beginDate + ' ' + beginTime, '%Y-%m-%d %H:%M:%S.%f')
+    # Extract ending date time
+    endDate = np.array(f_lst['StandardMetadata']['RangeEndingDate']).item().decode('utf-8')
+    endTime = np.array(f_lst['StandardMetadata']['RangeEndingTime']).item().decode('utf-8')
+    # Combine date and time
+    endDateTime = datetime.datetime.strptime(endDate + ' ' + endTime,'%Y-%m-%d %H:%M:%S.%f')
+    # Calculate "mean" datetime
+    recordingTime = datetime.datetime.fromtimestamp((beginDateTime.timestamp() + endDateTime.timestamp()) / 2).strftime("%Y-%m-%d %H:%M:%S")
     # Store relative paths of elements in list
     eco_objs = []
     f_lst.visit(eco_objs.append)
@@ -123,15 +139,16 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
     tempMax = (tempMax + 273.15) / 0.02
     # Set "wrong values" to 0
     lst_SD[(lst_SD < tempMin) | (lst_SD > tempMax)] = 0
-    def kelToCel(x):
-        if np.isnan(x):
-            return np.nan
-        elif x == 0:
-            return 0
-        else:
-            return round(((x * 0.02) - 273.15))
+    # NOTE: THIS PART MIGHT NOT WORK, I DIDNT TESTED IT YET
+    #def kelToCel(x):
+    #    if np.isnan(x):
+    #        return np.nan
+    #    elif x == 0:
+    #        return 0
+    #    else:
+    #        return round(((x * 0.02) - 273.15))
     # Vectorize function
-    kelToCel = np.vectorize(kelToCel)
+    #kelToCel = np.vectorize(kelToCel)
     # Vectorize function
     # kelToCel = np.vectorize(kelToCel)
     # Calculate temp to celcius
@@ -149,10 +166,10 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
     cld_SDS = [dataset for dataset in cld_SDS if dataset.endswith(tuple(sds))]
     # Extrcact dataset
     cld_SD = f_cld[cld_SDS[0]][()]
-    def get_bit(x):
-        return int('{0:08b}'.format(x)[-3])
+    #def get_bit(x):
+    #    return int('{0:08b}'.format(x)[-3])
     # Vectorize function
-    get_zero_vec = np.vectorize(get_bit)
+    #get_zero_vec = np.vectorize(get_bit)
     # Apply funtion
     cld_SD = get_zero_vec(cld_SD)
     # Read in .h5 file 
@@ -233,7 +250,18 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
     outNames = []
     # Set fill value
     fv = np.nan
-    # TODO: Adapt
+    # Define geometries
+    geometries = [
+        {
+            'type': 'Polygon',
+            'coordinates': [[
+                [config['bboxes']['munich'][0], config['bboxes']['munich'][1]],
+                [config['bboxes']['munich'][0], config['bboxes']['munich'][3]],
+                [config['bboxes']['munich'][2], config['bboxes']['munich'][3]],
+                [config['bboxes']['munich'][2], config['bboxes']['munich'][1]],
+                [config['bboxes']['munich'][0], config['bboxes']['munich'][1]]
+                ]]}
+                ]
     # ecoName = lst.split('.h5')[0]
     for file in outFiles:
         if file == 'LST':
@@ -272,32 +300,25 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
         band.FlushCache()
         #
         d, band = None, None
-    # Define geometries
-    geometries = [
-        {
-            'type': 'Polygon',
-            'coordinates': [[
-                [config['bboxes']['munich'][0], config['bboxes']['munich'][1]],
-                [config['bboxes']['munich'][0], config['bboxes']['munich'][3]],
-                [config['bboxes']['munich'][2], config['bboxes']['munich'][3]],
-                [config['bboxes']['munich'][2], config['bboxes']['munich'][1]],
-                [config['bboxes']['munich'][0], config['bboxes']['munich'][1]]
-                ]]}
-                ]
     # Loop over tif-filenames
-    for name in outNames:
+    #for name in outNames:  NOTE: THIS PART MIGHT NOT WORK, I DIDNT TESTED IT YET
         # Plot a png
-        plotTiffWithCoordinats(name)
+        plotTiffWithCoordinats(outName)
         # Load tif
-        tif = rioxarray.open_rasterio(name, masked = True)
+        tif = rioxarray.open_rasterio(outName, masked = True)
         # Crop tif
         clipped_tif = tif.rio.clip(geometries)
+        # Mean temp but only for lst: round(np.mean(tif.data),4)
+        clipped_tif.attrs['meanValue'] = round(np.mean(clipped_tif.data), 6)
+        # Time as attribute
+        clipped_tif.attrs['recordingTime'] = recordingTime
         # Delete old very large tif
-        # os.remove(name)
+        os.remove(outName)
         # Store new cropped tif
-        clipped_tif.rio.to_raster(name)
+        clipped_tif.rio.to_raster(outName)
+        
     # Return filenames
-    return outNames
+    #return outNames
 
 # Plot a png with lst/ cloud and a marker for munich
 def plotTiffWithCoordinats(path):
@@ -319,3 +340,23 @@ def plotTiffWithCoordinats(path):
     plt.axis('off')
     plt.savefig(path.replace('.tif', '') + '_Large')
     plt.close()
+
+def dateInHeatwave(date, heatwaves):
+    """
+    Checks if a given date falls within any of the heatwave periods.
+
+    Args:
+        date (datetime): The date to check.
+        heatwaves (list): A list of heatwave dictionaries, each containing 'start' and 'end' keys specifying the start and end dates of a heatwave.
+
+    Returns:
+        bool: True if the date falls within a heatwave, False otherwise.
+    """
+
+    for wave in heatwaves:
+        start_date = datetime.datetime.strptime(wave['start'], '%Y-%m-%d %H:%M:%S')
+        end_date = datetime.datetime.strptime(wave['end'], '%Y-%m-%d %H:%M:%S')
+        if start_date <= date <= end_date:
+            return True
+    
+    return False

@@ -20,11 +20,15 @@ import os
 import yaml
 from os import listdir
 from os.path import isfile, join
+import pandas as pd
 # Import function(s) from utils
 from utils import *
 # %% Import credentials from credentials.yml file; TODO adapat
 with open('/home/tu/tu_tu/' + os.getcwd().split('/')[6] +'/DS_Project/modules/credentials.yml', 'r') as file:
     credentials = yaml.safe_load(file)
+# %% Import bounding boxes for Munich from config.yml file
+with open('/home/tu/tu_tu/' + os.getcwd().split('/')[6] + '/DS_Project/modules/config.yml', 'r') as file: 
+    config = yaml.safe_load(file)
 # %% Set parameters (USGS/ERS login)
 login_ERS = {'username' : credentials["username"],'password' : credentials["password_ERS"]}
 # %% Set API URL
@@ -34,25 +38,116 @@ api_url = 'https://m2m.cr.usgs.gov/api/api/json/stable/'
 response = requests.post(api_url + 'login', data=json.dumps(login_ERS))
 # Extract token
 key = response.json()['data']
-# %% Set header
+# Set header
 headers = {'X-Auth-Token':key}
-# %% Set temporal filter; TODO variable dates
-temporalFilter = {'start':'2022-08-01 00:00:00', 'end':'2022-08-31 00:00:00'}
-# %% Import bounding boxes for Munich from config.yml file
-with open('/home/tu/tu_tu/' + os.getcwd().split('/')[6] + '/DS_Project/modules/config.yml', 'r') as file: 
-    config = yaml.safe_load(file)
-# %% Set spatial filter; TODO variable bounds
+# %% Import heatwaves
+heatwaves = pd.read_pickle('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/DWD/heatwaves.pkl')
+# Loop over heatwaves and store as list in the proper format
+heatwavesL = []
+for i in range(0, len(heatwaves), 2):
+    # Set start date
+    start_date = heatwaves[i]
+    start_datetime = datetime.datetime.combine(start_date, datetime.time.min)
+    # Set end date
+    end_date = heatwaves[i + 1]
+    end_datetime = datetime.datetime.combine(end_date, datetime.time.max)
+    # Store in dict
+    date_dict = {'start': start_datetime.strftime("%Y-%m-%d %H:%M:%S"), 'end': end_datetime.strftime("%Y-%m-%d %H:%M:%S")}
+    heatwavesL .append(date_dict)
+# %% Set temporal filter for August
+# temporalFilter = {'start':'2022-08-01 00:00:00', 'end':'2022-08-31 00:00:00'}
+# %% Set spatial filter;
 spatialFilter =  {'filterType' : "mbr",
                   'lowerLeft' : {'latitude' : config["bboxes"]["munich"][1], 'longitude' : config["bboxes"]["munich"][0]},
                   'upperRight' : { 'latitude' : config["bboxes"]["munich"][3], 'longitude' : config["bboxes"]["munich"][2]}}
-# %% Store filepaths
-filepaths = downloadH5(credentials, headers, temporalFilter, spatialFilter, 5)
-# And extract the lists from filepath
-geo_files = filepaths['geo_paths']
-cloud_files = filepaths['cld_paths']
-lst_files = filepaths['ste_paths']
+# %% Download all files corresponding to the heatwaves
+# for temporalFilter in heatwavesL:
+#    downloadH5(credentials, headers, temporalFilter, spatialFilter)
+# %% Extract all unique keys
+path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/raw_h5/'
+# Get all filepaths
+onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
+# Extract all unique keys
+unique_keys = []
+for files in onlyfiles:
+    unique_keys.append(files.split('_')[3] + '_' + files.split('_')[4])
+# Reduce on only unique values
+unique_keys = set(unique_keys)
+# %% Delete files in GeoTiffs
+direc = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/geoTiff/'
+filelist = [f for f in os.listdir(direc)]
+#for f in filelist:
+#    os.remove(os.path.join(direc, f))
 # %% 
-# NOTE: Choose the file to plot here
+# Create tif for all files corresponding to the heatwaves
+path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/raw_h5/'
+# Loop over all unique keys in the raw_h5 folder
+count = 0
+for key in unique_keys:
+    # Get all file paths containing the key
+    lstF = [f for f in onlyfiles if key in f and 'LSTE' in f][0]
+    # Check if scence belongs to the heatwave
+    f = h5py.File(path + lstF)
+    # Extract begining datetime
+    date = np.array(f['StandardMetadata']['RangeBeginningDate']).item().decode('utf-8')
+    time= np.array(f['StandardMetadata']['RangeBeginningTime']).item().decode('utf-8')
+    # Delete variable 
+    del f
+    # Combine time and date
+    dateTime = datetime.datetime.strptime(date + ' ' + time, '%Y-%m-%d %H:%M:%S.%f')
+    # Check if dateTime belong to one of the heatwaves
+    if dateInHeatwave(dateTime, heatwavesL):
+        # Create the respective tifs
+        fileNameGeo = path + [f for f in onlyfiles if key in f and 'GEO' in f][0]
+        fileNameLST = path + [f for f in onlyfiles if key in f and 'LSTE' in f][0]
+        fileNameCld = path + [f for f in onlyfiles if key in f and 'CLOUD' in f][0]
+        createTif(fileNameGeo, fileNameLST, fileNameCld, config)
+# %%
+# Create a Dataframe for the data quality
+# OrbitNumber - DateTime - Cloudcoverage - MeanLSTE - QualityFlag
+dataQ = pd.DataFrame(columns = ['orbitNumber', 'dateTime', 'cloudCoverage %', 'meanLSTE' ])
+#
+path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/geoTiff/'
+# Get all filepaths
+onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
+# Extract all unique keys
+unique_keys = []
+for files in onlyfiles:
+    unique_keys.append(files.split('_')[3] + '_' + files.split('_')[4])
+# Reduce on only unique values
+unique_keys = set(unique_keys)
+# 
+for key in unique_keys: 
+    orbifFls = [f for f in onlyfiles if key in f]
+    lst = rioxarray.open_rasterio(path + [f for f in orbifFls if 'LSTE' in f and '.tif' in f][0])
+    cld = rioxarray.open_rasterio(path + [f for f in orbifFls if 'CLOUD' in f and '.tif' in f][0])
+    dataQ.loc[len(dataQ)] = [
+        key,
+        lst.attrs['recordingTime'],
+        cld.attrs['meanValue'] * 100,
+        lst.attrs['meanValue']]
+# 
+dataQ.sort_values(by = ['dateTime'],inplace = True,ignore_index = True)
+dataQ['qualityFlag'] = (dataQ['meanLSTE'] > 0.5) & (dataQ['cloudCoverage %'] < 80)
+# %% Plot LST tiff
+key = '22424_006'
+lst = rioxarray.open_rasterio(path + [f for f in [p for p in onlyfiles if key in p] if 'LSTE' in f and '.tif' in f][0])
+img = np.array(lst)[0]
+import matplotlib.pyplot as plt
+plt.imshow(img, cmap='jet')
+plt.show()
+
+
+# %% 
+# TODO: Create a 'mean' tif 
+# %%
+# TODO: Plot tif over a interactive open street map
+
+
+# %%
+'''
+# %% 
+# Choose the file to plot here
 # lst_path = lst_files[0]
 # Extract unique identifier for the case that e.g the 6. lst-h5 does not 
 # correspond to the 6. geo or cld file
@@ -138,9 +233,11 @@ print(f'{np.mean(img_cld_MU.read()[0])*100:.2f}% of the picture are covered with
 
 
 
+# %%
 
-
-'''
+h5 = h5py.File('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/raw_h5/ECOSTRESS_L2_LSTE_23529_005_20220830T064558_0601_02.h5')
+# %%
+# %%
 
 # %% Calculate cloud coverage
 #cldX = rioxarray.open_rasterio(tif_paths[1], masked = True)
