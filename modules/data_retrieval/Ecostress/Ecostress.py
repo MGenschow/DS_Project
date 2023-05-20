@@ -4,7 +4,6 @@ import json
 from io import BytesIO
 import rasterio
 import rioxarray
-# import wget
 import h5py
 import subprocess 
 import numpy as np
@@ -129,17 +128,62 @@ for key in unique_keys:
 # 
 dataQ.sort_values(by = ['dateTime'],inplace = True,ignore_index = True)
 dataQ['qualityFlag'] = (dataQ['meanLSTE'] > 0.5) & (dataQ['cloudCoverage %'] < 80)
-# %% Plot LST tiff
-key = '22424_006'
+# %% Plot LST tiff by key
+key = '23005_006'
 lst = rioxarray.open_rasterio(path + [f for f in [p for p in onlyfiles if key in p] if 'LSTE' in f and '.tif' in f][0])
 img = np.array(lst)[0]
-import matplotlib.pyplot as plt
 plt.imshow(img, cmap='jet')
 plt.show()
 
+# %% Create DF with relevant tifs for the afternoon
+afterNoon = dataQ[
+    # TODO: How to choos the timesplot ?
+    (pd.to_datetime(dataQ['dateTime']).dt.hour >= 15 ) & 
+    (pd.to_datetime(dataQ['dateTime']).dt.hour <= 17) & 
+    dataQ['qualityFlag']
+    ]
+# %%
+# %% Create masked arrays for all scenes and calculate the average
+# Create an empty list
+maskedArraysL = []
+# Set path for geoTiffs, TODO Define path global
+path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/geoTiff/'
+# Loop over tifs in afternoon
+for orbitN in afterNoon['orbitNumber']:
+    # Select all files from one orbit in python
+    files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and orbitN in f]
+    # Extract path of lst and cloud
+    lst = rioxarray.open_rasterio(os.path.join(path, [f for f in files if "LSTE" in f and f.endswith(".tif")][0]))
+    cld = rioxarray.open_rasterio(os.path.join(path, [f for f in files if "Cloud" in f and f.endswith(".tif")][0]))
+    # Print shape of files
+    print(lst.shape)
+    # Transform to array
+    img_lst = np.array(lst)[0]
+    img_cld = np.array(cld)[0]
+    # Create a masked array. In addition to the cloud mask, temperature values below 1 are masked too
+    masked_array = np.ma.masked_array(img_lst, mask=(img_cld.astype(bool) | (lst.values<1)))
+    # Store masked arrays in a list
+    maskedArraysL.append(masked_array)
+# %% Create a subplot with all tiffs
+# Initiate subplots
+fig, axs = plt.subplots(2, 2)
+# Loop over maskedArraysL
+for i, ax in enumerate(axs.flat):
+    ax.imshow(maskedArraysL[i], cmap='jet')
+    ax.axis('off')
+# Plot overall plot
+plt.tight_layout()  
+plt.show()
+# %% Create and plot a mean array of all relevant tifs
+# TODO: The Last Array doesnt fit with the shape 
+# Create "mean" tif
+mean_array = np.ma.mean(maskedArraysL[:-1], axis=0)
+#  Plot mean array
+plt.imshow(mean_array, cmap='jet')
+plt.colorbar(label='Temperature')
+plt.show()
 
-# %% 
-# TODO: Create a 'mean' tif 
+
 # %%
 # TODO: Plot tif over a interactive open street map
 
