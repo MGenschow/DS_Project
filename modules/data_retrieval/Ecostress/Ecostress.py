@@ -129,7 +129,7 @@ for key in unique_keys:
 dataQ.sort_values(by = ['dateTime'],inplace = True,ignore_index = True)
 dataQ['qualityFlag'] = (dataQ['meanLSTE'] > 0.5) & (dataQ['cloudCoverage %'] < 80)
 # %% Plot LST tiff by key
-key = '23005_006'
+key = '23127_006'
 lst = rioxarray.open_rasterio(path + [f for f in [p for p in onlyfiles if key in p] if 'LSTE' in f and '.tif' in f][0])
 img = np.array(lst)[0]
 plt.imshow(img, cmap='jet')

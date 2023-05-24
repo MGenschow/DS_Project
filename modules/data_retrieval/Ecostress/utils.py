@@ -15,6 +15,8 @@ import rasterio
 import matplotlib.pyplot as plt
 from rasterio.transform import Affine
 import datetime
+
+
 # Define function to download hierarchichal files
 def downloadH5(credentials, header, tempFilter, spatialFilter):
      ws_path = "/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/raw_h5"
@@ -84,24 +86,56 @@ def downloadH5(credentials, header, tempFilter, spatialFilter):
              # i += 1
      #return filenames
 
-# Create function to scale data and transfer to celcius
+
 def kelToCel(x):
+    '''
+    Converts temperature in Kelvin to Celsius.
+
+    Parameters:
+    x (float): Temperature in Kelvin.
+
+    Returns:
+    float: Temperature in Celsius.
+
+    Notes:
+    - If the input is NaN (Not a Number), the function returns NaN.
+    - If the input is 0, the function returns 0.
+    - For any other valid input, the function calculates the temperature in Celsius using the formula:
+        Celsius = (Kelvin * 0.02) - 273.15.
+        The result is rounded to the nearest whole number.
+    '''
     if np.isnan(x):
         return np.nan
     elif x == 0:
         return 0
     else:
-        return round(((x * 0.02) - 273.15))
+        return round(((x * 0.02) - 273.15)) # TODO: ROUNDING 
+
+
 # Vectorize function
 kelToCel = np.vectorize(kelToCel)
-#  Encode the cloud coverage as function
+
+
+
 def get_bit(x):
+    '''
+    Encodes cloud-coverage from bit
+
+    Parameters:
+    x (int): 8-bit Numbers
+
+    Returns:
+    binary value: Cloud mask
+    '''
     return int('{0:08b}'.format(x)[-3])
+
+
 # Vectorize function
 get_zero_vec = np.vectorize(get_bit)
 
+
 # Function get path name for the geo file and the cloud lste file, produces to 
-# tiff files and returns their path name; TODO: Only works for first file
+# tiff files and returns their path name; 
 def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
     outDir = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/geoTiff/'
     if os.path.exists(join(outDir, '{}_{}.tif'.format(fileNameLST.rsplit('/')[-1].rsplit('.h5')[0], 'LST'))):
@@ -320,9 +354,27 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
     # Return filenames
     #return outNames
 
-# Plot a png with lst/ cloud and a marker for munich
+
 def plotTiffWithCoordinats(path):
-    tif_lrg = rasterio.open(path)
+    '''
+    Plots a PNG image with a given raster file and a marker for Munich.
+
+    Parameters:
+    path (str): The file path of the raster file.
+
+    Returns:
+    None
+
+    Raises:
+    FileNotFoundError: If the specified file path does not exist.
+
+    '''
+    try:
+        # Open the TIFF file
+        tif_lrg = rasterio.open(path)
+    except FileNotFoundError:
+        raise FileNotFoundError("The specified file path does not exist.")
+
     # Read data
     image = tif_lrg.read(1)
     # Set Transformer 
@@ -339,20 +391,22 @@ def plotTiffWithCoordinats(path):
     plt.scatter(col,row, color='red', marker='o')
     plt.axis('off')
     plt.savefig(path.replace('.tif', '') + '_Large')
+     # Close the plot
     plt.close()
 
+
 def dateInHeatwave(date, heatwaves):
-    """
+    '''
     Checks if a given date falls within any of the heatwave periods.
 
     Args:
         date (datetime): The date to check.
-        heatwaves (list): A list of heatwave dictionaries, each containing 'start' and 'end' keys specifying the start and end dates of a heatwave.
+        heatwaves (list): A list of heatwave dictionaries, each containing 
+        'start' and 'end' keys specifying the start and end dates of a heatwave.
 
     Returns:
         bool: True if the date falls within a heatwave, False otherwise.
-    """
-
+    '''
     for wave in heatwaves:
         start_date = datetime.datetime.strptime(wave['start'], '%Y-%m-%d %H:%M:%S')
         end_date = datetime.datetime.strptime(wave['end'], '%Y-%m-%d %H:%M:%S')
