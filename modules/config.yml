@@ -10,6 +10,10 @@ data:
   landsat: /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/landsat
   potsdam: /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/potsdam
   LoveDA: /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/LoveDA
+  ES_raw:  /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/raw_h5/
+  ES_tiffs: /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/geoTiff/
 # Bounding Boxes for locations we analyze
 bboxes: 
   munich: [11.310790,47.980475,11.855986,48.385189]
+api:
+  path: https://m2m.cr.usgs.gov/api/api/json/stable/

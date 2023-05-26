@@ -18,10 +18,10 @@ import datetime
 
 
 # Define function to download hierarchichal files
-def downloadH5(credentials, header, tempFilter, spatialFilter):
+def downloadH5(credentials, header, tempFilter, spatialFilter, config):
      ws_path = "/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/raw_h5"
      # Set api_url
-     api_url = 'https://m2m.cr.usgs.gov/api/api/json/stable/'
+     api_url = config['api']['path']
      # Set empty dictionaries for filenames
      filenames = {}
      # Store relevant datasets
@@ -350,9 +350,6 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
         os.remove(outName)
         # Store new cropped tif
         clipped_tif.rio.to_raster(outName)
-        
-    # Return filenames
-    #return outNames
 
 
 def plotTiffWithCoordinats(path):
@@ -414,3 +411,33 @@ def dateInHeatwave(date, heatwaves):
             return True
     
     return False
+
+
+def heatwave_transform(dates):
+    '''
+    Transforms a list of dates into heatwave intervals.
+
+    Args:
+        dates (list): A list of datetime objects representing dates.
+
+    Returns:
+        list: A list of dictionaries, each containing the start and end dates of a heatwave.
+    '''
+    heatwaves = []
+    start_date = None
+    end_date = None
+
+    for date in sorted(dates):
+        if start_date is None:
+            start_date = date
+            end_date = date
+        elif date - end_date == datetime.timedelta(days=1):
+            end_date = date
+        else:
+            heatwaves.append({'start': start_date.strftime('%Y-%m-%d 00:00:00'), 'end': end_date.strftime('%Y-%m-%d 23:59:00')})
+            start_date = date
+            end_date = date
+    # Append the last heatwave
+    heatwaves.append({'start': start_date.strftime('%Y-%m-%d 00:00:00'), 'end': end_date.strftime('%Y-%m-%d 23:59:00')})
+
+    return heatwaves
