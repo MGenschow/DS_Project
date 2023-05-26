@@ -341,7 +341,7 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
         # Load tif
         tif = rioxarray.open_rasterio(outName, masked = True)
         # Crop tif
-        clipped_tif = tif.rio.clip(geometries)
+        clipped_tif = tif.rio.clip(geometries) # all_touched = True)
         # Mean temp but only for lst: round(np.mean(tif.data),4)
         clipped_tif.attrs['meanValue'] = round(np.mean(clipped_tif.data), 6)
         # Time as attribute

@@ -236,6 +236,74 @@ plt.show()
 
 # %%
 # TODO: Plot tif over a interactive open street map
+import contextily as ctx
+from shapely.geometry import box
+import folium
+import matplotlib.colors as colors
+# Get tif path with orbit number: 23129_012
+files = [
+    f 
+    for f in os.listdir(config['data']['ES_tiffs']) 
+    if '23129_012' in f and 'LSTE' in f and f.endswith('.tif')
+    ]
+
+# %% Import tif 
+#lst = rasterio.open(config['data']['ES_tiffs'] + files[0])
+lst = rioxarray.open_rasterio(config['data']['ES_tiffs'] + files[0])
+
+# Extract values
+data = np.array(lst)[0]
+
+# Define the colormap from blue to red
+cmap = plt.colormaps['jet']
+
+# Normalize the data between 0 and 1
+norm = colors.Normalize(vmin=data.min(), vmax=data.max())
+
+# Apply the colormap to the normalized data
+colored_data = cmap(norm(data))
+
+# Set image bounds
+image_bounds = box(*lst.rio.bounds())
+
+m = folium.Map(
+    location=[image_bounds.centroid.y, image_bounds.centroid.x],
+    zoom_start=10,
+    # control_scale=True
+    )
+
+folium.GeoJson(image_bounds.__geo_interface__).add_to(m)
+
+# Extract bounds
+min_x, min_y, max_x, max_y = lst.rio.bounds()
+
+corner_coordinates = [[min_y, min_x], [max_y, max_x]]
+
+# Add the OpenStreetMap tile layer with transparent colors
+folium.TileLayer(
+    tiles='CartoDB positron',
+    attr='CartoDB',
+    transparent=True,
+).add_to(m)
+
+
+folium.raster_layers.ImageOverlay(
+        colored_data,
+        bounds=corner_coordinates,
+        opacity=0.4,
+        interactive=True,
+        cross_origin=False,
+        pixelated=False,
+        zindex=0.2
+    ).add_to(m)
+
+m
+
+# TODO: Reduce map to munich 
+
+# TODO: Add a legend
+
+# TODO: Add water to the map
 
 
 # %%
