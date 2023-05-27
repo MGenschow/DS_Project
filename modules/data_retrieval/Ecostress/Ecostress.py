@@ -20,11 +20,16 @@ import yaml
 from os import listdir
 from os.path import isfile, join
 import pandas as pd
+from shapely.geometry import box
+import folium
+import matplotlib.colors as colors
+import statistics
+from rasterio.enums import Resampling
 
 # Import all functions from utils
 from utils import *
 
-# %% Load login credentials and the config file 
+#  Load login credentials and the config file
 # Import credentials from credentials.yml file
 try:
     with open('/home/tu/tu_tu/' + os.getcwd().split('/')[6] +'/DS_Project/modules/credentials.yml', 'r') as file:
@@ -56,6 +61,8 @@ dates = pd.read_pickle('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/
 # Combine dates to periods format of heatwaves
 heatwaves = heatwave_transform(dates)
 
+heatwaves.append({'start': '2021-06-17 00:00:00', 'end': '2021-06-21 23:59:00'})
+heatwaves.append({'start': '2021-08-13 00:00:00', 'end': '2021-08-15 23:59:00'})
 
 # %% Set spatial filter;
 spatialFilter =  {
@@ -68,30 +75,54 @@ spatialFilter =  {
             'latitude' : config["bboxes"]["munich"][3],
             'longitude' : config["bboxes"]["munich"][2]}
             }
-            
+
 # %% Download all files corresponding to the heatwaves
 # NOTE: Can take, depending on the parameters, quite some time 
 # (up to several hours)
+confirmation = input("Do you want to download the hierarchical files (Y/n): ")
+if confirmation.lower() == "y":
+    for temporalFilter in heatwaves:
+        downloadH5(credentials, headers, temporalFilter, spatialFilter, config)
+else:
+    print("Loop execution cancelled.")
 
-# for temporalFilter in heatwaves:
-#    downloadH5(credentials, headers, temporalFilter, spatialFilter, config)
+# %% Extract unique keys and create a tiff for each unique scene 
+# Extract all unique keys
+# Get filepaths of all h5 files
+onlyfiles = [
+    f 
+    for f in listdir(config['data']['ES_raw']) 
+    if isfile(join(config['data']['ES_raw'], f))]
+    
+# Extract keys
+keys = [files.split('_')[3] + '_' + files.split('_')[4] for files in onlyfiles if 'LSTE' in files]
+# Reduce to unique
+unique_keys = set(keys)
 
-# %% Extract all unique keys
-# Get all filepaths
-onlyfiles = [f for f in listdir(config['data']['ES_raw']) if isfile(join(config['data']['ES_raw'], f))]
+# Delete tiff files
+confirmation = input("Do you really want to delete all tiff files (Y/n): ")
+if confirmation.lower() == "y":
+    files = os.listdir(config['data']['ES_tiffs'])
+    for file in files:
+        os.remove(os.path.join(config['data']['ES_tiffs'], file))
+else:
+    print("No tiffs were deleted.")
 
-# Pull put unique keys
-unique_keys = set([files.split('_')[3] + '_' + files.split('_')[4] for files in onlyfiles])
-
-# %% 
 # Create tif for all files corresponding to the heatwaves
 path = config['data']['ES_raw']
+count = 0
 
 # Loop over all unique keys in the raw_h5 folder
 for key in unique_keys:
-    
-    # Get all file paths containing the key
+
+    # Check if all files are aivalable
+    if len([f for f in onlyfiles if key in f]) != 3:
+        print(f'There are files missing for the key: {key}')
+        continue
+
+    # Get file path for the lst file
     lstF = [f for f in onlyfiles if key in f and 'LSTE' in f][0]
+
     # Check if scence belongs to the heatwave
     f = h5py.File(path + lstF)
     # Extract begining datetime
@@ -102,48 +133,43 @@ for key in unique_keys:
     # Combine time and date
     dateTime = datetime.datetime.strptime(date + ' ' + time, '%Y-%m-%d %H:%M:%S.%f')
 
-    # Check if dateTime belong to one of the heatwaves
     if dateInHeatwave(dateTime, heatwaves):
+        
         # Extract the file path of the respective paths
         fileNameGeo = path + [f for f in onlyfiles if key in f and 'GEO' in f][0]
         fileNameLST = path + [f for f in onlyfiles if key in f and 'LSTE' in f][0]
         fileNameCld = path + [f for f in onlyfiles if key in f and 'CLOUD' in f][0]
+        
         # Create the respective tifs
-        #
-        # createTif(fileNameGeo, fileNameLST, fileNameCld, config)
-# %% Check quality of tifs in terms of shape
-# Get tiff path
-tiffs = [f for f in listdir(config['data']['ES_tiffs']) if f.endswith(".tif")]
-shapes = []
-# Loop over tiffs and print shape
-for files in  tiffs:
-    tif = rioxarray.open_rasterio(config['data']['ES_tiffs'] + files)
-    img = np.array(tif)[0]
-    if np.sum(img.shape) < 1450:
-        print(img.shape)
-        plt.imshow(img, cmap='jet')
-        plt.show()
-    shapes.append(img.shape)
+        createTif(fileNameGeo, fileNameLST, fileNameCld, config)
 
-# TODO: Each 'quality' output tif should have the same dimension 
 
-# %%
-# Create a Dataframe for the data quality
-dataQ = pd.DataFrame(columns = ['orbitNumber', 'dateTime', 'cloudCoverage %', 'meanLSTE' ])
+# %% Create a Dataframe to check the quality of all relevant tiffs
+# Create empty data frame
+dataQ = pd.DataFrame(
+    columns = [
+        'orbitNumber',
+        'dateTime',
+        'cloudCoverage in %',
+        'meanLSTE' ])
 
-# Get all filepaths of the tifs
+# Get all filepaths of the relevant tiffs
 onlyfiles = [
     f 
     for f in listdir(config['data']['ES_tiffs']) 
     if isfile(join(config['data']['ES_tiffs'], f)) and f.endswith('.tif')]
 
 # Extract all unique keys and reduce to unique values
-unique_keys = set([files.split('_')[3] + '_' + files.split('_')[4] for files in onlyfiles])
+unique_keys = set(
+    [files.split('_')[3] + '_' + files.split('_')[4] for files in onlyfiles]
+    )
 
 # Loop over unique keys of the tif files 
 for key in unique_keys:
+
     # Get all filepaths corresponding to the unique key
     orbitFls = [f for f in onlyfiles if key in f]
+
     # Open lst tiff
     lst = rioxarray.open_rasterio(
         config['data']['ES_tiffs'] + [f for f in orbitFls if 'LSTE' in f and '.tif' in f][0]
@@ -152,6 +178,7 @@ for key in unique_keys:
     cld = rioxarray.open_rasterio(
         config['data']['ES_tiffs'] + [f for f in orbitFls if 'CLOUD' in f and '.tif' in f][0]
         )
+
     # Fill dataQ dataframe with information about the respective tiffs
     dataQ.loc[len(dataQ)] = [
         key,
@@ -161,13 +188,14 @@ for key in unique_keys:
 
 # Sort dataQ dataframe by time
 dataQ.sort_values(by = ['dateTime'],inplace = True,ignore_index = True)
-
-# Create a new column qualityFlag
-dataQ['qualityFlag'] = (dataQ['meanLSTE'] > 0.5) & (dataQ['cloudCoverage %'] < 80)
+# Create a new column qualityFlag based on average temperature and cloud coverage
+dataQ['qualityFlag'] = (dataQ['meanLSTE'] > 0.5) & (dataQ['cloudCoverage in %'] < 80)
 
 # %% Plot LST tiff by key
-key = '23127_006'
-lst = rioxarray.open_rasterio(config['data']['ES_tiffs'] + [f for f in [p for p in onlyfiles if key in p] if 'LSTE' in f and '.tif' in f][0])
+key = '23129_012'
+lst = rioxarray.open_rasterio(
+    config['data']['ES_tiffs'] + [f for f in [p for p in onlyfiles if key in p] if 'LSTE' in f and '.tif' in f][0]
+    )
 img = np.array(lst)[0]
 plt.imshow(img, cmap='jet')
 plt.show()
@@ -175,24 +203,31 @@ plt.show()
 # %% 
 # Create DF with relevant tifs for the afternoon
 afterNoon = dataQ[
-    # TODO: How to choose the timesplot ?
+    # TODO: How to choose the timeslot ?
     (pd.to_datetime(dataQ['dateTime']).dt.hour >= 15 ) & 
     (pd.to_datetime(dataQ['dateTime']).dt.hour <= 17) & 
     dataQ['qualityFlag']
     ]
 
-#  %% 
-
+#  %% TODO: Create function
+# Create empty lists
 maskedArraysL = []
 pixel_sizes = []
 bounding_boxes = [] 
+
 # Set path for geoTiffs
 path = config['data']['ES_tiffs']
 
-# Loop over tifs in afternoon
+# Loop over tiffs in afternoon and store them as masked array
 for orbitN in afterNoon['orbitNumber']:
-    # Select all files from one orbit in python
-    files=[f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and orbitN in f]
+
+    # Select all files from one orbit
+    files=[
+        f 
+        for f in os.listdir(path) 
+        if os.path.isfile(os.path.join(path, f)) and orbitN in f
+        ]
+
     # Extract path of lst and cloud
     lst=rasterio.open(
         os.path.join(path, [f for f in files if "LSTE" in f and f.endswith(".tif")][0])
@@ -200,136 +235,80 @@ for orbitN in afterNoon['orbitNumber']:
     cld=rasterio.open(
         os.path.join(path, [f for f in files if "Cloud" in f and f.endswith(".tif")][0])
         )
-    print(lst.shape)
+    # Store the pixel size of the picture in a list    
     pixel_sizes.append((lst.transform[0], lst.transform[4]))
+    # Store the bounding boxes in a list
     bounding_boxes.append(lst.bounds)
+    
+    # Deal with faulty data
     if lst.shape != cld.shape:
         raise ValueError("Array shapes of lst and cld are not equal.")
+    
     elif abs(lst.shape[0]-643) > 10 or abs(lst.shape[1]-866) > 10:
         raise ValueError("Array shape deviates too much from the desired size")
+
     elif lst.shape == (643, 866):
+        
         # Transform to array
         img_lst = lst.read()[0]
         img_cld = cld.read()[0]
+        
         # Create a masked array. In addition to the cloud mask, temperature values below 1 are masked too
         masked_array = np.ma.masked_array(img_lst, mask=(img_cld.astype(bool) | (lst.read()[0]<1)))
+        
         # Store masked arrays in a list
         maskedArraysL.append(masked_array)
+    
     else:
+
+        # Tranform the pixel to the desired shape of 643x866
         lst_transformed = lst.read(
             out_shape=(lst.count, 643, 866), resampling=Resampling.bilinear
             )[0]
         cld_transformed = cld.read(
             out_shape=(cld.count, 643, 866), resampling=Resampling.bilinear
             )[0]
+
+        # Store arrays as masked arrey
         masked_array = np.ma.masked_array(lst_transformed, mask=(cld_transformed.astype(bool) | (lst_transformed<1)))
         # Store masked arrays in a list
         maskedArraysL.append(masked_array)
 
-# Create mean array
+# Calculate the average for each respective pixel
 mean_array = np.ma.mean(maskedArraysL, axis=0)
 
-# %% Create tif
-import statistics
+# %% Store mean array as tiff
+
+# Set pixel size for geo tiff
 pixel_size = [statistics.mean(values) for values in zip(*pixel_sizes)]
 
+# Set values for the bounding box
 left = np.mean([box.left for box in bounding_boxes])
 bottom = np.mean([box.bottom for box in bounding_boxes])
 right = np.mean([box.right for box in bounding_boxes])
 top = np.mean([box.top for box in bounding_boxes])
 
+# Create bounding box
 boundingBox = rasterio.coords.BoundingBox(left, bottom, right, top)
-
 xmin, ymin, xmax, ymax = boundingBox
 
-height, width = 643, 866
-
-# %%
-driver = gdal.GetDriverByName('GTiff')
-
-path = 'mean_afternoon.tif' 
- 
-dataType = gdal_array.NumericTypeCodeToGDALTypeCode(mean_array.dtype)
-#
-d = driver.Create(path, width, height, 1, dataType)
-
+# Set geotransform
 geotransform = (xmin, pixel_size[0], 0, ymax, 0, pixel_size[1])
-d.SetGeoTransform(geotransform)
-# Create and set output projection, write output array data
-# Define target SRS
-srs = osr.SpatialReference()
-#
-srs.ImportFromEPSG(int('4326'))
-#
-d.SetProjection(srs.ExportToWkt())
-#
-srs.ExportToWkt()
-# Write array to band
-band = d.GetRasterBand(1)
-#
-band.WriteArray(mean_array)
-#
-band.FlushCache()
-#
-d, band = None, None
+
+# Create geotiff
+array_to_tiff(mean_array, 'mean_afternoon.tif' , geotransform)
 
 # %% 
 tif = rasterio.open('mean_afternoon.tif')
-
 plt.imshow(tif.read()[0],'jet')
 
-
-
-
-
-
-# %%
-
-orbitN = '23129_012'
-
-files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and orbitN in f]
-# Extract path of lst and cloud
-lst = rioxarray.open_rasterio(
-    os.path.join(path, [f for f in files if "LSTE" in f and f.endswith(".tif")][0])
-        )
-cld = rioxarray.open_rasterio(
-    os.path.join(path, [f for f in files if "Cloud" in f and f.endswith(".tif")][0])
-    )
-
-lst.data.shape
-
-# %% Transform to 643, 866
-from rasterio.enums import Resampling
-lst = rasterio.open(os.path.join(path, [f for f in files if "LSTE" in f and f.endswith(".tif")][0]))
-
-# %%
-data = lst.read(
-    out_shape=(
-        lst.count,
-        643,
-        866
-        ),
-        resampling=Resampling.bilinear
-    )
-
-# %% scale image transform
-transform =lst.transform * lst.transform.scale(
-    (lst.width / data.shape[-1]),
-    (lst.height / data.shape[-2])
-    )
-
-
-# %%
-
-plt.imshow(np.array(lst.data)[0], cmap='jet')
-plt.colorbar(label='Temperature')
-plt.show()
+# %% 
+plt.imshow(mean_array,'jet')
 
 
 
 # %% Create a subplot with all tiffs
-
-# Initiate subplots
+# Initiate subplots TODO: Make this code flexible
 fig, axs = plt.subplots(2, 2)
 
 # Loop over maskedArraysL
@@ -341,101 +320,24 @@ for i, ax in enumerate(axs.flat):
 plt.tight_layout()  
 plt.show()
 
-# %% Create and plot a mean array of all relevant tifs
-# TODO: The Last Array doesnt fit with the shape 
-# Create "mean" tif
-mean_array = np.ma.mean(maskedArraysL, axis=0)
 
-#  Plot mean array
-plt.imshow(mean_array, cmap='jet')
-plt.colorbar(label='Temperature')
-plt.show()
-
-# %%
-
-# Write mean array to geotiff
-
-
-
-
-
-
-# %%
-# TODO: Plot tif over a interactive open street map
-#import contextily as ctx
-from shapely.geometry import box
-import folium
-import matplotlib.colors as colors
-# Get tif path with orbit number: 23129_012
-files = [
-    f 
-    for f in os.listdir(config['data']['ES_tiffs']) 
-    if '23129_012' in f and 'LSTE' in f and f.endswith('.tif')
-    ]
-
-# %% Import tif 
-#lst = rasterio.open(config['data']['ES_tiffs'] + files[0])
-#lst = rioxarray.open_rasterio(config['data']['ES_tiffs'] + files[0])
-lst = rioxarray.open_rasterio('mean_afternoon.tif')
-
-# Extract values
-data = np.array(lst)[0]
-
-# Define the colormap from blue to red
-cmap = plt.colormaps['jet']
-# Normalize the data between 0 and 1
-norm = colors.Normalize(vmin=data.min(), vmax=data.max())
-# Apply the colormap to the normalized data
-colored_data = cmap(norm(data))
-
-# Set image bounds
-image_bounds = box(*lst.rio.bounds())
-# Extract bounds
-min_x, min_y, max_x, max_y = lst.rio.bounds()
-# Set corner coordinates
-corner_coordinates = [[min_y, min_x], [max_y, max_x]]
-
-# Initiate map
-m = folium.Map(
-    location=[image_bounds.centroid.y, image_bounds.centroid.x],
-    zoom_start=10,
-    )
-#
-folium.GeoJson(image_bounds.__geo_interface__).add_to(m)
-# Add the OpenStreetMap tile layer with transparent colors
-folium.TileLayer(
-    tiles='CartoDB positron',
-    attr='CartoDB',
-    transparent=True,
-).add_to(m)
-# Overlay the geotiff over the open street map
-folium.raster_layers.ImageOverlay(
-        colored_data,
-        bounds=corner_coordinates,
-        opacity=0.6,
-        interactive=True,
-        cross_origin=False,
-        pixelated=False,
-        zindex=0.2
-    ).add_to(m)
-# Display map
-m
+# %% TODO: As function
+# Plot tif over a interactive open street map
+array_to_foliumMap('mean_afternoon.tif')
 
 # TODO: Plot the mean tiff
-
 # TODO: Reduce map to munich 
-
 # TODO: Add a legend
-
 # TODO: Add water to the map
 
-
+# %%
 ########################################################################################################
 ########################################################################################################
 ########################################################################################################
 ########################################################################################################
 ########################################################################################################
 ########################################################################################################
+# 
 '''
 # %% Extract GEO file
 # https://lpdaac.usgs.gov/products/eco1bgeov001/
