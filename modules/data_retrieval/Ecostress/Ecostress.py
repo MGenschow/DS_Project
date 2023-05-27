@@ -25,7 +25,7 @@ import pandas as pd
 from utils import *
 
 # %% Load login credentials and the config file 
-# Import credentials from credentials.yml file; TODO adapat
+# Import credentials from credentials.yml file
 try:
     with open('/home/tu/tu_tu/' + os.getcwd().split('/')[6] +'/DS_Project/modules/credentials.yml', 'r') as file:
         credentials = yaml.safe_load(file)
@@ -167,7 +167,7 @@ dataQ['qualityFlag'] = (dataQ['meanLSTE'] > 0.5) & (dataQ['cloudCoverage %'] < 8
 
 # %% Plot LST tiff by key
 key = '23127_006'
-lst = rioxarray.open_rasterio(path + [f for f in [p for p in onlyfiles if key in p] if 'LSTE' in f and '.tif' in f][0])
+lst = rioxarray.open_rasterio(config['data']['ES_tiffs'] + [f for f in [p for p in onlyfiles if key in p] if 'LSTE' in f and '.tif' in f][0])
 img = np.array(lst)[0]
 plt.imshow(img, cmap='jet')
 plt.show()
@@ -181,33 +181,151 @@ afterNoon = dataQ[
     dataQ['qualityFlag']
     ]
 
-# %% Create masked arrays for all scenes and calculate the average
-# Create an empty list
+#  %% 
+
 maskedArraysL = []
+pixel_sizes = []
+bounding_boxes = [] 
 # Set path for geoTiffs
 path = config['data']['ES_tiffs']
 
 # Loop over tifs in afternoon
 for orbitN in afterNoon['orbitNumber']:
     # Select all files from one orbit in python
-    files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and orbitN in f]
+    files=[f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and orbitN in f]
     # Extract path of lst and cloud
-    lst = rioxarray.open_rasterio(
+    lst=rasterio.open(
         os.path.join(path, [f for f in files if "LSTE" in f and f.endswith(".tif")][0])
         )
-    cld = rioxarray.open_rasterio(
+    cld=rasterio.open(
         os.path.join(path, [f for f in files if "Cloud" in f and f.endswith(".tif")][0])
         )
-    # Print shape of files
     print(lst.shape)
-    print(type(lst))
-    # Transform to array
-    img_lst = np.array(lst)[0]
-    img_cld = np.array(cld)[0]
-    # Create a masked array. In addition to the cloud mask, temperature values below 1 are masked too
-    masked_array = np.ma.masked_array(img_lst, mask=(img_cld.astype(bool) | (lst.values<1)))
-    # Store masked arrays in a list
-    maskedArraysL.append(masked_array)
+    pixel_sizes.append((lst.transform[0], lst.transform[4]))
+    bounding_boxes.append(lst.bounds)
+    if lst.shape != cld.shape:
+        raise ValueError("Array shapes of lst and cld are not equal.")
+    elif abs(lst.shape[0]-643) > 10 or abs(lst.shape[1]-866) > 10:
+        raise ValueError("Array shape deviates too much from the desired size")
+    elif lst.shape == (643, 866):
+        # Transform to array
+        img_lst = lst.read()[0]
+        img_cld = cld.read()[0]
+        # Create a masked array. In addition to the cloud mask, temperature values below 1 are masked too
+        masked_array = np.ma.masked_array(img_lst, mask=(img_cld.astype(bool) | (lst.read()[0]<1)))
+        # Store masked arrays in a list
+        maskedArraysL.append(masked_array)
+    else:
+        lst_transformed = lst.read(
+            out_shape=(lst.count, 643, 866), resampling=Resampling.bilinear
+            )[0]
+        cld_transformed = cld.read(
+            out_shape=(cld.count, 643, 866), resampling=Resampling.bilinear
+            )[0]
+        masked_array = np.ma.masked_array(lst_transformed, mask=(cld_transformed.astype(bool) | (lst_transformed<1)))
+        # Store masked arrays in a list
+        maskedArraysL.append(masked_array)
+
+# Create mean array
+mean_array = np.ma.mean(maskedArraysL, axis=0)
+
+# %% Create tif
+import statistics
+pixel_size = [statistics.mean(values) for values in zip(*pixel_sizes)]
+
+left = np.mean([box.left for box in bounding_boxes])
+bottom = np.mean([box.bottom for box in bounding_boxes])
+right = np.mean([box.right for box in bounding_boxes])
+top = np.mean([box.top for box in bounding_boxes])
+
+boundingBox = rasterio.coords.BoundingBox(left, bottom, right, top)
+
+xmin, ymin, xmax, ymax = boundingBox
+
+height, width = 643, 866
+
+# %%
+driver = gdal.GetDriverByName('GTiff')
+
+path = 'mean_afternoon.tif' 
+ 
+dataType = gdal_array.NumericTypeCodeToGDALTypeCode(mean_array.dtype)
+#
+d = driver.Create(path, width, height, 1, dataType)
+
+geotransform = (xmin, pixel_size[0], 0, ymax, 0, pixel_size[1])
+d.SetGeoTransform(geotransform)
+# Create and set output projection, write output array data
+# Define target SRS
+srs = osr.SpatialReference()
+#
+srs.ImportFromEPSG(int('4326'))
+#
+d.SetProjection(srs.ExportToWkt())
+#
+srs.ExportToWkt()
+# Write array to band
+band = d.GetRasterBand(1)
+#
+band.WriteArray(mean_array)
+#
+band.FlushCache()
+#
+d, band = None, None
+
+# %% 
+tif = rasterio.open('mean_afternoon.tif')
+
+plt.imshow(tif.read()[0],'jet')
+
+
+
+
+
+
+# %%
+
+orbitN = '23129_012'
+
+files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and orbitN in f]
+# Extract path of lst and cloud
+lst = rioxarray.open_rasterio(
+    os.path.join(path, [f for f in files if "LSTE" in f and f.endswith(".tif")][0])
+        )
+cld = rioxarray.open_rasterio(
+    os.path.join(path, [f for f in files if "Cloud" in f and f.endswith(".tif")][0])
+    )
+
+lst.data.shape
+
+# %% Transform to 643, 866
+from rasterio.enums import Resampling
+lst = rasterio.open(os.path.join(path, [f for f in files if "LSTE" in f and f.endswith(".tif")][0]))
+
+# %%
+data = lst.read(
+    out_shape=(
+        lst.count,
+        643,
+        866
+        ),
+        resampling=Resampling.bilinear
+    )
+
+# %% scale image transform
+transform =lst.transform * lst.transform.scale(
+    (lst.width / data.shape[-1]),
+    (lst.height / data.shape[-2])
+    )
+
+
+# %%
+
+plt.imshow(np.array(lst.data)[0], cmap='jet')
+plt.colorbar(label='Temperature')
+plt.show()
+
+
 
 # %% Create a subplot with all tiffs
 
@@ -226,17 +344,25 @@ plt.show()
 # %% Create and plot a mean array of all relevant tifs
 # TODO: The Last Array doesnt fit with the shape 
 # Create "mean" tif
-mean_array = np.ma.mean(maskedArraysL[:-1], axis=0)
+mean_array = np.ma.mean(maskedArraysL, axis=0)
 
 #  Plot mean array
 plt.imshow(mean_array, cmap='jet')
 plt.colorbar(label='Temperature')
 plt.show()
 
+# %%
+
+# Write mean array to geotiff
+
+
+
+
+
 
 # %%
 # TODO: Plot tif over a interactive open street map
-import contextily as ctx
+#import contextily as ctx
 from shapely.geometry import box
 import folium
 import matplotlib.colors as colors
@@ -249,55 +375,53 @@ files = [
 
 # %% Import tif 
 #lst = rasterio.open(config['data']['ES_tiffs'] + files[0])
-lst = rioxarray.open_rasterio(config['data']['ES_tiffs'] + files[0])
+#lst = rioxarray.open_rasterio(config['data']['ES_tiffs'] + files[0])
+lst = rioxarray.open_rasterio('mean_afternoon.tif')
 
 # Extract values
 data = np.array(lst)[0]
 
 # Define the colormap from blue to red
 cmap = plt.colormaps['jet']
-
 # Normalize the data between 0 and 1
 norm = colors.Normalize(vmin=data.min(), vmax=data.max())
-
 # Apply the colormap to the normalized data
 colored_data = cmap(norm(data))
 
 # Set image bounds
 image_bounds = box(*lst.rio.bounds())
+# Extract bounds
+min_x, min_y, max_x, max_y = lst.rio.bounds()
+# Set corner coordinates
+corner_coordinates = [[min_y, min_x], [max_y, max_x]]
 
+# Initiate map
 m = folium.Map(
     location=[image_bounds.centroid.y, image_bounds.centroid.x],
     zoom_start=10,
-    # control_scale=True
     )
-
+#
 folium.GeoJson(image_bounds.__geo_interface__).add_to(m)
-
-# Extract bounds
-min_x, min_y, max_x, max_y = lst.rio.bounds()
-
-corner_coordinates = [[min_y, min_x], [max_y, max_x]]
-
 # Add the OpenStreetMap tile layer with transparent colors
 folium.TileLayer(
     tiles='CartoDB positron',
     attr='CartoDB',
     transparent=True,
 ).add_to(m)
-
-
+# Overlay the geotiff over the open street map
 folium.raster_layers.ImageOverlay(
         colored_data,
         bounds=corner_coordinates,
-        opacity=0.4,
+        opacity=0.6,
         interactive=True,
         cross_origin=False,
         pixelated=False,
         zindex=0.2
     ).add_to(m)
-
+# Display map
 m
+
+# TODO: Plot the mean tiff
 
 # TODO: Reduce map to munich 
 
@@ -306,119 +430,13 @@ m
 # TODO: Add water to the map
 
 
-# %%
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
 '''
-# %% 
-# Choose the file to plot here
-# lst_path = lst_files[0]
-# Extract unique identifier for the case that e.g the 6. lst-h5 does not 
-# correspond to the 6. geo or cld file
-# unique_idf = lst_path.replace("ECOSTRESS_L2_LSTE_", "").rsplit('_', 1)[0]
-# Select the geo path and cld path that containing the uniue idf
-# geo_path = [f_geo for f_geo in geo_files if unique_idf in f_geo][0]
-# cld_path = [f_cld for f_cld in cloud_files if unique_idf in f_cld][0]
-# Create tifs
-#ws_path = "/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/raw_h5"
-path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/raw_h5'
-onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
-# %%
-unique_keys = []
-for files in onlyfiles:
-    unique_keys.append(files.split('_')[3] + '_' + files.split('_')[4])
-# Reduce on only unique values
-unique_keys = set(unique_keys)
-# %%
-for keys in unique_keys:
-    for files in onlyfiles:
-# %%
-#orbit_files = [f for f in onlyfiles if '23467' in f]
-# %%
-#tif_paths = createTif(geo_files[0], lst_files[0], cloud_files[0], config)
-tif_paths = createTif(
-    path + '/ECOSTRESS_L1B_GEO_23529_005_20220830T064558_0601_01.h5',
-    path + '/ECOSTRESS_L2_LSTE_23529_005_20220830T064558_0601_02.h5',
-    path + '/ECOSTRESS_L2_CLOUD_23529_005_20220830T064558_0601_02.h5',
-    config)
-# %% Plot LST tiff for munich
-img_lst_MU = rasterio.open(tif_paths[0])
-show(img_lst_MU)
-#image_lst = Image.open(tif_paths[0].replace('.tif','_Large.png'))
-#image_lst.show()
-# %% Overlay over open street map
-from shapely.geometry import box
-dst = rioxarray.open_rasterio(tif_paths[0])
-#dst = dst.rio.reproject('EPSG:4326')
-image_bounds = box(*dst.rio.bounds())
-
-# %%
-img = np.array(dst)[0]
-import matplotlib.pyplot as plt
-plt.imshow(img)
-plt.show()
-# %%
-def colorize(array, cmap='viridis'):
-    normed_data = (array - array.min()) / (array.max() - array.min())    
-    cm = plt.cm.get_cmap(cmap)    
-    return cm(normed_data)  
-
-# %%
-colored_data = colorize(img , cmap='viridis_r')
-
-# %%
-import folium
-m = folium.Map(location=[image_bounds.centroid.y, image_bounds.centroid.x], zoom_start=14)
-folium.GeoJson(image_bounds.__geo_interface__).add_to(m)
-min_x, min_y, max_x, max_y = dst.rio.bounds()
-
-corner_coordinates = [[min_y, min_x], [max_y, max_x]]
-folium.raster_layers.ImageOverlay(
-        colored_data,
-        bounds=corner_coordinates,
-        opacity=1,
-        interactive=True,
-        cross_origin=False,
-        zindex=0.2,
-        colormap='jet' ,
-    ).add_to(m)
-
-m
-
-
-
-
-# %% Plot cloud coverage tiff
-img_cld_MU = rasterio.open(tif_paths[1])
-show(img_cld_MU)
-#image_cld = Image.open(tif_paths[1].replace('.tif','_Large.png'))
-#image_cld.show()
-print(f'{np.mean(img_cld_MU.read()[0])*100:.2f}% of the picture are covered with clouds')
-
-
-
-# %%
-
-h5 = h5py.File('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/raw_h5/ECOSTRESS_L2_LSTE_23529_005_20220830T064558_0601_02.h5')
-# %%
-# %%
-
-# %% Calculate cloud coverage
-#cldX = rioxarray.open_rasterio(tif_paths[1], masked = True)
-#print(f'{np.mean(img_cld.read()[0])*100:.2f}% of the picture are covered with clouds')
-# %%
-lst = h5py.File(lst_files[0])
-# %%
-lstArr = np.array(lst['SDS']['LST'])
-# %% 
-#img_lst = rasterio.open(tif_paths[0])
-#show(img_lst)
-# %%
-plt.imshow(lstArr, cmap='jet')
-plt.colorbar(label='Celsius')
-plt.title('ECOSTRESS LST Data')
-plt.show()
-
-####################################################################################################################################
-####################################################################################################################################
 # %% Extract GEO file
 # https://lpdaac.usgs.gov/products/eco1bgeov001/
 # Store path
@@ -557,67 +575,6 @@ areaDef = geom.AreaDefinition('4326', 'Geographic','longlat', projDict, cols, ro
 # - neighbours (The number of neigbours to consider for each grid point)
 index, outdex, indexArr, distArr = kdt.get_neighbour_info(swathDef, areaDef, 210, neighbours=1)
 # 
-#ecoSD = f_lst['SDS']['CloudMask'][()]
-# Encode the cloud coverage as function
-#def get_bit(x):
-#    return int('{0:08b}'.format(x)[-3])
-# Vectorize function
-#get_zero_vec = np.vectorize(get_bit)
-# Apply funtion
-#ecoSD = get_zero_vec(ecoSD).astype('float')
-
-#  Read in ETinst and print out SDS attributes
-#ecoSD = f_lst[lst_SDS[0]][()]
-#  
-#tempMin = 0
-#tempMax = 50
-# Transfer it to Kelvin and scale it 
-#tempMin = (tempMin + 273.15) / 0.02
-#tempMax = (tempMax + 273.15) / 0.02
-# Set "wrong values" to 0
-#ecoSD[(ecoSD < tempMin) | (ecoSD > tempMax)] = 0
-# 
-#def kelToCel(x):
-#     if np.isnan(x):
-#          return np.nan
-#     else:
-#         return round(((x * 0.02) - 273.15))
-# Vectorize function
-#kelToCel = np.vectorize(kelToCel)
-# 
-#ecoSD = kelToCel(ecoSD)
-# 
-
-
-#ecoSD = ma.masked_array(ecoSD,maskMunich)
-#  Read out the attributes _FillValue, add_offset, coordys, format
-#for attr in f_lst[s].attrs:
-#    if type(f_lst[s].attrs[attr]) == np.ndarray:
-#        print(f'{attr} = {f_lst[s].attrs[attr][0]}')
-#    else:
-#        print(f'{attr} = {f_lst[s].attrs[attr].decode("utf-8")}')
-#  Read SDS attributes and define fill value, add offset, and scale factor if available
-#try: # Works
-#    fv = int(f_lst[s].attrs['_FillValue'])
-#except KeyError:
-#    fv = None
-#except ValueError:
-#    fv = f_lst[s].attrs['_FillValue'][0]
-#try: # Doesnt work
-#    sf = f_lst[s].attrs['_Scale'][0]
-#except:
-#    sf = 1
-#try: # Doesnt work
-#    add_off = f_lst[s].attrs['_Offset'][0]
-#except:
-#    add_off = 0
-#try: # Works
-#    units = f_lst[s].attrs['units'].decode("utf-8")
-#except:
-#    units = 'none'
-
-
-
 # Perform K-D Tree nearest neighbor resampling (swath 2 grid conversion)
 # NOTE: This code returns a masked arrays that contain a mask to tag invalid datapoints
 #LSTgeo = kdt.get_sample_from_neighbour_info('nn', areaDef.shape, ecoSD, index, outdex, indexArr, fill_value=None)
@@ -740,233 +697,5 @@ print(f'Mean temperature: {mean_temp:.2f}')
 # %%
 cloud_coverage = np.mean(img_cld.read()[0])*100
 print(f'Cloud coverage: {cloud_coverage:.2f}%')
-# %%
-arr = img_lst.read()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# %%
-
-# %% Open tif
-fp = outName
-img = rasterio.open(fp)
-arr = img.read()
-show(img)
-# %% Plot array with colorbar
-plt.imshow(arr, cmap='jet')
-plt.colorbar(label='Celsius')
-plt.title('ECOSTRESS LST Data')
-plt.show()
-# %% 
-# https://corteva.github.io/rioxarray/stable/examples/clip_geom.html
-# Crop the large GeoTif to munich
-lst_Tif = rioxarray.open_rasterio(outName, masked = True)
-# %%
-geometries = [
-    {
-        'type': 'Polygon',
-        'coordinates': [[
-            [11.7,48.0558],#[config.longMin, config.latMin],
-            [11.7,48.2468],#[config.longMin,config.latMax],
-            [11.7501,48.2468],#[config.longMax, config.latMax],
-            [11.7501,48.0558],#[config.longMax, config.latMin],
-            [11.7,48.0558]#[config.longMin, config.latMin]
-        ]]
-    }
-]
-# %% Clip to geometries
-clipped = lst_Tif.rio.clip(geometries)
-clipped.plot()
-# %%
-#clipped.rio.to_raster('munich_lst.tif')
-# Plot munich
-clipped.plot()
-# %%
-plt.imshow(img.read(), cmap='jet')
-plt.colorbar(label='Celsius')
-plt.title('ECOSTRESS LST Data')
-plt.show()
-
-# %%
-
-# %% 
-temp = (clipped.squeeze().values * 0.02)-273.15
-# %%
-plt.imshow(temp, cmap='jet')
-plt.colorbar(label='Celsius')
-plt.title('ECOSTRESS LST Data')
-plt.show()
-# %%
-# %%
-temp = (lst.squeeze().values * 0.02) - 273.15
-# %%
-temp.rio.transform()
-# %%
-plt.imshow(temp, cmap='jet')
-plt.colorbar(label='Celsius')
-plt.title('ECOSTRESS LST Data')
-plt.show()
-# %%
-src = rasterio.open(outName)
-plt.imshow(src.read(1), cmap='jet')
-plt.show()
-# %%
-plt.imshow(im, cmap='jet')
-plt.colorbar(label='Celcius')
-plt.title('ECOSTRESS LST Data')
-plt.show()
-# %% 
-# %% 
-geo = 'ECOSTRESS_L1B_GEO_23529_005_20220830T064558_0601_01.h5'
-# Read in .h5 file 
-f_geo = h5py.File(geo)
-# Store longitude and latitude as matrix
-lat = np.array(f_geo['Geolocation']['latitude'])
-long = np.array(f_geo['Geolocation']['longitude'])
 #
-lst = 'ECOSTRESS_L2_LSTE_23529_005_20220830T064558_0601_02.h5'
-# Read .h5 file
-f_lst = h5py.File(lst)
-# Store LST as array; TODO: How to transfer data to celcius? Why so many zeros?
-lst = np.array(f_lst['SDS']['LST'])
-lst = lst.astype(float)
-# %%
-# set geotransform
-nx = lst.shape[0]
-ny = lst.shape[1]
-xmin, ymin, xmax, ymax = [long.min(), lat.min(), long.max(), lat.max()]
-xres = (xmax - xmin) / float(nx)
-yres = (ymax - ymin) / float(ny)
-geotransform = (xmin, xres, 0, ymax, 0, -yres)
-# %%
-# create the 3-band raster file
-dst_ds = gdal.GetDriverByName('GTiff').Create('myGeoTIFF.tif', ny, nx, 3, gdal.GDT_Float32)
-# %%
-dst_ds.SetGeoTransform(geotransform)    # specify coords
-# %%
-srs = osr.SpatialReference()            # establish encoding
-# %%
-srs.ImportFromEPSG(4326)                # WGS84 lat/long
-# %%
-dst_ds.SetProjection(srs.ExportToWkt()) # export coords to file
-# %%
-dst_ds.WriteArray(lst)   # write r-band to the raster
-# %%
-dst_ds.FlushCache()                     # write to disk
-dst_ds = None                           # save, close
-
-
-
-
-# %% Store longitude and latitude as matrix
-lat = np.array(f_geo['Geolocation']['latitude'])
-long = np.array(f_geo['Geolocation']['longitude'])
-# %% Creat Mask and combine them
-latMask = np.array((lat > config.latMin)&(lat < config.latMax))
-longMask = np.array((long > config.longMin)&(long < config.longMax))
-# Merge both masks
-maskMunich = np.array(latMask & longMask)
-# %% Apply mask on lat and long
-x = np.array([[1, 2, 3],[4 ,5, 6],[7, 8, 9]])
-# %%
-Mask = np.array([[False, False, False],[False, True, True],[False, True, True]])
-# %%
-np.array([[5, 6],[8, 9]])
-# %% Define middel of coordinate system
-mid = [int(lat.shape[1] / 2) - 1, int(lat.shape[0] / 2) - 1]
-midLat, midLon = lat[mid[0]][mid[1]], lon[mid[0]][mid[1]]
-# %%
-mid = [int(lat.shape[1] / 2) - 1, int(lat.shape[0] / 2) - 1]
-midLat, midLon = lat[mid[0]][mid[1]], lon[mid[0]][mid[1]]
-# %%
-epsgConvert = pyproj.Proj("+proj=aeqd +lat_0={} +lon_0={}".format(midLat, midLon))
-
-
-
-
-
-# %% Extract Land Surface temperature
-# https://lpdaac.usgs.gov/products/eco2lstev001/
-# Store path
-lst = 'ECOSTRESS_L2_LSTE_23529_005_20220830T064558_0601_02.h5'
-# Read .h5 file
-f_lst = h5py.File(lst)
-# Store LST as array; TODO: How to transfer data to celcius? Why so many zeros?
-lst = np.array(f_lst['SDS']['LST'])
-lst = lst.astype(float)
-# %% Set realistic range
-tempMin = -50
-tempMax = 50
-# Transfer it to Kelvin and scale it 
-tempMin = (tempMin + 273.15) / 0.02
-tempMax = (tempMax + 273.15) / 0.02
-# %% Set "wrong values" to NA
-lst[(lst < tempMin) | (lst > tempMax)] = np.nan
-# %%
-def kelToCel(x):
-     if np.isnan(x):
-          return np.nan
-     else:
-         return round(((x * 0.02) - 273.15))
-# Vectorize function
-kelToCel = np.vectorize(kelToCel)
-# %% 
-lst = kelToCel(lst)
-# %% Plot the image
-plt.imshow(lst, cmap='jet')
-plt.colorbar(label='Celcius')
-plt.title('ECOSTRESS LST Data')
-plt.show()
-# %% 
-lstMunich = lst*maskMunich
-# %% 
-import pandas as pd
-df = pd.DataFrame(lstMunich)
-df = df.replace(0, np.nan)
-df = df.dropna(thresh=0.01*len(df.columns))
-df = df.dropna(axis=1, thresh=0.01*len(df))
-lstMunich = df.to_numpy()
-# %% Plot the image
-plt.imshow(lstMunich, cmap='jet')
-plt.colorbar(label='Celcius')
-plt.title('ECOSTRESS LST Data')
-plt.show()
-# %% Extract cloud coverage
-# https://lpdaac.usgs.gov/products/eco2cldv001/
-# Store file path
-cld = 'ECOSTRESS_L2_CLOUD_23480_005_20220827T042037_0601_02.h5'
-# Read .h5 file
-f_cld = h5py.File(cld)
-# %% Store cloud coverage as array
-cld = np.array(f_cld['SDS']['CloudMask'])
-# %% Encode the cloud coverage as function
-def get_bit(x):
-    return int('{0:08b}'.format(x)[-2])
-# %% Vectorize function
-get_zero_vec = np.vectorize(get_bit)
-# %% Apply funtion
-cld_mask = get_zero_vec(cld)
-# %% Plot cloud coverage
-plt.imshow(cld_mask,cmap = 'binary')
-plt.show()
-# %% This can help to get better overview over hierarchical file 
-#data = {}
-#
-#for k in f.keys():
-#    data[k] = {}
-#    for sub_key in f[k].keys():
-#        data[k][sub_key] = [f[k][sub_key].size, f[k][sub_key].nbytes]
-# %%
 '''
