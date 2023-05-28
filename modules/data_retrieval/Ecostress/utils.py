@@ -75,7 +75,6 @@ def downloadH5(credentials, header, tempFilter, spatialFilter, config):
          # Store scenes as json
          scenes_lste = scenes_lste.json()['data']['results']
 
-         print(f'{len(scenes_lste)} number of scenes are available.')
          # Loop over scenes
          for scenes in scenes_lste:
 
@@ -104,7 +103,6 @@ def downloadH5(credentials, header, tempFilter, spatialFilter, config):
              url = downloadRequest.json()["data"]["availableDownloads"][0]["url"]
              # Extract filename 
              filename = url.rsplit('/',1)[1]
-             print(filename)
 
              # If file already exist, dont download it again
              if os.path.exists(ws_path + filename):

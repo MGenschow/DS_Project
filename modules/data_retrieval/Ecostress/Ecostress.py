@@ -60,8 +60,8 @@ dates = pd.read_pickle('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/
 # Combine dates to periods format of heatwaves
 heatwaves = heatwave_transform(dates)
 # Add heatwaves from 2021
-#heatwaves.append({'start': '2021-06-17 00:00:00', 'end': '2021-06-21 23:59:00'})
-#heatwaves.append({'start': '2021-08-13 00:00:00', 'end': '2021-08-15 23:59:00'})
+heatwaves.append({'start': '2021-06-17 00:00:00', 'end': '2021-06-22 00:00:00'})
+heatwaves.append({'start': '2021-08-13 00:00:00', 'end': '2021-08-16 00:00:00'})
 
 # %% Import tropical timeperiods
 tropicalDays = pd.read_pickle('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/tropicalPeriods.pkl')
@@ -114,6 +114,34 @@ LST = [
     if 'LSTE' in f and dateInHeatwave(datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), hW_tD)]
 print(len(LST))
 
+# %%
+onlyfiles = [
+    f 
+    for f in listdir(config['data']['ES_raw']) 
+    if isfile(join(config['data']['ES_raw'], f))
+    ]
+    
+# Extract keys
+keys = [
+    files.split('_')[3] + '_' + files.split('_')[4] 
+    for files in onlyfiles 
+    if 'LSTE' in files and  dateInHeatwave(datetime.datetime.strptime(files.split('_')[5], '%Y%m%dT%H%M%S'), hW_tD)
+    ]
+# Reduce to unique
+unique_keys = set(keys)
+
+for key in unique_keys:
+    # Check if all files are aivalable
+    if len([f for f in onlyfiles if key in f]) != 3:
+        files = [f for f in onlyfiles if key in f]
+        print([f for f in onlyfiles if key in f])
+        print(datetime.datetime.strptime(files[0].split('_')[5], '%Y%m%dT%H%M%S'))
+# %%
+
+for files in listdir(config['data']['ES_raw']):
+    if datetime.datetime.strptime(files.split('_')[5], '%Y%m%dT%H%M%S').year == 2021:
+         os.remove(os.path.join(config['data']['ES_raw'], files))
+         #print(os.path.join(config['data']['ES_raw'], files))
 
 # %% Create a tiff for each unique scene
 # processHF(heatwaves, config)
@@ -122,6 +150,8 @@ processHF(hW_tD, config)
 # %% Create a Dataframe to check the quality of all relevant tiffs (in heatwave)
 dataQ = dataQualityOverview(hW_tD, config)
 dataQ
+
+
 # %% Plot LST tiff by key
 key = '22424_007'
 
@@ -233,14 +263,14 @@ mCentral = dwd[dwd['STATIONS_ID'] == id].reset_index(drop=True)
 mCentral['MESS_DATUM'] = mCentral['MESS_DATUM'].astype('datetime64[ns]')
 # Identify tropical days
 tropicalDays = pd.to_datetime(mCentral[mCentral['TT_TU']>=30]['MESS_DATUM'].dt.date)
-# Reduce to tropical days from last year
-tropicalDays = set(tropicalDays[tropicalDays.dt.year == 2022])
+# %% Reduce to tropical days from last year
+tropicalDays = set(tropicalDays[tropicalDays.dt.year > 2020])
 
 # %%
 from datetime import datetime, time, timedelta
 tropicalPeriods = []
 
-for dates in set(tropicalDays):
+for dates in tropicalDays:
     tropicalPeriods.append(
         {'start': str(dates),
         'end': str(dates+ timedelta(days=1))
@@ -274,11 +304,13 @@ while i < len(mCentral):
                 mCentral.loc[index, 'tropicalNight'] = True
 
 # %%
-lastyear = mCentral[mCentral.MESS_DATUM.dt.year == 2022]
+lastyear = mCentral[mCentral.MESS_DATUM.dt.year > 2020]
 
 lastyear[lastyear['tropicalNight']]
 
 # %%
+tropicalPeriods.append({'start': '2021-06-18 18:00:00', 'end': '2021-06-19 06:00:00'})
+tropicalPeriods.append({'start': '2021-06-19 18:00:00', 'end': '2021-06-20 06:00:00'})
 tropicalPeriods.append({'start': '2022-06-19 18:00:00', 'end': '2022-06-20 06:00:00'})
 tropicalPeriods.append({'start': '2022-07-13 18:00:00', 'end': '2022-07-14 06:00:00'})
 # %%
