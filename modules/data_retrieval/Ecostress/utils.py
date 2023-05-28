@@ -21,6 +21,7 @@ import folium
 from rasterio.enums import Resampling
 from os import listdir
 import pandas as pd
+#from datetime import datetime
 
 
 # Define function to download hierarchichal files
@@ -74,6 +75,7 @@ def downloadH5(credentials, header, tempFilter, spatialFilter, config):
          # Store scenes as json
          scenes_lste = scenes_lste.json()['data']['results']
 
+         print(f'{len(scenes_lste)} number of scenes are available.')
          # Loop over scenes
          for scenes in scenes_lste:
 
@@ -88,6 +90,7 @@ def downloadH5(credentials, header, tempFilter, spatialFilter, config):
 
              # Skip unaivalable scenes
              if not infoH5['available']:
+                 print('Scene not available.')
                  continue
 
              # Request Download
@@ -101,6 +104,7 @@ def downloadH5(credentials, header, tempFilter, spatialFilter, config):
              url = downloadRequest.json()["data"]["availableDownloads"][0]["url"]
              # Extract filename 
              filename = url.rsplit('/',1)[1]
+             print(filename)
 
              # If file already exist, dont download it again
              if os.path.exists(ws_path + filename):
@@ -506,11 +510,14 @@ def heatwave_transform(dates):
         elif date - end_date == datetime.timedelta(days=1):
             end_date = date
         else:
-            heatwaves.append({'start': start_date.strftime('%Y-%m-%d 00:00:00'), 'end': end_date.strftime('%Y-%m-%d 23:59:00')})
+            end_date += datetime.timedelta(days=1)
+            # end_date = end_date.replace(hour=0, minute=0, second=0)
+
+            heatwaves.append({'start': start_date.strftime('%Y-%m-%d 00:00:00'), 'end': end_date.strftime('%Y-%m-%d 00:00:00')})
             start_date = date
             end_date = date
     # Append the last heatwave
-    heatwaves.append({'start': start_date.strftime('%Y-%m-%d 00:00:00'), 'end': end_date.strftime('%Y-%m-%d 23:59:00')})
+    heatwaves.append({'start': start_date.strftime('%Y-%m-%d 00:00:00'), 'end': end_date.strftime('%Y-%m-%d 00:00:00')})
 
     return heatwaves
 
@@ -731,13 +738,13 @@ def processHF(heatwaves, config):
     unique_keys = set(keys)
 
     # Delete tiff files
-    confirmation = input("Do you really want to delete all existing tiff files (Y/n): ")
-    if confirmation.lower() == "y":
-        files = os.listdir(config['data']['ES_tiffs'])
-        for file in files:
-         os.remove(os.path.join(config['data']['ES_tiffs'], file))
-    else:
-        print("No tiffs were deleted and function call terminated.")
+    # confirmation = input("Do you really want to delete all existing tiff files (Y/n): ")
+    # if confirmation.lower() == "y":
+    #    files = os.listdir(config['data']['ES_tiffs'])
+    #    for file in files:
+    #     os.remove(os.path.join(config['data']['ES_tiffs'], file))
+    # else:
+    #    print("No tiffs were deleted and function call terminated.")
 
     # Create tif for all files corresponding to the heatwaves
     path = config['data']['ES_raw']
@@ -779,7 +786,7 @@ def processHF(heatwaves, config):
             continue
 
 
-def dataQualityOverview(config):
+def dataQualityOverview(heatwaves, config):
     '''
     Generates an overview of data quality from TIFF files based on 
     the provided configuration.
@@ -801,11 +808,13 @@ def dataQualityOverview(config):
             'meanLSTE'
             ])
 
-    # Get all filepaths of the relevant tiffs
+    # Get all filepaths of the relevant tiffs, TODO: Check if tif in heatwave
     onlyfiles = [
         f 
         for f in listdir(config['data']['ES_tiffs']) 
-        if isfile(join(config['data']['ES_tiffs'], f)) and f.endswith('.tif')
+        if isfile(join(config['data']['ES_tiffs'], f)) and 
+        f.endswith('.tif') and 
+        dateInHeatwave(datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), heatwaves)
         ]
 
     # Extract all unique keys and reduce to unique values
@@ -836,10 +845,9 @@ def dataQualityOverview(config):
             lst.attrs['meanValue']]
 
     # Sort dataQ dataframe by time
-    dataQ.sort_values(by = ['dateTime'],inplace = True,ignore_index = True)
+    dataQ.sort_values(by=['dateTime'], inplace=True, ignore_index=True)
     # Create a new column qualityFlag based on average temperature and cloud coverage
     dataQ['qualityFlag'] = (dataQ['meanLSTE'] > 0.5) & (dataQ['cloudCoverage in %'] < 80)
 
     return dataQ
 
-    
