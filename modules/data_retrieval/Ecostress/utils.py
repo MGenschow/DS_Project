@@ -21,10 +21,63 @@ import folium
 from rasterio.enums import Resampling
 from os import listdir
 import pandas as pd
-#from datetime import datetime
+import statistics
 
 
-# Define function to download hierarchichal files
+def heatwave_transform(dates):
+    '''
+    Transforms a list of dates into heatwave intervals.
+
+    Args:
+        dates (list): A list of datetime objects representing dates.
+
+    Returns:
+        list: A list of dictionaries, each containing the start and end dates of a heatwave.
+    '''
+    heatwaves = []
+    start_date = None
+    end_date = None
+
+    for date in sorted(dates):
+        if start_date is None:
+            start_date = date
+            end_date = date
+        elif date - end_date == datetime.timedelta(days=1):
+            end_date = date
+        else:
+            end_date += datetime.timedelta(days=1)
+            # end_date = end_date.replace(hour=0, minute=0, second=0)
+
+            heatwaves.append({'start': start_date.strftime('%Y-%m-%d 00:00:00'), 'end': end_date.strftime('%Y-%m-%d 00:00:00')})
+            start_date = date
+            end_date = date
+    # Append the last heatwave
+    heatwaves.append({'start': start_date.strftime('%Y-%m-%d 00:00:00'), 'end': end_date.strftime('%Y-%m-%d 00:00:00')})
+
+    return heatwaves
+
+
+def dateInHeatwave(date, heatwaves):
+    '''
+    Checks if a given date falls within any of the heatwave periods.
+
+    Args:
+        date (datetime): The date to check.
+        heatwaves (list): A list of heatwave dictionaries, each containing 
+        'start' and 'end' keys specifying the start and end dates of a heatwave.
+
+    Returns:
+        bool: True if the date falls within a heatwave, False otherwise.
+    '''
+    for wave in heatwaves:
+        start_date = datetime.datetime.strptime(wave['start'], '%Y-%m-%d %H:%M:%S')
+        end_date = datetime.datetime.strptime(wave['end'], '%Y-%m-%d %H:%M:%S')
+        if start_date <= date <= end_date:
+            return True
+    
+    return False
+
+
 def downloadH5(credentials, header, tempFilter, spatialFilter, config):
      '''
      Downloads hierarchical files for specified datasets based on given filters.
@@ -190,11 +243,10 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
     # Specify directory for the tiffs
     outDir = config['data']['ES_tiffs']
 
-    if os.path.exists(
-        join(outDir,
-            '{}_{}.tif'.format(fileNameLST.rsplit('/')[-1].rsplit('.h5')[0],
-            'LST'))):
-        return
+    #if os.path.exists(
+    #    join(outDir,
+    #        '{}_{}.tif'.format(fileNameLST.rsplit('/')[-1].rsplit('.h5')[0], 'QC'))):
+    #    return
     
     # Read in lst file
     f_lst = h5py.File(fileNameLST)
@@ -226,7 +278,7 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
     lst_SDS = [str(obj) for obj in eco_objs if isinstance(f_lst[obj], h5py.Dataset)]
 
     # Store name of relevant dataset
-    sds = ['LST','LST_err']
+    sds = ['LST','QC']
     # Extract relevant datasets
     lst_SDS  = [dataset for dataset in lst_SDS if dataset.endswith(tuple(sds))]
 
@@ -244,6 +296,18 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
 
     # Calculate temp to celcius
     lst_SD = kelToCel(lst_SD)
+
+    # Read in data
+    qc_SD = f_lst[lst_SDS[1]][()]
+
+    def uncodeQC(x):
+        return int('{0:016b}'.format(x)[0:2])
+
+    # Vectorize function
+    uncodeQC_vec = np.vectorize(uncodeQC)
+
+    # Apply function
+    qc_SD = uncodeQC_vec(qc_SD)
 
 
     # Read in lst file
@@ -266,7 +330,6 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
 
     # Apply funtion
     cld_SD = get_zero_vec(cld_SD)
-
 
     # Read in .h5 file 
     f_geo = h5py.File(fileNameGeo)
@@ -341,12 +404,13 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
     # NOTE: This code returns a masked arrays that contain a mask to tag invalid datapoints
     LSTgeo = kdt.get_sample_from_neighbour_info('nn', areaDef.shape, lst_SD, index, outdex, indexArr, fill_value=0)
     Cldgeo = kdt.get_sample_from_neighbour_info('nn', areaDef.shape, cld_SD, index, outdex, indexArr, fill_value=0)
-    
+    QCgeo = kdt.get_sample_from_neighbour_info('nn', areaDef.shape, qc_SD, index, outdex, indexArr, fill_value=0)
+
     #  Define the geotransform
     gt = [areaDef.area_extent[0], ps, 0, areaDef.area_extent[3], 0, -ps]
 
     # Set up dictionary of arrays to export
-    outFiles = {'LST': LSTgeo, 'Cloud': Cldgeo}
+    outFiles = {'LST': LSTgeo, 'Cloud': Cldgeo, 'QC': QCgeo}
     # Set fill value
     fv = np.nan
 
@@ -370,13 +434,17 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
         # Define output name
         if file == 'LST':
             ecoName = fileNameLST.rsplit('/')[-1].rsplit('.h5')[0]
-        if file == 'Cloud':
+        elif file == 'Cloud':
             ecoName = fileNameCld.rsplit('/')[-1].rsplit('.h5')[0]
+        elif file == 'QC':
+            ecoName = fileNameLST.rsplit('/')[-1].rsplit('.h5')[0]
 
         # Set up output name using output directory and filename
         outName = join(outDir, '{}_{}.tif'.format(ecoName, file))
 
-        # NOTE: Might not work
+        if os.path.exists(outName):
+            continue
+
         array_to_tiff(outFiles[file], outName, gt)
 
         # Get driver, specify dimensions, define and set output geotransform
@@ -458,67 +526,14 @@ def plotTiffWithCoordinats(path):
         plt.imshow(image, cmap='jet')
     if 'Cloud' in path:
         plt.imshow(image)
+    if 'QC' in path:
+        plt.imshow(image)    
     # Plot Point for Munich
     plt.scatter(col,row, color='red', marker='o')
     plt.axis('off')
     plt.savefig(path.replace('.tif', '') + '_Large')
      # Close the plot
     plt.close()
-
-
-def dateInHeatwave(date, heatwaves):
-    '''
-    Checks if a given date falls within any of the heatwave periods.
-
-    Args:
-        date (datetime): The date to check.
-        heatwaves (list): A list of heatwave dictionaries, each containing 
-        'start' and 'end' keys specifying the start and end dates of a heatwave.
-
-    Returns:
-        bool: True if the date falls within a heatwave, False otherwise.
-    '''
-    for wave in heatwaves:
-        start_date = datetime.datetime.strptime(wave['start'], '%Y-%m-%d %H:%M:%S')
-        end_date = datetime.datetime.strptime(wave['end'], '%Y-%m-%d %H:%M:%S')
-        if start_date <= date <= end_date:
-            return True
-    
-    return False
-
-
-def heatwave_transform(dates):
-    '''
-    Transforms a list of dates into heatwave intervals.
-
-    Args:
-        dates (list): A list of datetime objects representing dates.
-
-    Returns:
-        list: A list of dictionaries, each containing the start and end dates of a heatwave.
-    '''
-    heatwaves = []
-    start_date = None
-    end_date = None
-
-    for date in sorted(dates):
-        if start_date is None:
-            start_date = date
-            end_date = date
-        elif date - end_date == datetime.timedelta(days=1):
-            end_date = date
-        else:
-            end_date += datetime.timedelta(days=1)
-            # end_date = end_date.replace(hour=0, minute=0, second=0)
-
-            heatwaves.append({'start': start_date.strftime('%Y-%m-%d 00:00:00'), 'end': end_date.strftime('%Y-%m-%d 00:00:00')})
-            start_date = date
-            end_date = date
-    # Append the last heatwave
-    heatwaves.append({'start': start_date.strftime('%Y-%m-%d 00:00:00'), 'end': end_date.strftime('%Y-%m-%d 00:00:00')})
-
-    return heatwaves
-
 
 def array_to_tiff(file, outputDir, geoTrans):
     '''
@@ -557,155 +572,6 @@ def array_to_tiff(file, outputDir, geoTrans):
 
     band.FlushCache()
     d, band = None, None
-
-
-def array_to_foliumMap(tif_path):
-    '''
-    Create a folium map with an overlay of a GeoTIFF image.
-
-    Args:
-        tif_path (str): Path to the GeoTIFF file.
-
-    Returns:
-        folium.Map: A folium map object with the GeoTIFF overlay.
-    '''
-    # Import tif 
-    lst = rioxarray.open_rasterio('mean_afternoon.tif')
-    # Extract values
-    data = np.array(lst)[0]
-
-    # Create a masked array
-    data = np.ma.masked_array(data, mask = data < 1)
-
-    # Define the colormap from blue to red
-    cmap = plt.colormaps['jet']
-    # Normalize the data between 0 and 1
-    norm = colors.Normalize(vmin=data.min(), vmax=data.max())
-    # Apply the colormap to the normalized data
-    colored_data = cmap(norm(data))
-
-    # Set image bounds
-    image_bounds = box(*lst.rio.bounds())
-    # Extract bounds
-    min_x, min_y, max_x, max_y = lst.rio.bounds()
-    # Set corner coordinates
-    corner_coordinates = [[min_y, min_x], [max_y, max_x]]
-
-    #  Initiate map
-    m = folium.Map(
-     location=[image_bounds.centroid.y, image_bounds.centroid.x],
-     zoom_start=10,
-     )
-    #
-    folium.GeoJson(image_bounds.__geo_interface__).add_to(m)
-
-    # Add the OpenStreetMap tile layer with transparent colors
-    folium.TileLayer(
-        tiles='CartoDB positron',
-        attr='CartoDB',
-        transparent=True,
-    ).add_to(m)
-
-    # Overlay the geotiff over the open street map
-    folium.raster_layers.ImageOverlay(
-         colored_data,
-            bounds=corner_coordinates,
-            opacity=0.6,
-            interactive=True,
-            cross_origin=False,
-            pixelated=False,
-            zindex=0.2
-        ).add_to(m)
-    
-    # Display map
-    return m
-
-
-def meanMaskArray(orbitNumbers, config):
-    '''
-    Calculate the average for each respective pixel from a set of GeoTIFF files,
-    applying masks based on cloud coverage and temperature values.
-
-    Args:
-        orbitNumbers (list): List of orbit numbers to process.
-        config (dict): Configuration dictionary containing data paths.
-
-    Returns:
-        tuple: A tuple containing the following elements:
-            - mean_array (numpy.ma.core.MaskedArray): A masked array representing 
-              the mean values for each pixel.
-            - maskedArraysL (list): A list of masked arrays for each input GeoTIFF file.
-            - pixel_sizes (list): A list of tuples representing the pixel sizes for 
-              each GeoTIFF file.
-            - bounding_boxes (list): A list of bounding boxes for each GeoTIFF file.
-    '''
-    final_shape = (643, 866)
-    # Create empty lists
-    maskedArraysL = []
-    pixel_sizes = []
-    bounding_boxes = []
-
-    # Set path for geoTiffs
-    path = config['data']['ES_tiffs']
-
-    # Loop over tiffs in afternoon and store them as masked array
-    for orbitN in orbitNumbers:
-
-        # Select all files from one orbit
-        files=[
-            f 
-            for f in os.listdir(path) 
-            if os.path.isfile(os.path.join(path, f)) and orbitN in f
-            ]
-
-        # Extract path of lst and cloud
-        lst=rasterio.open(
-            os.path.join(path, [f for f in files if "LSTE" in f and f.endswith(".tif")][0])
-            )
-        cld=rasterio.open(
-            os.path.join(path, [f for f in files if "Cloud" in f and f.endswith(".tif")][0])
-            )
-        # Store the pixel size of the picture in a list    
-        pixel_sizes.append((lst.transform[0], lst.transform[4]))
-        # Store the bounding boxes in a list
-        bounding_boxes.append(lst.bounds)
-    
-        # Deal with faulty data final_shape[0]
-        if lst.shape != cld.shape:
-            raise ValueError("Array shapes of lst and cld are not equal.")
-    
-        elif abs(lst.shape[0]-final_shape[0]) > 10 or abs(lst.shape[1]-final_shape[1]) > 10:
-            raise ValueError("Array shape deviates too much from the desired size")
-
-        elif lst.shape == final_shape:
-            # Transform to array
-            img_lst = lst.read()[0]
-            img_cld = cld.read()[0]
-        
-            # Create a masked array. In addition to the cloud mask, temperature values below 1 are masked too
-            masked_array = np.ma.masked_array(img_lst, mask=(img_cld.astype(bool) | (lst.read()[0]<1)))
-        
-            # Store masked arrays in a list
-            maskedArraysL.append(masked_array)
-    
-        else:
-            # Tranform the pixel to the desired shape of 643x866
-            lst_transformed = lst.read(
-                out_shape=(lst.count, final_shape[0], final_shape[1]), resampling=Resampling.bilinear
-                )[0]
-            cld_transformed = cld.read(
-                out_shape=(cld.count, final_shape[0], final_shape[1]), resampling=Resampling.bilinear
-                )[0]
-
-            # Store arrays as masked arrey
-            masked_array = np.ma.masked_array(lst_transformed, mask=(cld_transformed.astype(bool) | (lst_transformed<1)))
-            # Store masked arrays in a list
-            maskedArraysL.append(masked_array)
-
-    # Calculate the average for each respective pixel
-    mean_array = np.ma.mean(maskedArraysL, axis=0)
-    
-    return mean_array, maskedArraysL, pixel_sizes, bounding_boxes
 
 
 def processHF(heatwaves, config):
@@ -757,8 +623,8 @@ def processHF(heatwaves, config):
         # Get file path for the lst file
         lstF = [f for f in onlyfiles if key in f and 'LSTE' in f][0]
 
-        if os.path.exists(config['data']['ES_tiffs'] + lstF.replace('.h5','_LST.tif')):
-            continue
+        # if os.path.exists(config['data']['ES_tiffs'] + lstF.replace('.h5','_LST.tif')): # QC
+        #    continue
 
         # Check if scence belongs to the heatwave
         f = h5py.File(path + lstF)
@@ -811,8 +677,7 @@ def dataQualityOverview(heatwaves, config):
         f 
         for f in listdir(config['data']['ES_tiffs']) 
         if isfile(join(config['data']['ES_tiffs'], f)) and 
-        f.endswith('.tif') and 
-        dateInHeatwave(datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), heatwaves)
+        f.endswith('.tif') and dateInHeatwave(datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), heatwaves)
         ]
 
     # Extract all unique keys and reduce to unique values
@@ -828,12 +693,16 @@ def dataQualityOverview(heatwaves, config):
 
         # Open lst tiff
         lst = rioxarray.open_rasterio(
-            config['data']['ES_tiffs'] + [f for f in orbitFls if 'LSTE' in f and '.tif' in f][0]
+            config['data']['ES_tiffs'] + [f for f in orbitFls if 'LSTE' in f and 'QC' not in f and f.endswith('.tif')][0]
             )
         # Open cloud tiff
         cld = rioxarray.open_rasterio(
             config['data']['ES_tiffs'] + [f for f in orbitFls if 'CLOUD' in f and '.tif' in f][0]
             )
+        # Open quality control tiff 
+        #qc = rioxarray.open_rasterio(
+        #    config['data']['ES_tiffs'] + [f for f in orbitFls if 'LSTE' in f and 'QC' in f and f.endswith('.tif')][0]
+        #    )
 
         # Fill dataQ dataframe with information about the respective tiffs
         dataQ.loc[len(dataQ)] = [
@@ -848,4 +717,232 @@ def dataQualityOverview(heatwaves, config):
     dataQ['qualityFlag'] = (dataQ['meanLSTE'] > 0.5) & (dataQ['cloudCoverage in %'] < 80)
 
     return dataQ
+
+
+def meanMaskArray(orbitNumbers, config):
+    '''
+    Calculate the average for each respective pixel from a set of GeoTIFF files,
+    applying masks based on cloud coverage and temperature values.
+
+    Args:
+        orbitNumbers (list): List of orbit numbers to process.
+        config (dict): Configuration dictionary containing data paths.
+
+    Returns:
+        tuple: A tuple containing the following elements:
+            - mean_array (numpy.ma.core.MaskedArray): A masked array representing 
+              the mean values for each pixel.
+            - maskedArraysL (list): A list of masked arrays for each input GeoTIFF file.
+            - pixel_sizes (list): A list of tuples representing the pixel sizes for 
+              each GeoTIFF file.
+            - bounding_boxes (list): A list of bounding boxes for each GeoTIFF file.
+    '''
+    final_shape = (643, 866)
+    # Create empty lists
+    maskedArraysL = []
+    pixel_sizes = []
+    bounding_boxes = []
+
+    # Set path for geoTiffs
+    path = config['data']['ES_tiffs']
+
+    # Loop over tiffs in afternoon and store them as masked array
+    for orbitN in orbitNumbers:
+
+        # Select all files from one orbit
+        files=[
+            f 
+            for f in os.listdir(path) 
+            if os.path.isfile(os.path.join(path, f)) and orbitN in f
+            ]
+
+        # Extract path of lst and cloud
+        lst=rasterio.open(
+            os.path.join(path, [f for f in files if "LSTE" in f and 'QC' not in f and f.endswith(".tif")][0])
+            )
+        cld=rasterio.open(
+            os.path.join(path, [f for f in files if "Cloud" in f and f.endswith(".tif")][0])
+            )
+        qc=rasterio.open(
+            os.path.join(path, [f for f in files if 'QC' in f and f.endswith(".tif")][0])
+            )
+        # Store the pixel size of the picture in a list    
+        pixel_sizes.append((lst.transform[0], lst.transform[4]))
+        # Store the bounding boxes in a list
+        bounding_boxes.append(lst.bounds)
+    
+        # Deal with faulty data final_shape[0]
+        if lst.shape != cld.shape:
+            raise ValueError("Array shapes of lst and cld are not equal.")
+    
+        elif abs(lst.shape[0]-final_shape[0]) > 10 or abs(lst.shape[1]-final_shape[1]) > 10:
+            raise ValueError("Array shape deviates too much from the desired size")
+
+        elif lst.shape == final_shape:
+            # Transform to array
+            img_lst = lst.read()[0]
+            img_cld = cld.read()[0]
+            
+            # TODO: Add quality control
+            # Create a masked array. In addition to the cloud mask, temperature values below 1 are masked too
+            masked_array = np.ma.masked_array(img_lst, mask=(img_cld.astype(bool) | (lst.read()[0]<1)))
+        
+            # Store masked arrays in a list
+            maskedArraysL.append(masked_array)
+    
+        else:
+            # Tranform the pixel to the desired shape of 643x866
+            lst_transformed = lst.read(
+                out_shape=(lst.count, final_shape[0], final_shape[1]), resampling=Resampling.bilinear
+                )[0]
+            cld_transformed = cld.read(
+                out_shape=(cld.count, final_shape[0], final_shape[1]), resampling=Resampling.bilinear
+                )[0]
+
+            # Store arrays as masked arrey
+            masked_array = np.ma.masked_array(lst_transformed, mask=(cld_transformed.astype(bool) | (lst_transformed<1)))
+            # Store masked arrays in a list
+            maskedArraysL.append(masked_array)
+
+    # Calculate the average for each respective pixel
+    mean_array = np.ma.mean(maskedArraysL, axis=0)
+    
+    return mean_array, maskedArraysL, pixel_sizes, bounding_boxes
+
+
+def mergeTiffs(orbitNrs, path, config):
+    '''
+    Merges multiple tiffs into a single GeoTIFF file.
+
+    Parameters:
+        orbitNrs (list): List of orbit numbers.
+        path (str): Path for storing the output GeoTIFF.
+        config (dict): Configuration parameters.
+
+    Returns:
+        tuple: A tuple containing the mean array and a list of masked arrays.
+    '''
+    # Calculate mean masked array
+    output = meanMaskArray(orbitNrs, config)
+    # Store output in variables
+    mean_array, maskedArraysL, pixel_sizes, bounding_boxes = output
+
+    # Set pixel size for geo tiff
+    pixel_size = [statistics.mean(values) for values in zip(*pixel_sizes)]
+
+    # Set values for the bounding box
+    left = np.mean([box.left for box in bounding_boxes])
+    bottom = np.mean([box.bottom for box in bounding_boxes])
+    right = np.mean([box.right for box in bounding_boxes])
+    top = np.mean([box.top for box in bounding_boxes])
+
+    # Create bounding box
+    boundingBox = rasterio.coords.BoundingBox(left, bottom, right, top)
+    xmin, ymin, xmax, ymax = boundingBox
+
+    # Set geotransform
+    geotransform = (xmin, pixel_size[0], 0, ymax, 0, pixel_size[1])
+
+    # Create geotiff
+    outDir = config['data']['ES_tiffs'].replace('geoTiff/', '') + path
+    
+    # Store mean array as tiff
+    array_to_tiff(mean_array, outDir, geotransform)
+
+    return mean_array, maskedArraysL
+
+
+def arrays_subplot(masked_array_list):
+    '''
+    Plots a grid of masked arrays using subplots.
+
+    Parameters:
+        masked_array_list (list of numpy.ndarray): List of 2D masked arrays to be plotted.
+
+    Returns:
+        None
+    '''
+    # Get number of arrays
+    num_plots = len(masked_array_list)
+    # Calculate number of rows and cols
+    rows = int(np.ceil(np.sqrt(num_plots)))
+    cols = int(np.ceil(num_plots / rows))
+
+    # Initiate subplot
+    fig, axs = plt.subplots(rows, cols)
+
+    # Loop over masked_array_list
+    for i, ax in enumerate(axs.flat):
+        if i < num_plots:
+            ax.imshow(masked_array_list[i], cmap='jet')
+            ax.axis('off')
+        else:
+            ax.axis('off')
+
+    # Plot overall plot
+    plt.tight_layout()  
+    plt.show()
+
+
+def tiffs_to_foliumMap(tif_path):
+    '''
+    Create a folium map with an overlay of a GeoTIFF image.
+
+    Args:
+        tif_path (str): Path to the GeoTIFF file.
+
+    Returns:
+        folium.Map: A folium map object with the GeoTIFF overlay.
+    '''
+    # Import tif 
+    lst = rioxarray.open_rasterio(tif_path)
+    # Extract values
+    data = np.array(lst)[0]
+
+    # Create a masked array
+    data = np.ma.masked_array(data, mask = data < 1)
+
+    # Define the colormap from blue to red
+    cmap = plt.colormaps['jet']
+    # Normalize the data between 0 and 1
+    norm = colors.Normalize(vmin=data.min(), vmax=data.max())
+    # Apply the colormap to the normalized data
+    colored_data = cmap(norm(data))
+
+    # Set image bounds
+    image_bounds = box(*lst.rio.bounds())
+    # Extract bounds
+    min_x, min_y, max_x, max_y = lst.rio.bounds()
+    # Set corner coordinates
+    corner_coordinates = [[min_y, min_x], [max_y, max_x]]
+
+    #  Initiate map
+    m = folium.Map(
+     location=[image_bounds.centroid.y, image_bounds.centroid.x],
+     zoom_start=10,
+     )
+    #
+    folium.GeoJson(image_bounds.__geo_interface__).add_to(m)
+
+    # Add the OpenStreetMap tile layer with transparent colors
+    folium.TileLayer(
+        tiles='CartoDB positron',
+        attr='CartoDB',
+        transparent=True,
+    ).add_to(m)
+
+    # Overlay the geotiff over the open street map
+    folium.raster_layers.ImageOverlay(
+         colored_data,
+            bounds=corner_coordinates,
+            opacity=0.6,
+            interactive=True,
+            cross_origin=False,
+            pixelated=False,
+            zindex=0.2
+        ).add_to(m)
+    
+    # Display map
+    return m
+
 

@@ -23,7 +23,6 @@ import pandas as pd
 from shapely.geometry import box
 import folium
 import matplotlib.colors as colors
-import statistics
 from rasterio.enums import Resampling
 
 # Import all functions from utils
@@ -63,10 +62,10 @@ heatwaves = heatwave_transform(dates)
 heatwaves.append({'start': '2021-06-17 00:00:00', 'end': '2021-06-22 00:00:00'})
 heatwaves.append({'start': '2021-08-13 00:00:00', 'end': '2021-08-16 00:00:00'})
 
-# %% Import tropical timeperiods
+# Import tropical timeperiods
 tropicalDays = pd.read_pickle('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/tropicalPeriods.pkl')
 
-# %% Combine both
+# Combine both
 hW_tD = heatwaves + tropicalDays
 
 # %% Set spatial filter;
@@ -94,27 +93,18 @@ if confirmation.lower() == "y":
 else:
     print("Loop execution cancelled.")
 
-# %%
+# %% Count number of files
+types = ['GEO','CLOUD', 'LSTE']
+# Loop over files
+for t in types: 
+    files =  [
+        f
+        for f in listdir(config['data']['ES_raw']) 
+        if t in f and dateInHeatwave(datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), hW_tD)]
+        
+    print(f'There are {len(files)} {t} files')
 
-GEO =  [
-    f 
-    for f in listdir(config['data']['ES_raw']) 
-    if 'GEO' in f and dateInHeatwave(datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), hW_tD)]
-print(len(GEO))
-
-CLD = [
-    f 
-    for f in listdir(config['data']['ES_raw']) 
-    if 'CLOUD' in f and dateInHeatwave(datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), hW_tD)]
-print(len(CLD))
-
-LST = [
-    f 
-    for f in listdir(config['data']['ES_raw']) 
-    if 'LSTE' in f and dateInHeatwave(datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), hW_tD)]
-print(len(LST))
-
-# %%
+# %% Show missing files
 onlyfiles = [
     f 
     for f in listdir(config['data']['ES_raw']) 
@@ -125,7 +115,7 @@ onlyfiles = [
 keys = [
     files.split('_')[3] + '_' + files.split('_')[4] 
     for files in onlyfiles 
-    if 'LSTE' in files and  dateInHeatwave(datetime.datetime.strptime(files.split('_')[5], '%Y%m%dT%H%M%S'), hW_tD)
+    # if 'LSTE' in files and  dateInHeatwave(datetime.datetime.strptime(files.split('_')[5], '%Y%m%dT%H%M%S'), hW_tD)
     ]
 # Reduce to unique
 unique_keys = set(keys)
@@ -136,24 +126,71 @@ for key in unique_keys:
         files = [f for f in onlyfiles if key in f]
         print([f for f in onlyfiles if key in f])
         print(datetime.datetime.strptime(files[0].split('_')[5], '%Y%m%dT%H%M%S'))
-# %%
-
-for files in listdir(config['data']['ES_raw']):
-    if datetime.datetime.strptime(files.split('_')[5], '%Y%m%dT%H%M%S').year == 2021:
-         os.remove(os.path.join(config['data']['ES_raw'], files))
-         #print(os.path.join(config['data']['ES_raw'], files))
 
 # %% Create a tiff for each unique scene
 # processHF(heatwaves, config)
 processHF(hW_tD, config)
 
+# %% Plot cipped tiffs 
+onlyfiles = [
+    f 
+    for f in listdir(config['data']['ES_tiffs']) 
+    if isfile(join(config['data']['ES_tiffs'], f))
+    ]
+keys = [
+    files.split('_')[3] + '_' + files.split('_')[4] 
+    for files in onlyfiles
+    ]
+unique_keys = set(keys)
+# 
+path = config['data']['ES_tiffs']
+# %%
+for key in unique_keys:
+    # Check if all files
+    lst=rasterio.open(
+        os.path.join(path, [f for f in onlyfiles if key in f and "LSTE" in f and 'QC' not in f and f.endswith(".tif")][0])
+        )
+    cld=rasterio.open(
+        os.path.join(path, [f for f in onlyfiles if key in f and "Cloud" in f and f.endswith(".tif")][0])
+        )
+    qc=rasterio.open(
+        os.path.join(path, [f for f in onlyfiles if key in f and 'QC' in f and f.endswith(".tif")][0])
+        )
+    # Plot the images
+    fig, axs = plt.subplots(1, 3, figsize=(12, 6))
+
+    # Plot the LSTE image
+    axs[0].imshow(lst.read(1), cmap='jet')
+    axs[0].set_title('LSTE')
+
+    # Plot the Cloud image
+    axs[1].imshow(cld.read(1), cmap='gray')
+    axs[1].set_title('Cloud')
+
+    # Plot the QC image
+    axs[2].imshow(qc.read(1), cmap='jet')
+    axs[2].set_title('QC')
+
+    # Adjust the spacing between subplots
+    fig.tight_layout()
+
+    # Display the plot
+    plt.show()
+
+# %%
+for key in unique_keys:
+    qc=rasterio.open(
+        os.path.join(path, [f for f in onlyfiles if key in f and 'QC' in f and f.endswith(".tif")][0])
+        )
+    unique, counts = np.unique(qc.read(), return_counts=True)
+    print(np.asarray((unique, counts)).T)
+    print(' ')
+
 # %% Create a Dataframe to check the quality of all relevant tiffs (in heatwave)
 dataQ = dataQualityOverview(hW_tD, config)
-dataQ
-
 
 # %% Plot LST tiff by key
-key = '22424_007'
+key = '22409_006'
 
 onlyfiles = [
     f 
@@ -175,83 +212,132 @@ plt.show()
 # Create DF with relevant tifs for the afternoon
 afterNoon = dataQ[
     # TODO: How to choose the timeslot ?
-    (pd.to_datetime(dataQ['dateTime']).dt.hour >= 15 ) & 
-    (pd.to_datetime(dataQ['dateTime']).dt.hour <= 17) & 
+    (pd.to_datetime(dataQ['dateTime']).dt.hour >= 12 ) & 
+    (pd.to_datetime(dataQ['dateTime']).dt.hour <= 16) & 
     dataQ['qualityFlag']
     ]
 
-# %%
+name = 'mean_afterNoon.tif'
+
 # Store orbit numbers
-orbitNumbers = afterNoon['orbitNumber']
+orbitNumbers = afterNoon['orbitNumber'] 
+# Create and store mean tiff
+meanAfterNoon, maList = mergeTiffs(orbitNumbers, name, config)
 
-# Calculate mean masked array
-output = meanMaskArray(orbitNumbers, config)
+path = config['data']['ES_tiffs'].replace('geoTiff/','') + name
 
-# Store output in variables
-mean_array, maskedArraysL, pixel_sizes, bounding_boxes = output
-
-# %% Store mean array as tiff
-# Set pixel size for geo tiff
-pixel_size = [statistics.mean(values) for values in zip(*pixel_sizes)]
-
-# Set values for the bounding box
-left = np.mean([box.left for box in bounding_boxes])
-bottom = np.mean([box.bottom for box in bounding_boxes])
-right = np.mean([box.right for box in bounding_boxes])
-top = np.mean([box.top for box in bounding_boxes])
-
-# Create bounding box
-boundingBox = rasterio.coords.BoundingBox(left, bottom, right, top)
-xmin, ymin, xmax, ymax = boundingBox
-
-# Set geotransform
-geotransform = (xmin, pixel_size[0], 0, ymax, 0, pixel_size[1])
-
-# Create geotiff
-array_to_tiff(mean_array, 'mean_afternoon.tif' , geotransform)
-
-# %% Plot tif
-tif = rasterio.open('mean_afternoon.tif')
+# %% Plot tiff
+tif = rasterio.open(path)
 plt.imshow(tif.read()[0],'jet')
 
-# %% Plot mean array
-plt.imshow(mean_array,'jet')
-
-# Count number of not matching values
-n = mean_array.data.size-np.sum(mean_array.data == tif.read()[0])
-print(f'{n} elements differ in both arrays')
-
-# %% Create a subplot with all tiffs
-# Get number of arrays
-num_plots = len(maskedArraysL)
-# Calculate number of rows and cols
-rows = int(np.ceil(np.sqrt(num_plots)))
-cols = int(np.ceil(num_plots / rows))
-
-# Initiate subplot
-fig, axs = plt.subplots(rows, cols)
-
-# Loop over maskedArraysL
-for i, ax in enumerate(axs.flat):
-    if i < num_plots:
-        ax.imshow(maskedArraysL[i], cmap='jet')
-        ax.axis('off')
-    else:
-        ax.axis('off')
-
-# Plot overall plot
-plt.tight_layout()  
-plt.show()
-
+# %%Plot arrays
+arrays_subplot(maList)
 
 # %% Plot tif over a interactive open street map
-array_to_foliumMap('mean_afternoon.tif')
+tiffs_to_foliumMap(path)
 
-# TODO: Plot the mean tiff
+# %% # Create DF with relevant tifs for the morning
+morning = dataQ[
+    # TODO: How to choose the timeslot ?
+    (pd.to_datetime(dataQ['dateTime']).dt.hour >= 5) & 
+    (pd.to_datetime(dataQ['dateTime']).dt.hour <= 8) & 
+    dataQ['qualityFlag']
+    ]
+
+# Set name
+name = 'mean_Morning.tif'
+
+# Store orbit numbers
+orbitNumbers = morning['orbitNumber']
+
+# Create and store mean tiff
+meanMorning, maList = mergeTiffs(orbitNumbers, name, config)
+
+# Set path 
+path = config['data']['ES_tiffs'].replace('geoTiff/','') + 'mean_Morning.tif'
+
+# %% Plot tiff
+tif = rasterio.open(path)
+plt.imshow(tif.read()[0],'jet')
+
+# %% Plot arrays
+arrays_subplot(maList)
+
+# %% Plot tif over a interactive open street map
+tiffs_to_foliumMap(path)
+
 # TODO: Reduce map to munich 
 # TODO: Add a legend
 # TODO: Add water to the map
 
+# %%
+
+Lst_files = [
+    f for f in listdir(config['data']['ES_raw'])
+    if 'LST' in f
+]
+# %%
+f_lst = h5py.File(os.path.join(config['data']['ES_raw'], Lst_files[0]))
+
+# %%
+f_lst['SDS'].keys()
+
+data = np.array(f_lst['SDS']['QC'])
+
+plt.imshow(data,'jet')
+
+# %%
+f_lst = h5py.File(os.path.join(config['data']['ES_raw'], Lst_files[0]))
+
+# Store relative paths of elements in list
+eco_objs = []
+f_lst.visit(eco_objs.append)
+
+# Show datasets in f_lst
+lst_SDS = [str(obj) for obj in eco_objs if isinstance(f_lst[obj], h5py.Dataset)]
+
+# Store name of relevant dataset
+sds = ['LST','QC']
+# Extract relevant datasets
+lst_SDS  = [dataset for dataset in lst_SDS if dataset.endswith(tuple(sds))]
+
+# %%
+# Read in data
+lst_SD = f_lst[lst_SDS[0]][()]
+# %%
+qc_SD = f_lst[lst_SDS[1]][()]
+
+# %%
+def get_bit(x):
+    return int('{0:016b}'.format(x)[0:2])
+
+# Vectorize function
+get_zero_vec = np.vectorize(get_bit)
+# %%
+
+qc_SDS = get_zero_vec(qc_SD)
+# %%
+
+class_labels = ['poor', 'marginal', 'good', 'excellent']
+class_colors = ['red', 'green', 'blue', 'orange']
+
+# Plot the data
+plt.imshow(qc_SDS)
+# %%
+# Create a custom legend with class labels and colors
+legend_elements = [
+    plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=color, markersize=10, label=label)
+    for label, color in zip(class_labels, class_colors)
+    ]
+# Add the legend to the plot
+plt.legend(handles=legend_elements)
+
+# Show the plot
+plt.show()
+
+
+# %%
+'''
 # %% Tropical day, tropical night
 dwd = pd.read_csv(config['data']['dwd']+'/dwd.csv')
 
@@ -261,7 +347,18 @@ id = 3379
 mCentral = dwd[dwd['STATIONS_ID'] == id].reset_index(drop=True)
 # Convert the date column to datetime
 mCentral['MESS_DATUM'] = mCentral['MESS_DATUM'].astype('datetime64[ns]')
-# Identify tropical days
+# %%
+mCentral_Summer = mCentral[(mCentral['MESS_DATUM'].dt.month >= 6) & (mCentral['MESS_DATUM'].dt.month <= 8)]
+
+# %%
+print(np.mean(mCentral_Summer.loc[mCentral_Summer.groupby(mCentral_Summer['MESS_DATUM'].dt.date)['TT_TU'].idxmin()].MESS_DATUM.dt.hour))
+
+print(np.mean(mCentral_Summer.loc[mCentral_Summer.groupby(mCentral_Summer['MESS_DATUM'].dt.date)['TT_TU'].idxmax()].MESS_DATUM.dt.hour))
+
+# %%
+mCentral_Summer = 
+
+# %% Identify tropical days
 tropicalDays = pd.to_datetime(mCentral[mCentral['TT_TU']>=30]['MESS_DATUM'].dt.date)
 # %% Reduce to tropical days from last year
 tropicalDays = set(tropicalDays[tropicalDays.dt.year > 2020])
@@ -318,3 +415,5 @@ import pickle
 with open('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/tropicalPeriods.pkl', 'wb') as f:
     pickle.dump(tropicalPeriods, f)
 # %%
+'''
+
