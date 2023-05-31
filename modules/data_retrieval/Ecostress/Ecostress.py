@@ -132,6 +132,7 @@ for key in unique_keys:
 processHF(hW_tD, config)
 
 # %% Plot cipped tiffs 
+'''
 onlyfiles = [
     f 
     for f in listdir(config['data']['ES_tiffs']) 
@@ -185,7 +186,7 @@ for key in unique_keys:
     unique, counts = np.unique(qc.read(), return_counts=True)
     print(np.asarray((unique, counts)).T)
     print(' ')
-
+'''
 # %% Create a Dataframe to check the quality of all relevant tiffs (in heatwave)
 dataQ = dataQualityOverview(hW_tD, config)
 
@@ -228,7 +229,11 @@ path = config['data']['ES_tiffs'].replace('geoTiff/','') + name
 
 # %% Plot tiff
 tif = rasterio.open(path)
+
 plt.imshow(tif.read()[0],'jet')
+plt.colorbar(label = "Temperature in Celsius")
+
+plt.show()
 
 # %%Plot arrays
 arrays_subplot(maList)
@@ -237,8 +242,8 @@ arrays_subplot(maList)
 map_afternoon = tiffs_to_foliumMap(path)
 map_afternoon
 
-# %%
-map_afternoon.save('afterNoon.html')
+# Save after noon 
+#map_afternoon.save('afterNoon.html')
 
 
 # %% # Create DF with relevant tifs for the morning
@@ -272,16 +277,15 @@ arrays_subplot(maList)
 morning_map = tiffs_to_foliumMap(path)
 morning_map
 
-# %%
+# Save folium map
 morning_map.save('morning.html')
 
 # %%
 # TODO: Reduce map to munich 
-# TODO: Add a legend
 # TODO: Add water to the map
 
 # %%
-
+'''
 Lst_files = [
     f for f in listdir(config['data']['ES_raw'])
     if 'LST' in f
@@ -366,7 +370,6 @@ print(np.mean(mCentral_Summer.loc[mCentral_Summer.groupby(mCentral_Summer['MESS_
 print(np.mean(mCentral_Summer.loc[mCentral_Summer.groupby(mCentral_Summer['MESS_DATUM'].dt.date)['TT_TU'].idxmax()].MESS_DATUM.dt.hour))
 
 # %%
-mCentral_Summer = 
 
 # %% Identify tropical days
 tropicalDays = pd.to_datetime(mCentral[mCentral['TT_TU']>=30]['MESS_DATUM'].dt.date)
@@ -425,5 +428,4 @@ import pickle
 with open('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/tropicalPeriods.pkl', 'wb') as f:
     pickle.dump(tropicalPeriods, f)
 # %%
-'''
 

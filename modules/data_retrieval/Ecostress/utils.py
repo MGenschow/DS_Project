@@ -22,6 +22,9 @@ from rasterio.enums import Resampling
 from os import listdir
 import pandas as pd
 import statistics
+import branca.colormap as cm
+import matplotlib.colors as mcolors
+
 
 
 def heatwave_transform(dates):
@@ -878,7 +881,7 @@ def arrays_subplot(masked_array_list):
             ax.axis('off')
         else:
             ax.axis('off')
-
+    
     # Plot overall plot
     plt.tight_layout()  
     plt.show()
@@ -902,6 +905,13 @@ def tiffs_to_foliumMap(tif_path):
     # Create a masked array
     data = np.ma.masked_array(data, mask = data < 1)
 
+    # Set the color range from 'jet' colormap
+    color_range = np.linspace(0, 1, 256)
+    colors_jet_rgba = plt.cm.jet(color_range)
+    
+    # Convert RGBA to hexadecimal format
+    colors_jet_hex = [mcolors.rgb2hex(color) for color in colors_jet_rgba]
+
     # Define the colormap from blue to red
     cmap = plt.colormaps['jet']
     # Normalize the data between 0 and 1
@@ -918,8 +928,8 @@ def tiffs_to_foliumMap(tif_path):
 
     #  Initiate map
     m = folium.Map(
-     location=[image_bounds.centroid.y, image_bounds.centroid.x],
-     zoom_start=10,
+        location=[image_bounds.centroid.y, image_bounds.centroid.x],
+        zoom_start=10,
      )
     #
     folium.GeoJson(image_bounds.__geo_interface__).add_to(m)
@@ -941,6 +951,17 @@ def tiffs_to_foliumMap(tif_path):
             pixelated=False,
             zindex=0.2
         ).add_to(m)
+
+    # Create the colormap legend with 'jet' colormap colors
+    colormap = cm.LinearColormap(
+        colors=colors_jet_hex,
+        vmin=data.min(),
+        vmax=data.max(),
+        max_labels=15
+        )
+
+    colormap.caption = 'Land surface temperature in celsius'
+    colormap.add_to(m)
     
     # Display map
     return m
