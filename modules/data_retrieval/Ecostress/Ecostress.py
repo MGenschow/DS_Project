@@ -234,7 +234,12 @@ plt.imshow(tif.read()[0],'jet')
 arrays_subplot(maList)
 
 # %% Plot tif over a interactive open street map
-tiffs_to_foliumMap(path)
+map_afternoon = tiffs_to_foliumMap(path)
+map_afternoon
+
+# %%
+map_afternoon.save('afterNoon.html')
+
 
 # %% # Create DF with relevant tifs for the morning
 morning = dataQ[
@@ -254,7 +259,7 @@ orbitNumbers = morning['orbitNumber']
 meanMorning, maList = mergeTiffs(orbitNumbers, name, config)
 
 # Set path 
-path = config['data']['ES_tiffs'].replace('geoTiff/','') + 'mean_Morning.tif'
+path = config['data']['ES_tiffs'].replace('geoTiff/','') + name
 
 # %% Plot tiff
 tif = rasterio.open(path)
@@ -264,8 +269,13 @@ plt.imshow(tif.read()[0],'jet')
 arrays_subplot(maList)
 
 # %% Plot tif over a interactive open street map
-tiffs_to_foliumMap(path)
+morning_map = tiffs_to_foliumMap(path)
+morning_map
 
+# %%
+morning_map.save('morning.html')
+
+# %%
 # TODO: Reduce map to munich 
 # TODO: Add a legend
 # TODO: Add water to the map
