@@ -73,7 +73,7 @@ git clone https://github.com/MGenschow/DS_Project.git
 - Alternatively, add this path to your .bashrc/.zshrc file to automatically source when logging into the cluster
 - After conda is sourced, you can activate the environment for our project using 
 ```bash
-    conda activate ds_project
+    conda activate DS_Project
 ```
 - As package manager I propose we use mamba. Mamba is much faster than conda when solving the environment. To use mamba to install packages run 
 ```bash
