@@ -75,7 +75,11 @@ git clone https://github.com/MGenschow/DS_Project.git
 ```bash
     conda activate ds_project
 ```
-- Keep in mind to only use conda when installing packages (e.g. `conda install pandas`) and not pip
+- As package manager I propose we use mamba. Mamba is much faster than conda when solving the environment. To use mamba to install packages run 
+```bash
+    mamba install pandas -c conda-forge
+```
+- The option "-c conda-forge" states thta mamba should look in the conda-forge repository for the respective package. This ensures that the package you want to install is actually found.
 
 ---
 
