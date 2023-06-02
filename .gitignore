@@ -139,3 +139,5 @@ dmypy.json
 *.png
 *.icloud
 *.html
+*.pickle
+*.pkl

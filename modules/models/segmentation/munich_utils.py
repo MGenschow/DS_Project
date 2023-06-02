@@ -86,7 +86,6 @@ def plot_example(img:np.ndarray, title:str=''):
     ax[0].imshow(ToPILImage()(img))
     ax[1].imshow(ToPILImage()(denormalize_image(img)))
     [axs.axis('off') for axs in fig.get_axes()]
-    plt.show()
 
     # Set figure title
     plt.suptitle(title)

@@ -14,6 +14,11 @@ root_dir = config['data']['orthophotos']
 # %%
 # Get path to all tiles stored in the "raw_tiles" folder
 all_tiles = glob(root_dir + "/raw_tiles/*.tif")
+#all_tiles = [
+#    '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/orthophotos/raw_tiles/32692_5337.tif',
+#    '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/orthophotos/raw_tiles/32692_5336.tif',
+#    '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/orthophotos/raw_tiles/32692_5335.tif'
+]
 
 # %%
 def slice_image(input_path, output_dir,  num_subtiles):
@@ -81,3 +86,4 @@ for tile in tqdm(all_tiles):
                 num_subtiles=patch_size)
     
     
+# %%
