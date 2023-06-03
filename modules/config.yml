@@ -12,6 +12,7 @@ data:
   LoveDA: /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/LoveDA
   ES_raw:  /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/raw_h5/
   ES_tiffs: /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/geoTiff/
+  model_weights: /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/model_weights
 # Bounding Boxes for locations we analyze
 bboxes: 
   munich: [11.310790,47.980475,11.855986,48.385189]
