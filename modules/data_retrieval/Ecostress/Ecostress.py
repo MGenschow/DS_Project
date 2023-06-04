@@ -68,6 +68,38 @@ tropicalDays = pd.read_pickle('/pfs/work7/workspace/scratch/tu_zxmav84-ds_projec
 # Combine both
 hW_tD = heatwaves + tropicalDays
 
+# %%
+import datetime
+
+start_date = datetime.date(2022, 6, 1)
+end_date = datetime.date(2022, 8, 31)
+date_list = []
+
+delta = datetime.timedelta(days=1)
+current_date = start_date
+
+while current_date <= end_date:
+    date_element = {
+        'start': current_date.strftime('%Y-%m-%d 00:00:00'),
+        'end': (current_date + delta).strftime('%Y-%m-%d 00:00:00')
+    }
+    date_list.append(date_element)
+    current_date += delta
+
+print(len(date_list))
+
+# NOTE: Removing the element makes the loop jumping over the element after that 
+for dates in date_list:
+    if dateInHeatwave(datetime.datetime.strptime(dates['start'],'%Y-%m-%d %H:%M:%S'),[hW_tD[0]]) or dateInHeatwave(datetime.datetime.strptime(dates['end'],'%Y-%m-%d %H:%M:%S'),[hW_tD[0]]):
+        # date_list.remove(dates)
+        print(dates)
+    elif dateInHeatwave(datetime.datetime.strptime(dates['end'],'%Y-%m-%d %H:%M:%S'),[hW_tD[0]]):
+        # date_list.remove(dates)
+        print(dates)
+
+print(len(date_list))
+
+
 # %% Set spatial filter;
 spatialFilter =  {
     'filterType' : "mbr",
@@ -82,16 +114,19 @@ spatialFilter =  {
     }
 
 # %% Download all files corresponding to the heatwaves
+#month = [{'start': '2022-08-01 00:00:00', 'end': '2022-09-01 00:00:00'}]
+# %%
 # NOTE: Can take, depending on the parameters, quite some time 
 # (up to several hours)
 confirmation = input("Do you want to download the hierarchical files (Y/n): ")
 if confirmation.lower() == "y":
     #for temporalFilter in heatwaves:
     # for temporalFilter in tropicalDays:
-    for temporalFilter in hW_tD:
+    for temporalFilter in month:
         downloadH5(credentials, headers, temporalFilter, spatialFilter, config)
 else:
     print("Loop execution cancelled.")
+
 
 # %% Count number of files
 types = ['GEO','CLOUD', 'LSTE']

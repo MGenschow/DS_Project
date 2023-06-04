@@ -246,11 +246,6 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
     # Specify directory for the tiffs
     outDir = config['data']['ES_tiffs']
 
-    #if os.path.exists(
-    #    join(outDir,
-    #        '{}_{}.tif'.format(fileNameLST.rsplit('/')[-1].rsplit('.h5')[0], 'QC'))):
-    #    return
-    
     # Read in lst file
     f_lst = h5py.File(fileNameLST)
 
@@ -281,7 +276,7 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
     lst_SDS = [str(obj) for obj in eco_objs if isinstance(f_lst[obj], h5py.Dataset)]
 
     # Store name of relevant dataset
-    sds = ['LST','QC']
+    sds = ['LST']
     # Extract relevant datasets
     lst_SDS  = [dataset for dataset in lst_SDS if dataset.endswith(tuple(sds))]
 
@@ -299,18 +294,6 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
 
     # Calculate temp to celcius
     lst_SD = kelToCel(lst_SD)
-
-    # Read in data
-    qc_SD = f_lst[lst_SDS[1]][()]
-
-    def uncodeQC(x):
-        return int('{0:016b}'.format(x)[0:2])
-
-    # Vectorize function
-    uncodeQC_vec = np.vectorize(uncodeQC)
-
-    # Apply function
-    qc_SD = uncodeQC_vec(qc_SD)
 
 
     # Read in lst file
@@ -407,13 +390,12 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
     # NOTE: This code returns a masked arrays that contain a mask to tag invalid datapoints
     LSTgeo = kdt.get_sample_from_neighbour_info('nn', areaDef.shape, lst_SD, index, outdex, indexArr, fill_value=0)
     Cldgeo = kdt.get_sample_from_neighbour_info('nn', areaDef.shape, cld_SD, index, outdex, indexArr, fill_value=0)
-    QCgeo = kdt.get_sample_from_neighbour_info('nn', areaDef.shape, qc_SD, index, outdex, indexArr, fill_value=0)
 
     #  Define the geotransform
     gt = [areaDef.area_extent[0], ps, 0, areaDef.area_extent[3], 0, -ps]
 
     # Set up dictionary of arrays to export
-    outFiles = {'LST': LSTgeo, 'Cloud': Cldgeo, 'QC': QCgeo}
+    outFiles = {'LST': LSTgeo, 'Cloud': Cldgeo}
     # Set fill value
     fv = np.nan
 
@@ -439,8 +421,6 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
             ecoName = fileNameLST.rsplit('/')[-1].rsplit('.h5')[0]
         elif file == 'Cloud':
             ecoName = fileNameCld.rsplit('/')[-1].rsplit('.h5')[0]
-        elif file == 'QC':
-            ecoName = fileNameLST.rsplit('/')[-1].rsplit('.h5')[0]
 
         # Set up output name using output directory and filename
         outName = join(outDir, '{}_{}.tif'.format(ecoName, file))
@@ -448,33 +428,8 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
         if os.path.exists(outName):
             continue
 
+        # Call array to tiff function
         array_to_tiff(outFiles[file], outName, gt)
-
-        # Get driver, specify dimensions, define and set output geotransform
-        #height, width = outFiles[file].shape
-        # Fetchs a driver by name, here GTiff
-        #driv = gdal.GetDriverByName('GTiff')
-        # Set datatype
-        #dataType = gdal_array.NumericTypeCodeToGDALTypeCode(outFiles[file].dtype)
-        # Specify driver
-        #d = driv.Create(outName, width, height, 1, dataType)
-        # Set geotransform
-        #d.SetGeoTransform(gt)
-        # Create and set output projection, write output array data
-        # Define target SRS
-        #srs = osr.SpatialReference()
-        # Import final projection
-        #srs.ImportFromEPSG(int('4326'))
-        #d.SetProjection(srs.ExportToWkt())
-        #srs.ExportToWkt()
-        # Write array to band
-        #band = d.GetRasterBand(1)
-        #
-        #band.WriteArray(outFiles[file])
-        #
-        #band.FlushCache()
-        #
-        #d, band = None, None
 
         # Plot a png
         plotTiffWithCoordinats(outName)
@@ -528,9 +483,7 @@ def plotTiffWithCoordinats(path):
     if 'LST' in path:
         plt.imshow(image, cmap='jet')
     if 'Cloud' in path:
-        plt.imshow(image)
-    if 'QC' in path:
-        plt.imshow(image)    
+        plt.imshow(image)   
     # Plot Point for Munich
     plt.scatter(col,row, color='red', marker='o')
     plt.axis('off')
@@ -577,13 +530,13 @@ def array_to_tiff(file, outputDir, geoTrans):
     d, band = None, None
 
 
-def processHF(heatwaves, config):
+def processHF(timePeriod, config):
     '''
     Processes heatwave data by creating TIFF files for 
     corresponding HDF5 files and deleting existing TIFF files if confirmed.
 
     Parameters:
-    - heatwaves (list): List of heatwave data.
+    - timePeriod (list): List of heatwave data.
     - config (dict): A dictionary containing configuration information.
 
     Returns:
@@ -613,7 +566,7 @@ def processHF(heatwaves, config):
     # else:
     #    print("No tiffs were deleted and function call terminated.")
 
-    # Create tif for all files corresponding to the heatwaves
+    # Create tif for all files corresponding to the timePeriod
     path = config['data']['ES_raw']
 
     # Loop over all unique keys in the raw_h5 folder
@@ -626,8 +579,8 @@ def processHF(heatwaves, config):
         # Get file path for the lst file
         lstF = [f for f in onlyfiles if key in f and 'LSTE' in f][0]
 
-        # if os.path.exists(config['data']['ES_tiffs'] + lstF.replace('.h5','_LST.tif')): # QC
-        #    continue
+        if os.path.exists(config['data']['ES_tiffs'] + lstF.replace('.h5','_LST.tif')):
+            continue
 
         # Check if scence belongs to the heatwave
         f = h5py.File(path + lstF)
@@ -639,7 +592,7 @@ def processHF(heatwaves, config):
         # Combine time and date
         dateTime = datetime.datetime.strptime(date + ' ' + time, '%Y-%m-%d %H:%M:%S.%f')
 
-        if dateInHeatwave(dateTime, heatwaves):
+        if dateInHeatwave(dateTime, timePeriod):
         
             # Extract the file path of the respective paths
             fileNameGeo = path + [f for f in onlyfiles if key in f and 'GEO' in f][0]
@@ -696,16 +649,12 @@ def dataQualityOverview(heatwaves, config):
 
         # Open lst tiff
         lst = rioxarray.open_rasterio(
-            config['data']['ES_tiffs'] + [f for f in orbitFls if 'LSTE' in f and 'QC' not in f and f.endswith('.tif')][0]
+            config['data']['ES_tiffs'] + [f for f in orbitFls if 'LSTE' in f and f.endswith('.tif')][0]
             )
         # Open cloud tiff
         cld = rioxarray.open_rasterio(
             config['data']['ES_tiffs'] + [f for f in orbitFls if 'CLOUD' in f and '.tif' in f][0]
             )
-        # Open quality control tiff 
-        #qc = rioxarray.open_rasterio(
-        #    config['data']['ES_tiffs'] + [f for f in orbitFls if 'LSTE' in f and 'QC' in f and f.endswith('.tif')][0]
-        #    )
 
         # Fill dataQ dataframe with information about the respective tiffs
         dataQ.loc[len(dataQ)] = [
@@ -761,14 +710,12 @@ def meanMaskArray(orbitNumbers, config):
 
         # Extract path of lst and cloud
         lst=rasterio.open(
-            os.path.join(path, [f for f in files if "LSTE" in f and 'QC' not in f and f.endswith(".tif")][0])
+            os.path.join(path, [f for f in files if "LSTE" in f and f.endswith(".tif")][0])
             )
         cld=rasterio.open(
             os.path.join(path, [f for f in files if "Cloud" in f and f.endswith(".tif")][0])
             )
-        qc=rasterio.open(
-            os.path.join(path, [f for f in files if 'QC' in f and f.endswith(".tif")][0])
-            )
+    
         # Store the pixel size of the picture in a list    
         pixel_sizes.append((lst.transform[0], lst.transform[4]))
         # Store the bounding boxes in a list
