@@ -71,7 +71,7 @@ def calculate_accuracy(model, test_loader):
             correct_pixels += (pred.cpu() == label).sum()
             num_pixels += pred.numel()
         print(f"\n\tAccuracy: {np.round((correct_pixels/num_pixels)*100,2)}")
-        logging.info(f"\n\tAccuracy: {np.round((correct_pixels/num_pixels)*100,2)}")
+        log.info(f"\n\tAccuracy: {np.round((correct_pixels/num_pixels)*100,2)}")
 
 # %%
 def train_epoch(model, train_loader, epoch):
@@ -100,7 +100,7 @@ def train_epoch(model, train_loader, epoch):
         if batch_id%5==0:
             progress = f'Epoch: {epoch} | Batch {batch_id} / {len(train_loader)} | Loss: {np.round(loss_sum/(batch_id),4)}'
             print(progress)
-            logging.info(progress)
+            log.info(progress)
             
 
 # %%
@@ -143,16 +143,22 @@ def train_model(DATASET = 'potsdam', MODEL_TYPE = 'FCN', BACKBONE = 'r101', NUM_
     os.mkdir(save_dir)
 
     # Configure logging
-    # TODO Delete existing log file
     log_file = save_dir + '/' + specs_name+'.log'
-    logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    
+    log = logging.getLogger()
+    log.setLevel(logging.INFO)
+    handler = logging.FileHandler(log_file)
+    handler.setLevel(logging.INFO)
+    handler.setFormatter(logging.Formatter(fmt='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S'))
+    log.addHandler(handler) 
+    
     # Log Basis Training Specs
-    logging.info(f'DATASET: {DATASET}')
-    logging.info(f'MODEL_TYPE: {MODEL_TYPE}')
-    logging.info(f'BACKBONE: {BACKBONE}')
-    logging.info(f'NUM_EPOCHS: {NUM_EPOCHS}')
-    logging.info(f'LEARNING_RATE: {LEARNING_RATE}')
-    logging.info(f'BATCH_SIZE: {BATCH_SIZE}')
+    log.info(f'DATASET: {DATASET}')
+    log.info(f'MODEL_TYPE: {MODEL_TYPE}')
+    log.info(f'BACKBONE: {BACKBONE}')
+    log.info(f'NUM_EPOCHS: {NUM_EPOCHS}')
+    log.info(f'LEARNING_RATE: {LEARNING_RATE}')
+    log.info(f'BATCH_SIZE: {BATCH_SIZE}')
 
     #################### DataLoaders ####################
 
@@ -219,7 +225,7 @@ def train_model(DATASET = 'potsdam', MODEL_TYPE = 'FCN', BACKBONE = 'r101', NUM_
     #################### Training #################### 
     #calculate_accuracy(model, test_loader)
     print("Start Training ...")
-    logging.info("Start Training ...")
+    log.info("Start Training ...")
     for epoch in range(NUM_EPOCHS):
         train_epoch(model, train_loader, epoch)
         calculate_accuracy(model, test_loader)
@@ -229,4 +235,6 @@ def train_model(DATASET = 'potsdam', MODEL_TYPE = 'FCN', BACKBONE = 'r101', NUM_
         torch.save(model, save_dir + '/' + specs_name+'_epoch'+str(epoch)+'.pth.tar')
         #torch.save(optimizer, save_dir + '/' + specs_name+'_optimizer.pth.tar')
 
+    # Clear logging handlers
+    log.handlers.clear()
 

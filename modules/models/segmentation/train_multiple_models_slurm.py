@@ -1,0 +1,13 @@
+from train_utils import *
+
+# Train multiple models on Potsdam
+train_model(DATASET='potsdam', MODEL_TYPE='DeepLabV3', BACKBONE='r101', NUM_EPOCHS=10, LEARNING_RATE=0.01, BATCH_SIZE = 2)
+#train_model(DATASET='potsdam', MODEL_TYPE='DeepLabV3', BACKBONE='r101', NUM_EPOCHS=10, LEARNING_RATE=0.001, BATCH_SIZE = 2)
+#train_model(DATASET='potsdam', MODEL_TYPE='FCN', BACKBONE='r101', NUM_EPOCHS=10, LEARNING_RATE=0.01, BATCH_SIZE = 2)
+#train_model(DATASET='potsdam', MODEL_TYPE='FCN', BACKBONE='r101', NUM_EPOCHS=10, LEARNING_RATE=0.001, BATCH_SIZE = 2)
+
+# Train multiple models on loveda
+#train_model(DATASET='loveda', MODEL_TYPE='DeepLabV3', BACKBONE='r101', NUM_EPOCHS=10, LEARNING_RATE=0.001, BATCH_SIZE = 8)
+#train_model(DATASET='loveda', MODEL_TYPE='DeepLabV3', BACKBONE='r101', NUM_EPOCHS=10, LEARNING_RATE=0.01, BATCH_SIZE = 8)
+#train_model(DATASET='loveda', MODEL_TYPE='FCN', BACKBONE='r101', NUM_EPOCHS=10, LEARNING_RATE=0.01, BATCH_SIZE = 8)
+#train_model(DATASET='loveda', MODEL_TYPE='FCN', BACKBONE='r101', NUM_EPOCHS=10, LEARNING_RATE=0.01, BATCH_SIZE = 8)
