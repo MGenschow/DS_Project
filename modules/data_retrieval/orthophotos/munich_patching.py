@@ -78,7 +78,7 @@ def slice_image(input_path, output_dir,  num_subtiles):
 
 # %%
 # Loop over all tiles and create corresponding subtiles
-patch_size = 10
+patch_size = 20
 print(f"Processing {len(all_tiles)} tiles with patch size {patch_size}, i.e. {patch_size**2} subtiles for each image ...")
 for tile in tqdm(all_tiles):
     slice_image(tile, 
