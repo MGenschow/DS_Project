@@ -68,7 +68,7 @@ tropicalDays = pd.read_pickle('/pfs/work7/workspace/scratch/tu_zxmav84-ds_projec
 # Combine both
 hW_tD = heatwaves + tropicalDays
 
-# %%
+# %% Invert heatwave
 import datetime
 
 start_date = datetime.date(2022, 6, 1)
@@ -86,18 +86,16 @@ while current_date <= end_date:
     date_list.append(date_element)
     current_date += delta
 
-print(len(date_list))
 
-# NOTE: Removing the element makes the loop jumping over the element after that 
+inverted_HW = []
+
+# 
 for dates in date_list:
-    if dateInHeatwave(datetime.datetime.strptime(dates['start'],'%Y-%m-%d %H:%M:%S'),[hW_tD[0]]) or dateInHeatwave(datetime.datetime.strptime(dates['end'],'%Y-%m-%d %H:%M:%S'),[hW_tD[0]]):
-        # date_list.remove(dates)
-        print(dates)
-    elif dateInHeatwave(datetime.datetime.strptime(dates['end'],'%Y-%m-%d %H:%M:%S'),[hW_tD[0]]):
-        # date_list.remove(dates)
-        print(dates)
+    if not dateInHeatwave(datetime.datetime.strptime(dates['start'],'%Y-%m-%d %H:%M:%S'),hW_tD):
+        inverted_HW.append(dates)
+    elif not dateInHeatwave(datetime.datetime.strptime(dates['end'],'%Y-%m-%d %H:%M:%S'),hW_tD):
+        inverted_HW.append(dates)
 
-print(len(date_list))
 
 
 # %% Set spatial filter;
@@ -129,15 +127,32 @@ else:
 
 
 # %% Count number of files
+summer = [{'start': '2022-06-01 00:00:00', 'end': '2022-09-01 00:00:00'}]
 types = ['GEO','CLOUD', 'LSTE']
 # Loop over files
 for t in types: 
     files =  [
         f
         for f in listdir(config['data']['ES_raw']) 
-        if t in f and dateInHeatwave(datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), hW_tD)]
+        if t in f and dateInHeatwave(datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), inverted_HW)]
         
     print(f'There are {len(files)} {t} files')
+
+
+# %% Check for the respective tiff files
+files = [
+    f # datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S') 
+    for f in listdir(config['data']['ES_tiffs']) 
+    if isfile(join(config['data']['ES_tiffs'], f)) and 
+    f.endswith('.tif') and 
+    'LSTE' in f and
+    dateInHeatwave(datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), inverted_HW)
+    ]
+len(files)
+#len([file for file in files if file.year == 2022])
+
+# 56
+
 
 # %% Show missing files
 onlyfiles = [
@@ -163,8 +178,9 @@ for key in unique_keys:
         print(datetime.datetime.strptime(files[0].split('_')[5], '%Y%m%dT%H%M%S'))
 
 # %% Create a tiff for each unique scene
-# processHF(heatwaves, config)
-processHF(hW_tD, config)
+summer = [{'start': '2022-06-01 00:00:00', 'end': '2022-09-01 00:00:00'}]
+# 
+processHF(summer, config)
 
 # %% Plot cipped tiffs 
 '''
@@ -222,8 +238,17 @@ for key in unique_keys:
     print(np.asarray((unique, counts)).T)
     print(' ')
 '''
+# %%
+
+files = [
+    datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S') 
+    for f in listdir(config['data']['ES_tiffs']) 
+    if isfile(join(config['data']['ES_tiffs'], f)) and f.endswith('.tif') and 'LSTE' in f
+    ]
+
+len([file for file in files if file.year == 2022])
 # %% Create a Dataframe to check the quality of all relevant tiffs (in heatwave)
-dataQ = dataQualityOverview(hW_tD, config)
+dataQ = dataQualityOverview(summer, config)
 
 # %% Plot LST tiff by key
 key = '22409_006'

@@ -425,8 +425,8 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
         # Set up output name using output directory and filename
         outName = join(outDir, '{}_{}.tif'.format(ecoName, file))
 
-        if os.path.exists(outName):
-            continue
+        #if os.path.exists(outName):
+        #    continue
 
         # Call array to tiff function
         array_to_tiff(outFiles[file], outName, gt)
@@ -490,6 +490,7 @@ def plotTiffWithCoordinats(path):
     plt.savefig(path.replace('.tif', '') + '_Large')
      # Close the plot
     plt.close()
+
 
 def array_to_tiff(file, outputDir, geoTrans):
     '''
@@ -556,7 +557,8 @@ def processHF(timePeriod, config):
      ]
     # Reduce to unique
     unique_keys = set(keys)
-
+    print(f'There are {len(unique_keys)} unique keys')
+    
     # Delete tiff files
     # confirmation = input("Do you really want to delete all existing tiff files (Y/n): ")
     # if confirmation.lower() == "y":
@@ -580,6 +582,7 @@ def processHF(timePeriod, config):
         lstF = [f for f in onlyfiles if key in f and 'LSTE' in f][0]
 
         if os.path.exists(config['data']['ES_tiffs'] + lstF.replace('.h5','_LST.tif')):
+            print('File does already exist.')
             continue
 
         # Check if scence belongs to the heatwave
@@ -606,7 +609,7 @@ def processHF(timePeriod, config):
             continue
 
 
-def dataQualityOverview(heatwaves, config):
+def dataQualityOverview(heatPeriods, config):
     '''
     Generates an overview of data quality from TIFF files based on 
     the provided configuration.
@@ -633,7 +636,7 @@ def dataQualityOverview(heatwaves, config):
         f 
         for f in listdir(config['data']['ES_tiffs']) 
         if isfile(join(config['data']['ES_tiffs'], f)) and 
-        f.endswith('.tif') and dateInHeatwave(datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), heatwaves)
+        f.endswith('.tif') and dateInHeatwave(datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), heatPeriods)
         ]
 
     # Extract all unique keys and reduce to unique values
