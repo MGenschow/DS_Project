@@ -1,11 +1,7 @@
 #%% import packages
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 import pickle
-import statsmodels.tsa.stattools as stattools
-from statsmodels.tsa.arima_process import arma_generate_sample
-from statsmodels.tsa.arima.model import ARIMA
 import yaml
 config_path = '/home/tu/tu_tu/tu_zxmny46/DS_Project/modules/config.yml'
 # config_path = 'C:/Users/stefan/OneDrive - bwedu/04_semester/DS_Project/DS_Project/modules/config.yml'
