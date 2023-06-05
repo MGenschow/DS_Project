@@ -1,6 +1,12 @@
 # %%
-# Custom utils
-from potsdam_utils import *
+# Basic Imports
+import glob
+import re
+import os
+import numpy as np
+import random
+from tqdm import tqdm
+
 
 # FCN Imports
 from torchvision.models.segmentation import fcn_resnet50, fcn_resnet101, FCN_ResNet50_Weights, FCN_ResNet101_Weights
@@ -9,15 +15,31 @@ from torchvision.models.segmentation.deeplabv3 import DeepLabHead
 from torchvision.models.segmentation import deeplabv3_resnet50, deeplabv3_resnet101, DeepLabV3_ResNet50_Weights, DeepLabV3_ResNet101_Weights
 from torchvision.models.segmentation.fcn import FCNHead
 # Other torch imports
+import torch
 import torch.optim as optim
 import torch.nn as nn
 
 import seaborn as sns
 import pandas as pd
+import numpy as np
 
 import os
 import shutil
 import logging
+
+
+
+
+# Torch Imports
+import torch
+from torch.utils.data import Dataset, DataLoader
+from torchvision.transforms import ToPILImage
+
+# Image utils imports
+from PIL import Image
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
+import matplotlib.pyplot as plt
 
 
 # %%
@@ -44,7 +66,7 @@ def calculate_accuracy(model, test_loader):
         for data, label in test_loader:
             data = data.to(DEVICE)
             logits = model(data)['out']
-            prob = nn.Softmax(logits).dim
+            prob = nn.Softmax(logits).dim 
             pred = torch.argmax(prob, dim = 1)
             correct_pixels += (pred.cpu() == label).sum()
             num_pixels += pred.numel()
@@ -96,9 +118,9 @@ def assign_device():
 assign_device()
 
 # %%
-def train_model(DATASET = 'potsdam', MODEL_TYPE = 'FCN', BACKBONE = 'r101', NUM_EPOCHS=1, LEARNING_RATE = 0.01):
+def train_model(DATASET = 'potsdam', MODEL_TYPE = 'FCN', BACKBONE = 'r101', NUM_EPOCHS=1, LEARNING_RATE = 0.01, BATCH_SIZE = 2):
     #################### Catch NotImplemented ####################
-    if DATASET not in ['potsdam']:
+    if DATASET not in ['potsdam', 'loveda']:
         print(f'Function not implemented for DATSET {DATASET}. Check spelling or datset selection')
         raise NotImplementedError
     if MODEL_TYPE not in ['FCN', 'DeepLabV3']:
@@ -130,20 +152,28 @@ def train_model(DATASET = 'potsdam', MODEL_TYPE = 'FCN', BACKBONE = 'r101', NUM_
     logging.info(f'BACKBONE: {BACKBONE}')
     logging.info(f'NUM_EPOCHS: {NUM_EPOCHS}')
     logging.info(f'LEARNING_RATE: {LEARNING_RATE}')
+    logging.info(f'BATCH_SIZE: {BATCH_SIZE}')
 
     #################### DataLoaders ####################
-    if DATASET == 'potsdam':
-        train_loader, test_loader = get_potsdam_loaders(batch_size=2)
 
-    # TODO: Implement DataLoader for LoveDA Dataset
+
+    if DATASET == 'potsdam':
+        # Custom Potsdam Imports
+        from potsdam_utils import get_potsdam_loaders
+        train_loader, test_loader = get_potsdam_loaders(batch_size=BATCH_SIZE)
+
     if DATASET == 'loveda':
-        raise NotImplementedError
+        from loveda_utils import get_loveda_loaders
+        train_loader, test_loader = get_loveda_loaders(batch_size=BATCH_SIZE)
 
 
 
     #################### Instantiate Model ####################
     # Hyperparameters
-    NUM_CLASSES = 6
+    if DATASET == 'potsdam':
+        NUM_CLASSES = 6
+    elif DATASET == 'loveda':
+        NUM_CLASSES = 8
     AUX_LAYER = True
     FROZEN = False
 
@@ -187,7 +217,7 @@ def train_model(DATASET = 'potsdam', MODEL_TYPE = 'FCN', BACKBONE = 'r101', NUM_
     LOSS_FUNC = nn.CrossEntropyLoss()
 
     #################### Training #################### 
-    calculate_accuracy(model, test_loader)
+    #calculate_accuracy(model, test_loader)
     print("Start Training ...")
     logging.info("Start Training ...")
     for epoch in range(NUM_EPOCHS):
