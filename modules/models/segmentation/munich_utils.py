@@ -61,7 +61,7 @@ class MunichDataset(Dataset):
 # Test transform analogously to Potsdam test transform
 test_transform = A.Compose(
     [
-        A.Resize(height=1000, width=1000),
+        A.Resize(height=512, width=512),
         A.Normalize(
             mean = [0.485, 0.456, 0.406],
             std=[0.229, 0.224, 0.225]
