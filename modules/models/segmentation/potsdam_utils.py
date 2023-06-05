@@ -211,6 +211,20 @@ test_transform = A.Compose(
     ],
 )
 
+def get_potsdam_loaders(batch_size=2):
+    file_paths = get_file_paths()
+    train_dict, test_dict = train_test_split(file_paths, test_size=0.2)
+    BATCH_SIZE = 2
+    train_loader = DataLoader(PotsdamDataset(train_dict, transform=train_transform), 
+                            batch_size = BATCH_SIZE, 
+                            num_workers = 2)
+    test_loader = DataLoader(PotsdamDataset(test_dict, transform=test_transform),
+                            batch_size = BATCH_SIZE, 
+                            num_workers = 2)
+    print(f"Length of train loader: {len(train_loader)}; Length of test loader: {len(test_loader)} with batch size {BATCH_SIZE}")
+
+    return train_loader, test_loader
+
 ################################################################################################
 ####################################### Plotting Functions #####################################
 ################################################################################################
