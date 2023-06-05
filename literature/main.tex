@@ -22,9 +22,10 @@ urlcolor=[RGB]{74, 133, 150}
 \usepackage{xurl}
 \usepackage{natbib}
 \usepackage{amsmath}
-
-
-
+\usepackage{booktabs} % for addlinespace
+\usepackage{float} % for table adjustment
+\usepackage{tabularx}
+\usepackage[acronym]{glossaries} % for abbreviation glossary
 
 % adjust settings
 \bibliographystyle{apalike}
@@ -62,12 +63,21 @@ bmargin=2.5cm
 \author{Malte Genschow, Stefan Glaisner, Stefan Grochowski, Aaron Lay}
 \date{\today}
 
+% configure glossary
+\makeglossaries
+\newacronym{lst}{LST}{Land surface temperature}
+\newacronym{mse}{MSE}{Mean squared error}
+\newacronym{uhi}{UHI}{Urban heat intensity}
 
  % document
  
 \begin{document}
 
 \maketitle
+
+\defcitealias{dwd2017}{\textcolor{black}{DWD (}2017\textcolor{black}{)}}
+\defcitealias{isprs2012}{\textcolor{black}{ISPRS (}2012\textcolor{black}{)}}
+
 
 \section{Introduction}
 
@@ -79,16 +89,49 @@ Neighbourhoods with a high building density often do not cool down sufficiently 
 
 The urban heat island effect is therefore particularly problematic when temperatures are high (on consecutive days), in so-called heat waves. Therefore, our analysis is primarily based on weather data recorded at the time of a heat wave.
 
-\section{Identification of heat waves}
+\section{Data sources}
+
+\begin{table}[H]
+\footnotesize
+\begin{center}
+\caption{Data sources \label{data}}
+\begin{tabularx}{\textwidth}{XXX}
+ & & \\
+\hline
+Data source & Use Case & Details   \\
+\hline
+\addlinespace[0.3cm]
+Ecostress \citep{ecostress2019} & Land surface temperature & 70m resolution \\
+Landsat-8 \citep{landsat2016} & NVDI vegetation index & 30m resolution \\
+\citetalias{isprs2012} & Feature classification model training & 5cm resolution, labelled segmentation data \\
+Love DA \citep{loveda2021} & Feature classification model training & 30cm resolution, labelled segmentation data \\
+\citet{bayern2018} & Feature classification & 40cm resolution \\
+\citetalias{dwd2017} & Heatwave detection & hourly local metereological data from official DWD weather stations \\
+\citet{underground2014} & Wind data & 20 minute metereological data from private stations \\
+\hline
+\end{tabularx}
+\end{center}
+\end{table}
+\vspace{-1cm}
+\begin{center}
+\begin{minipage}[H]{\textwidth}
+\scriptsize
+For further information (incl. URLs) consult the references at the bottom data.
+\end{minipage}
+\end{center}
+\vspace{0.5cm}
+
+\section{Heat wave detection}
 
 When defining heat waves, researchers often do not only consider plain temperature measurements but draw back on the concept on apparent temperature $T_a$ as proposed by \citet{steadman1984}. $T_a$ represents a combination of relative humidity $H$ and temperature $T$.
 
 How these two measurements are combined to one apparent temperature estimate differs. One of the most famous proposals is the one by \citet{el2007}:
 \begin{equation}
-\begin{split}
-HIF = -42.379 + 2.0490 T + 10.1433H + (-0.2248)TH + (-6.8378*10^{-3})T^2 \\ + (-5.4817*10^{-2})H^2 + 1.2287*10^{-3})T^2H + (8.5282*10^{-4})TH^2 \\
-+ (-1.99*10^{-6})T^2H^2
-\end{split}
+\begin{aligned}
+HIF = & -42.379 + 2.0490 T + 10.1433H + (-0.2248)TH + (-6.8378*10^{-3})T^2 \\
+& + (-5.4817*10^{-2})H^2 + (1.2287*10^{-3})T^2H + (8.5282*10^{-4})TH^2 \\
+& + (-1.99*10^{-6})T^2H^2
+\end{aligned}
 \end{equation}
 
 Another prominent index was developed by \citet{nws2011}. It is based on various nested conditions and is nicely described in \citet{anderson2013}.
@@ -97,25 +140,44 @@ Having defined different temperature measurements, we have laid the foundation f
 
 \subsection{Annual series method}
 
-The annual series method has been applied frequently in the context of heat waves identification. One of the first and most prominent applications is the one by {\citet{karl1997}. This method assesses either minimum nighttime temperatures or maximum daytime temperatures. Whether to concentrate on day- or nighttime is a conceptual decision. However, most of the literature deems very warm nights as even more impactful compared to very warm days concerning health risks \citep{mcmichael1996,henschel1969}. 
+The annual series method has been applied frequently in the context of heat waves identification. One of the first and most prominent applications is the one by \citet{karl1997}. This method assesses either minimum nighttime temperatures or maximum daytime temperatures. Whether to concentrate on day- or nighttime is a conceptual decision. However, most of the literature deems very warm nights as even more impactful compared to very warm days concerning health risks \citep{mcmichael1996,henschel1969}. 
 
 \subsection{Threshold method}
 
 An alternative definition solely concentrates on the daytime maximum temperate meeting pre-defined temperate limits for some number of consecutive days. This - let's call it 'threshold method' - goes back to \citet{huth2000} and was applied quite frequently in meteorological literature \citep{meehl2004,kysely2004,kysely2010}. The exact definition goes as follows: A heat wave is established as soon as a temperature of $T_1$ is exceeded for at least three consecutive days and lasts as long as the average maximum temperature $T_{MAX}$ remains above $T_1$ over the entire period and does not fall below a maximum temperature of $T_2$ on any day. \\
 We chose 25°C for $T_2$ and 30°C for $T_1$ following the literature that deals with temperatures in Central Europe (e.g. \citet{kysely2004} focusing on the Czech Republic).
 \\
-Using this approach and data from the Munich central DWD weather station for 2022, we identified three periods of heatwaves: June 18-21, July 18-20 and August 03-05.
+Using this approach and data from the Munich central DWD weather station for 2022, we identified three periods of heatwaves: June 18-21, July 18-20 and August 03-05 \citep{loveda2021}.
 
 \subsection{Recurrence probabilities}
 
 \citet{kysely2010} add some substance to the mere identification by testing the statistical significance of identified heatwaves. They do this on the basis of a fitted AR(1) process for which they run 100,000 simulations to calculate the so-called recurrence probability.
 
+\section{Modeling urban heat intensity}
+
+\subsection{Feature engineering}
+
+One of the key aspects of this data science project is to complement the identification of heat islands with the identification of the key drivers of heat islands. Therefore, we follow the literature by employing a standard OLS model with urban heat intensity (\acrshort{uhi} measured by land surface temperature (\acrshort{lst}) as our dependent variable \citep{deilami2018}. Unfortunately, our model only incorporates spatial heterogeneity and cannot account for temporal variation, too, as, for instance, done by \citet{seebacher2019}. This is because the orthophotos were only available for a certain point of time, namely March 2021. Since a large part of our feature set is based on this data source, we have no temporal heterogeneity here. However, even over a period of several years, we would not expect any major changes here, as a cityscape changes only very slowly and the temporal variation would be minimal anyway. 
+
+\subsection{Correlative model}
+
+Both our dependent variable (LST) and our features are observed for a predefined section (bounding box) around Munich. So we are talking about a very large observation that is limited in granularity by the coarsest pixel resolution. In our case, this is the LST data from Ecostress where one pixel measures 70m by 70m. Given this constraint, we now divide our one large observation into several small observations by dividing our bounding box around Munich into a grid of many small 100m by 100m sections. For each grid element, we can now calculate the temperature as well as the feature composition. \\
+Let us now denote a 100m by 100m grid element by subscript $i$, the dependent variable $Y_i$ as the average LST and $X_i$ as a vector of features for this grid element:
+\begin{equation}
+Y_i = f(X_i) + u_i
+\end{equation}
+We can think of $f(\cdot)$ being any (non)-linear prediction function from our ML toolbox. We refrained from applying standard OLS as the meteorological process incorporates many non-linearities. Due to the black-box character of neural networks, we left them out, too. Following \citet{seebacher2019}, we test a random forest, a decision tree, a support vector machine and a naive bayes using 10-fold cross validation to choose the best model (in terms of the mean squared error (\acrshort{mse})).
+
+
 \section{Accessibility of Results}
 
-Our statistical analysis can be found in our \href{https://github.com/MGenschow/DS_Project}{Github repository}. The final app that sheds light on urban heat islands in the city of Munich is available \href{https://github.com/MGenschow/DS_Project}{here}.
+Our statistical analysis can be found in our \href{https://github.com/MGenschow/DS_Project}{Github repository}. The final app that visualises our findings for the city of Munich is available \href{https://github.com/MGenschow/DS_Project}{here}.
 
 \newpage
 \pagenumbering{Roman}
 \bibliography{ref}
+
+\newpage
+\printglossary[type=\acronymtype, nonumberlist, title={Abbreviations}]
 
 \end{document}
