@@ -144,7 +144,7 @@ def train_model(DATASET = 'potsdam', MODEL_TYPE = 'FCN', BACKBONE = 'r101', NUM_
 
     # Configure logging
     log_file = save_dir + '/' + specs_name+'.log'
-    
+    global log
     log = logging.getLogger()
     log.setLevel(logging.INFO)
     handler = logging.FileHandler(log_file)
@@ -223,7 +223,7 @@ def train_model(DATASET = 'potsdam', MODEL_TYPE = 'FCN', BACKBONE = 'r101', NUM_
     LOSS_FUNC = nn.CrossEntropyLoss()
 
     #################### Training #################### 
-    #calculate_accuracy(model, test_loader)
+    calculate_accuracy(model, test_loader)
     print("Start Training ...")
     log.info("Start Training ...")
     for epoch in range(NUM_EPOCHS):
