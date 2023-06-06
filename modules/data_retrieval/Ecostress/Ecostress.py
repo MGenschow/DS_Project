@@ -134,27 +134,37 @@ for t in types:
     files =  [
         f
         for f in listdir(config['data']['ES_raw']) 
-        if t in f and dateInHeatwave(datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), inverted_HW)]
+        if t in f and # and dateInHeatwave(datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), inverted_HW)
+        datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S').year == 2022
+        ]
         
     print(f'There are {len(files)} {t} files')
 
+# Overall, there 145 cloud and lste files and 147 geo files
+# For 2022, there are 134 geo and 132 cloud and lste files
+
+
+# %% Create a tiff for each unique scene
+summer = [{'start': '2022-06-01 00:00:00', 'end': '2022-09-01 00:00:00'}]
+# 
+processHF(summer, config)
 
 # %% Check for the respective tiff files
-files = [
-    f # datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S') 
-    for f in listdir(config['data']['ES_tiffs']) 
-    if isfile(join(config['data']['ES_tiffs'], f)) and 
-    f.endswith('.tif') and 
-    'LSTE' in f and
-    dateInHeatwave(datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), inverted_HW)
-    ]
-len(files)
-#len([file for file in files if file.year == 2022])
+types = ['LSTE', 'CLOUD'] 
 
-# 56
-
-
-# %% Show missing files
+for t in types: 
+    files = [
+        f 
+        for f in listdir(config['data']['ES_tiffs'])
+        if isfile(join(config['data']['ES_tiffs'], f)) and 
+        f.endswith('.tif') and
+        t in f #and
+        #dateInHeatwave(datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), inverted_HW)
+        ]
+    print(f'There are {len(files)} {t} tiffs')
+# Last time I checked: 118
+# %% There are around 60 tiffs missing 
+# Extract path names
 onlyfiles = [
     f 
     for f in listdir(config['data']['ES_raw']) 
@@ -170,6 +180,45 @@ keys = [
 # Reduce to unique
 unique_keys = set(keys)
 
+# %%Search for missing keys in the tiffs files
+files = [
+    f 
+    for f in listdir(config['data']['ES_tiffs']) 
+    if isfile(join(config['data']['ES_tiffs'], f))
+    ]
+#
+count = 0
+for key in unique_keys:
+    l_Tiff = [f for f in files if key in f]
+    l_raw = [f for f in onlyfiles if key in f]
+    if len(l_Tiff) < 4: 
+        print(l_raw)
+        count+=1
+
+print(count)
+
+# %%
+count = 0
+other_count = 0
+for key in unique_keys:
+    # Check if all files are aivalable
+    if len([f for f in onlyfiles if key in f]) != 3:
+        print(f'There are files missing for the key: {key}')
+        continue
+    
+    # Get file path for the lst file
+    lstF = [f for f in onlyfiles if key in f and 'LSTE' in f][0]
+
+    if os.path.exists(config['data']['ES_tiffs'] + lstF.replace('.h5','_LST.tif')):
+        print('File does already exist.')
+        count +=1
+        continue
+    else: 
+        other_count +=1
+
+
+# %%
+
 for key in unique_keys:
     # Check if all files are aivalable
     if len([f for f in onlyfiles if key in f]) != 3:
@@ -177,10 +226,16 @@ for key in unique_keys:
         print([f for f in onlyfiles if key in f])
         print(datetime.datetime.strptime(files[0].split('_')[5], '%Y%m%dT%H%M%S'))
 
-# %% Create a tiff for each unique scene
-summer = [{'start': '2022-06-01 00:00:00', 'end': '2022-09-01 00:00:00'}]
-# 
-processHF(summer, config)
+
+# %% 
+for key in unique_keys:
+    cloud = [f for f in files if key in f and f.endswith('tif') and 'Cloud' in f]
+    lst = [f for f in files if key in f and f.endswith('tif') and 'LSTE' in f]
+
+    if len(cloud) != len(lst):
+        print(cloud)
+        print(lst)
+
 
 # %% Plot cipped tiffs 
 '''
@@ -251,7 +306,7 @@ len([file for file in files if file.year == 2022])
 dataQ = dataQualityOverview(summer, config)
 
 # %% Plot LST tiff by key
-key = '22409_006'
+key = '22133_006'
 
 onlyfiles = [
     f 
@@ -278,7 +333,7 @@ afterNoon = dataQ[
     dataQ['qualityFlag']
     ]
 
-name = 'mean_afterNoon.tif'
+name = 'mean_afterNoon_nonHT.tif'
 
 # Store orbit numbers
 orbitNumbers = afterNoon['orbitNumber'] 
@@ -303,7 +358,7 @@ map_afternoon = tiffs_to_foliumMap(path)
 map_afternoon
 
 # Save after noon 
-#map_afternoon.save('afterNoon.html')
+map_afternoon.save('afterNoon_nonHT.html')
 
 
 # %% # Create DF with relevant tifs for the morning
@@ -315,7 +370,7 @@ morning = dataQ[
     ]
 
 # Set name
-name = 'mean_Morning.tif'
+name = 'mean_Morning_nonHT.tif'
 
 # Store orbit numbers
 orbitNumbers = morning['orbitNumber']
@@ -338,7 +393,7 @@ morning_map = tiffs_to_foliumMap(path)
 morning_map
 
 # Save folium map
-morning_map.save('morning.html')
+morning_map.save('morning_nonHT.html')
 
 # %%
 # TODO: Reduce map to munich 

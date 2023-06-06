@@ -555,24 +555,16 @@ def processHF(timePeriod, config):
         files.split('_')[3] + '_' + files.split('_')[4] 
         for files in onlyfiles if 'LSTE' in files
      ]
-    # Reduce to unique
+    # Reduce to unique keys
     unique_keys = set(keys)
     print(f'There are {len(unique_keys)} unique keys')
     
-    # Delete tiff files
-    # confirmation = input("Do you really want to delete all existing tiff files (Y/n): ")
-    # if confirmation.lower() == "y":
-    #    files = os.listdir(config['data']['ES_tiffs'])
-    #    for file in files:
-    #     os.remove(os.path.join(config['data']['ES_tiffs'], file))
-    # else:
-    #    print("No tiffs were deleted and function call terminated.")
-
     # Create tif for all files corresponding to the timePeriod
     path = config['data']['ES_raw']
 
     # Loop over all unique keys in the raw_h5 folder
     for key in unique_keys:
+        
         # Check if all files are aivalable
         if len([f for f in onlyfiles if key in f]) != 3:
             print(f'There are files missing for the key: {key}')
@@ -584,29 +576,31 @@ def processHF(timePeriod, config):
         if os.path.exists(config['data']['ES_tiffs'] + lstF.replace('.h5','_LST.tif')):
             print('File does already exist.')
             continue
-
-        # Check if scence belongs to the heatwave
-        f = h5py.File(path + lstF)
-        # Extract begining datetime
-        date = np.array(f['StandardMetadata']['RangeBeginningDate']).item().decode('utf-8')
-        time = np.array(f['StandardMetadata']['RangeBeginningTime']).item().decode('utf-8')
-        # Delete variable 
-        del f
-        # Combine time and date
-        dateTime = datetime.datetime.strptime(date + ' ' + time, '%Y-%m-%d %H:%M:%S.%f')
-
-        if dateInHeatwave(dateTime, timePeriod):
-        
-            # Extract the file path of the respective paths
-            fileNameGeo = path + [f for f in onlyfiles if key in f and 'GEO' in f][0]
-            fileNameLST = path + [f for f in onlyfiles if key in f and 'LSTE' in f][0]
-            fileNameCld = path + [f for f in onlyfiles if key in f and 'CLOUD' in f][0]
-        
-            # Create the respective tifs
-            createTif(fileNameGeo, fileNameLST, fileNameCld, config)
         
         else:
-            continue
+            # Check if scence belongs to the heatwave
+            f = h5py.File(path + lstF)
+            # Extract begining datetime
+            date = np.array(f['StandardMetadata']['RangeBeginningDate']).item().decode('utf-8')
+            time = np.array(f['StandardMetadata']['RangeBeginningTime']).item().decode('utf-8')
+            # Delete variable 
+            del f
+            # Combine time and date
+            dateTime = datetime.datetime.strptime(date + ' ' + time, '%Y-%m-%d %H:%M:%S.%f')
+
+            if dateInHeatwave(dateTime, timePeriod):
+        
+                # Extract the file path of the respective paths
+                fileNameGeo = path + [f for f in onlyfiles if key in f and 'GEO' in f][0]
+                fileNameLST = path + [f for f in onlyfiles if key in f and 'LSTE' in f][0]
+                fileNameCld = path + [f for f in onlyfiles if key in f and 'CLOUD' in f][0]
+                print('Start creating a new tif')
+                # Create the respective tifs
+                createTif(fileNameGeo, fileNameLST, fileNameCld, config)
+
+            else:
+                print('Scence does not fall into the heat period')
+                continue
 
 
 def dataQualityOverview(heatPeriods, config):
@@ -658,12 +652,15 @@ def dataQualityOverview(heatPeriods, config):
         cld = rioxarray.open_rasterio(
             config['data']['ES_tiffs'] + [f for f in orbitFls if 'CLOUD' in f and '.tif' in f][0]
             )
-
+        try:
+            mean_value = cld.attrs['meanValue'] * 100
+        except KeyError:
+            mean_value = np.nan
         # Fill dataQ dataframe with information about the respective tiffs
         dataQ.loc[len(dataQ)] = [
             key,
             lst.attrs['recordingTime'],
-            cld.attrs['meanValue'] * 100,
+            mean_value,
             lst.attrs['meanValue']]
 
     # Sort dataQ dataframe by time
