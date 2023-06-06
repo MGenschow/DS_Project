@@ -141,3 +141,4 @@ dmypy.json
 *.html
 *.pickle
 *.pkl
+*.out

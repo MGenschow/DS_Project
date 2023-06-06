@@ -82,16 +82,18 @@ def train_epoch(model, train_loader, epoch):
         data = data.to(DEVICE)
         label = label.to(DEVICE)
 
-        # Forward Pass:
-        output = model(data)['out']
+        with torch.cuda.amp.autocast(): 
+            # Forward Pass:
+            output = model(data)['out']
 
-        # Caluclate Loss
-        loss = LOSS_FUNC(output, label.long())
+            # Caluclate Loss
+            loss = LOSS_FUNC(output, label.long())
 
         # Backward Pass
         optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
 
         # Comupte loss sum and count batches
         loss_sum += loss.item()
@@ -219,8 +221,11 @@ def train_model(DATASET = 'potsdam', MODEL_TYPE = 'FCN', BACKBONE = 'r101', NUM_
     # Optimization setup
     global optimizer
     global LOSS_FUNC
+    global scaler
     optimizer = optim.SGD(params=model.parameters(), lr=LEARNING_RATE)
     LOSS_FUNC = nn.CrossEntropyLoss()
+    # use torch grad scaler to speed up training and make it more stable
+    scaler = torch.cuda.amp.GradScaler()
 
     #################### Training #################### 
     calculate_accuracy(model, test_loader)
