@@ -45,7 +45,7 @@ import matplotlib.pyplot as plt
 # %%
 # Load config file and get potsdam data path
 import yaml
-config_path = '/home/tu/tu_tu/tu_zxmav84/DS_Project/modules/config.yml'
+config_path = '/home/tu/tu_tu/'+ os.getcwd().split('/')[6] + '/DS_Project/modules/config.yml'
 with open(config_path, 'r') as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 path = config['data']['potsdam']
