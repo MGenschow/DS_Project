@@ -181,7 +181,7 @@ def train_model(DATASET = 'potsdam', MODEL_TYPE = 'FCN', BACKBONE = 'r101', NUM_
     if DATASET == 'potsdam':
         NUM_CLASSES = 6
     elif DATASET == 'loveda':
-        NUM_CLASSES = 8
+        NUM_CLASSES = 6
     AUX_LAYER = True
     FROZEN = False
 

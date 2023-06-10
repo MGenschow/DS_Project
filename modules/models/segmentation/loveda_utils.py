@@ -60,6 +60,35 @@ rgb2idx = {v: k for k, v in idx2rgb.items()}
 # Dict to map from label to rgb
 rgb2label = dict(zip(Label_classes, RGB_classes))
 
+
+################### Updated RGB Mappings after relabeling
+# Get label RGB Mpaaings in all directions
+# Define official RGB to Label mappings
+RGB_classes = [
+       (0, 0, 0), # ignore
+       (255, 255, 225), # impervious
+       (255,  0, 255), # building
+       (255, 200, 0), # low vegetation
+       (0,  0,  255), # water
+       (0, 130, 0)] # trees
+Label_classes = [
+       "ignore",
+       "impervious",
+       "building",
+       "low vegetation",
+       "water",
+       "trees"]
+
+idx2label = {key: value for key, value in enumerate(Label_classes)}
+
+# Create a dictionary to translate a mask to a rgb tensor
+idx2rgb = {key: value for key, value in enumerate(RGB_classes)}
+rgb2idx = {v: k for k, v in idx2rgb.items()}
+
+# Dict to map from label to rgb
+rgb2label = dict(zip(Label_classes, RGB_classes))
+
+
 # Functions to translate labels masks back and forth
 def map_rgb2label(mask:np.array):
     """
@@ -132,6 +161,14 @@ def get_loveda_loaders(batch_size = 2):
         img = sample['image']
         # Convert to np.array
         mask = np.array(mask)
+
+        ### Relabel mask to adjust to out use case
+        mask[(mask == 1) | (mask == 3)] = 1 # Impervious surface = background + road
+        #mask[mask == 2] = 2 # Building stays the same
+        mask[(mask == 5) | (mask == 7)] = 3 # low vegetation = barren + agriculture
+        mask[mask == 4] = 4 # Water stays the same
+        mask[(mask == 6)] = 5 # forest
+
         img = np.array(img.permute(1,2,0))
 
         # transform image and mask
@@ -155,6 +192,14 @@ def get_loveda_loaders(batch_size = 2):
         img = sample['image']
         # Convert to np.array
         mask = np.array(mask)
+
+        ### Relabel mask to adjust to out use case
+        mask[(mask == 1) | (mask == 3)] = 1 # Impervious surface = background + road
+        #mask[mask == 2] = 2 # Building stays the same
+        mask[(mask == 5) | (mask == 7)] = 3 # low vegetation = barren + agriculture
+        mask[mask == 4] = 4 # Water stays the same
+        mask[(mask == 6)] = 5 # forest
+
         img = np.array(img.permute(1,2,0))
 
         # transform image and mask
