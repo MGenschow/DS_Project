@@ -16,8 +16,14 @@ root_dir = config['data']['orthophotos']
 all_tiles = glob(root_dir + "/raw_tiles/*.tif")
 all_tiles = [
     '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/orthophotos/raw_tiles/32692_5337.tif',
-#    '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/orthophotos/raw_tiles/32692_5336.tif',
-#    '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/orthophotos/raw_tiles/32692_5335.tif'
+    '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/orthophotos/raw_tiles/32692_5336.tif',
+    '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/orthophotos/raw_tiles/32692_5335.tif',
+    '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/orthophotos/raw_tiles/32672_5320.tif',
+    '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/orthophotos/raw_tiles/32674_5328.tif',
+    '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/orthophotos/raw_tiles/32689_5344.tif',
+    '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/orthophotos/raw_tiles/32696_5342.tif'
+
+
 ]
 
 # %%
