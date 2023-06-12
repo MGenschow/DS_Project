@@ -2,9 +2,9 @@
 # Paths to data files
 data:
   workspace:  #/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/
-  data:  /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data #/Users/maltegenschow/Documents/Uni/SoSe23/Data Science Project/data
-  orthophotos:  /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/orthophotos #/Users/maltegenschow/Documents/Uni/SoSe23/Data Science Project/data/orthophotos
-  building_boxes: /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/building_boxes #/Users/maltegenschow/Documents/Uni/SoSe23/Data Science Project/data/building_boxes
+  data:  /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data 
+  orthophotos:  /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/orthophotos 
+  building_boxes: /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/building_boxes 
   dwd: /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/DWD
   sentinel: /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/sentinel
   landsat: /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/landsat
@@ -13,6 +13,7 @@ data:
   ES_raw:  /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/raw_h5/
   ES_tiffs: /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/geoTiff/
   model_weights: /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/model_weights
+  segmentation_output: /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/segmentation_output/
 # Bounding Boxes for locations we analyze
 bboxes: 
   munich: [11.310790,47.980475,11.855986,48.385189]
