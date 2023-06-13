@@ -14,6 +14,7 @@ data:
   ES_tiffs: /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/geoTiff/
   model_weights: /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/model_weights
   segmentation_output: /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/segmentation_output/
+  nutzungsdaten: /pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/nutzungsdaten/
 # Bounding Boxes for locations we analyze
 bboxes: 
   munich: [11.310790,47.980475,11.855986,48.385189]
