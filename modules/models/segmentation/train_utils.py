@@ -54,7 +54,16 @@ path = config['data']['potsdam']
 
 # %%
 def calculate_accuracy(model, test_loader):
+    """
+    Calculate the accuracy of a model on the test set.
 
+    Args:
+        model: The trained model.
+        test_loader: DataLoader for the test set.
+
+    Returns:
+        None
+    """
     # TODO: Implement Ccalculatation of accuracy per class
 
     print("\nEvaluating Accuracy on Test Set...")
@@ -75,6 +84,17 @@ def calculate_accuracy(model, test_loader):
 
 # %%
 def train_epoch(model, train_loader, epoch):
+    """
+    Trains the model for one epoch using the provided training data.
+
+    Args:
+        model (torch.nn.Module): The model to be trained.
+        train_loader (torch.utils.data.DataLoader): The DataLoader object that provides the training data.
+        epoch (int): The current epoch number.
+
+    Returns:
+        None
+    """
     model.train()
     loss_sum = 0
     for batch_id, (data, label) in enumerate(train_loader):
@@ -107,6 +127,12 @@ def train_epoch(model, train_loader, epoch):
 
 # %%
 def assign_device():
+    """
+    Assigns the appropriate device (CPU or GPU) for training based on the availability of CUDA-enabled devices.
+
+    Returns:
+        None
+    """
     global DEVICE
     # Device setup
     if torch.cuda.is_available():
@@ -121,6 +147,25 @@ assign_device()
 
 # %%
 def train_model(DATASET = 'potsdam', MODEL_TYPE = 'FCN', BACKBONE = 'r101', NUM_EPOCHS=1, LEARNING_RATE = 0.01, BATCH_SIZE = 2):
+    """
+    Trains a semantic segmentation model on a specified dataset using the specified model architecture and hyperparameters.
+
+    Args:
+        DATASET (str): The dataset to train the model on. Options are 'potsdam' and 'loveda'.
+        MODEL_TYPE (str): The type of model architecture to use. Options are 'FCN' and 'DeepLabV3'.
+        BACKBONE (str): The backbone network architecture to use. Options are 'r50' and 'r101'.
+        NUM_EPOCHS (int): The number of epochs to train the model.
+        LEARNING_RATE (float): The learning rate for the optimizer.
+        BATCH_SIZE (int): The batch size for training.
+
+    Raises:
+        NotImplementedError: If the specified dataset, model type, or backbone is not implemented.
+
+    Returns:
+        None
+    """
+
+
     #################### Catch NotImplemented ####################
     if DATASET not in ['potsdam', 'loveda']:
         print(f'Function not implemented for DATSET {DATASET}. Check spelling or datset selection')

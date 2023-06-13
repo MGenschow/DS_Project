@@ -37,6 +37,16 @@ assert mask_files_dict.keys() == image_files_dict.keys()
 
 # Function to create patches
 def create_patches(tile_name:str, patch_size:int = 2000):
+    """
+    Create patches from an image and its corresponding mask.
+
+    Args:
+        tile_name (str): The name of the tile.
+        patch_size (int, optional): The size of each patch. Defaults to 2000.
+
+    Returns:
+        None
+    """
     print(f"Processing image {tile_name}")
     img_path = image_files_dict[tile_name]
     mask_path = mask_files_dict[tile_name]

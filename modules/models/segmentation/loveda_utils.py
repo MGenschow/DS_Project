@@ -138,6 +138,16 @@ def map_label2rgb(label_mask:np.array):
 ################################################################################################
 
 def get_loveda_loaders(batch_size = 2):
+    """
+    Get data loaders for the LoveDA dataset. Loaders are initialized with suitable transforms functions.
+
+    Args:
+        batch_size (int, optional): The batch size for the data loaders. Defaults to 2.
+
+    Returns:
+        torch.utils.data.DataLoader: The data loader for the training set.
+        torch.utils.data.DataLoader: The data loader for the test set.
+    """
     # Define transforms
     def apply_train_transform(sample):
         # Define train transforms
