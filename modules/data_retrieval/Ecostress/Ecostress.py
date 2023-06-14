@@ -112,7 +112,7 @@ spatialFilter =  {
     }
 
 # %% Download all files corresponding to the heatwaves
-#month = [{'start': '2022-08-01 00:00:00', 'end': '2022-09-01 00:00:00'}]
+month = [{'start': '2022-03-01 00:00:00', 'end': '2022-06-05 00:00:00'}]
 # %%
 # NOTE: Can take, depending on the parameters, quite some time 
 # (up to several hours)
@@ -121,6 +121,7 @@ if confirmation.lower() == "y":
     #for temporalFilter in heatwaves:
     # for temporalFilter in tropicalDays:
     for temporalFilter in month:
+        # TODO: FIX Error
         downloadH5(credentials, headers, temporalFilter, spatialFilter, config)
 else:
     print("Loop execution cancelled.")
@@ -398,76 +399,46 @@ morning_map.save('morning_nonHT.html')
 # %%
 # TODO: Reduce map to munich 
 # TODO: Add water to the map
-
 # %%
-'''
-Lst_files = [
-    f for f in listdir(config['data']['ES_raw'])
-    if 'LST' in f
-]
-# %%
-f_lst = h5py.File(os.path.join(config['data']['ES_raw'], Lst_files[0]))
+path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/mean_afterNoon.tif'
+lst = rioxarray.open_rasterio(path)
+plt.imshow(lst.data[0])
 
-# %%
-f_lst['SDS'].keys()
+# %% 
+tif = rasterio.open(path)
 
-data = np.array(f_lst['SDS']['QC'])
+geometries = [
+        {
+            'type': 'Polygon',
+            'coordinates': [[
+                [config['bboxes']['munich'][0], config['bboxes']['munich'][1]],
+                [config['bboxes']['munich'][0], config['bboxes']['munich'][3]],
+                [config['bboxes']['munich'][2], config['bboxes']['munich'][3]],
+                [config['bboxes']['munich'][2], config['bboxes']['munich'][1]],
+                [config['bboxes']['munich'][0], config['bboxes']['munich'][1]]
+                ]]
+                }
+                ]
 
-plt.imshow(data,'jet')
+tif.rio.clip(geometries)
 
-# %%
-f_lst = h5py.File(os.path.join(config['data']['ES_raw'], Lst_files[0]))
 
-# Store relative paths of elements in list
-eco_objs = []
-f_lst.visit(eco_objs.append)
 
-# Show datasets in f_lst
-lst_SDS = [str(obj) for obj in eco_objs if isinstance(f_lst[obj], h5py.Dataset)]
+plt.imshow(tif.read()[0],'jet')
+plt.colorbar(label = "Temperature in Celsius")
 
-# Store name of relevant dataset
-sds = ['LST','QC']
-# Extract relevant datasets
-lst_SDS  = [dataset for dataset in lst_SDS if dataset.endswith(tuple(sds))]
-
-# %%
-# Read in data
-lst_SD = f_lst[lst_SDS[0]][()]
-# %%
-qc_SD = f_lst[lst_SDS[1]][()]
-
-# %%
-def get_bit(x):
-    return int('{0:016b}'.format(x)[0:2])
-
-# Vectorize function
-get_zero_vec = np.vectorize(get_bit)
-# %%
-
-qc_SDS = get_zero_vec(qc_SD)
-# %%
-
-class_labels = ['poor', 'marginal', 'good', 'excellent']
-class_colors = ['red', 'green', 'blue', 'orange']
-
-# Plot the data
-plt.imshow(qc_SDS)
-# %%
-# Create a custom legend with class labels and colors
-legend_elements = [
-    plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=color, markersize=10, label=label)
-    for label, color in zip(class_labels, class_colors)
-    ]
-# Add the legend to the plot
-plt.legend(handles=legend_elements)
-
-# Show the plot
 plt.show()
 
 
 # %%
-'''
+lst = gdal.Open(path) 
+# Get geotransform
+gt = lst.GetGeoTransform()
+
 # %% Tropical day, tropical night
+
+
+'''
 dwd = pd.read_csv(config['data']['dwd']+'/dwd.csv')
 
 # %% Extract id for munich central
@@ -542,5 +513,5 @@ tropicalPeriods.append({'start': '2022-07-13 18:00:00', 'end': '2022-07-14 06:00
 import pickle
 with open('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/tropicalPeriods.pkl', 'wb') as f:
     pickle.dump(tropicalPeriods, f)
-# %%
+'''
 

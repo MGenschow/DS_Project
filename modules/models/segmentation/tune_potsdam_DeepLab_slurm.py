@@ -36,7 +36,15 @@ parameters_dict = {
         },
     'batchSize': {
         'values': list(range(2, 31, 2))
-        }
+        },
+    'optimizer': {
+        'values': [
+            'sgd',
+            'adam',
+            'RMSprop',
+            'adagrad'
+        ]
+    }
     }
 
 sweep_config['parameters'] = parameters_dict
@@ -106,7 +114,7 @@ def train_model_sweep(config=None):
         # Set wandb config
         config = wandb.config
 
-        NUM_EPOCHS=1
+        NUM_EPOCHS=6
         DATASET = config.dataset
         MODEL_TYPE = config.modelType
         BACKBONE = config.backbone
@@ -210,8 +218,17 @@ def train_model_sweep(config=None):
         global LOSS_FUNC
         global scaler
 
-        # TODO: Try diffrent optimizers
-        optimizer = optim.SGD(params=model.parameters(), lr=config.learningRate)
+        if config.optimizer == 'sgd':
+            optimizer = optim.SGD(params=model.parameters(), lr=config.learningRate)
+        elif config.optimizer == 'adam':
+            optimizer = optim.Adam(params=model.parameters(), lr=config.learningRate)
+        elif config.optimizer == 'RMSprop':
+            optimizer = optim.RMSprop(params=model.parameters(), lr=config.learningRate)
+        elif config.optimizer == 'adagrad':
+            optimizer = optim.Adagrad(params=model.parameters(), lr=config.learningRate)
+        else:
+            raise ValueError("Invalid optimizer specified in the configuration.")
+
         LOSS_FUNC = nn.CrossEntropyLoss()
         # use torch grad scaler to speed up training and make it more stable
         scaler = torch.cuda.amp.GradScaler()
