@@ -143,3 +143,5 @@ dmypy.json
 *.pkl
 *.out
 *settings.json
+
+modules/models/segmentation/wandb/

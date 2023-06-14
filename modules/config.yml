@@ -20,3 +20,5 @@ bboxes:
   munich: [11.310790,47.980475,11.855986,48.385189]
 api:
   path: https://m2m.cr.usgs.gov/api/api/json/stable/
+wandb:
+  key: 7a88e9e59b43baebf0e573d9f81b3c3c475a6995
