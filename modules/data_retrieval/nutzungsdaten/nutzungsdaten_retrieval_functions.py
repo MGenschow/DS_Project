@@ -6,7 +6,8 @@ from glob import glob
 import geopandas as gpd
 import pandas as pd
 import pickle
-
+import numpy as np
+from shapely.geometry import box
 
 # %%
 import yaml
@@ -87,6 +88,32 @@ def create_complete_dataset():
         pickle.dump(df, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-# Run both functions
+def subset_nutzungsdaten_df():
+    df = pickle.load(open(nutzungsdaten_path + 'nutzungsdaten_complete.pkl', 'rb'))
+
+    # Relabel to relevant labels for our case
+    df['Label'] = np.nan
+    df['Label'] = np.where(df.nutzart.isin(['Fließgewässer', 'Stehendes Gewässer', 'Hafenbecken', 'Schiffsverkehr']), 4, df['Label'])
+    #df['Label'] = np.where(df.nutzart.isin(['Wohnbaufläche']), 'Wohnbaufläche', df['Label'])
+    df['Label'] = np.where(df.nutzart.isin(['Straßenverkehr', 'Weg']), 6, df['Label'])
+    df['Label'] = np.where(df.nutzart.isin(['Bahnverkehr', 'Flugverkehr']), 7, df['Label'])
+
+
+    # Subset to relevant labels and columns
+    df = df[df.Label.isna() == False]
+    df = df[['geometry', 'geometry_4326', 'Label']]
+    
+    # Subset to relevant bounding box
+    df = df[df.geometry_4326.intersects(box(*config['bboxes']['munich']))]
+    
+    df = df.reset_index(drop=True)
+
+    # Save to pickle
+    with open(nutzungsdaten_path + 'nutzungsdaten_relevant.pkl', 'wb') as handle:
+        pickle.dump(df, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+# Run functions
 #download_and_unzip(urls, nutzungsdaten_path)
-create_complete_dataset()
+#create_complete_dataset()
+subset_nutzungsdaten_df()
