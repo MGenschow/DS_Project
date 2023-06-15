@@ -31,18 +31,18 @@ parameters_dict = {
         },
     'learningRate': {
         'distribution': 'uniform',
-        'min': 0.0001,
-        'max': 0.1
+        'min': 0.05,
+        'max': 0.09
         },
     'batchSize': {
         'values': list(range(2, 31, 2))
         },
     'optimizer': {
         'values': [
-            'sgd',
-            'adam',
-            'RMSprop',
-            'adagrad'
+            'sgd' #,
+            #'adam',
+            #'RMSprop',
+            #'adagrad'
         ]
     }
     }
@@ -253,5 +253,5 @@ def train_model_sweep(config=None):
 
 sweep_id = wandb.sweep(sweep_config, project="DS_Project")
 
-wandb.agent(sweep_id, train_model_sweep, count=50)
+wandb.agent(sweep_id, train_model_sweep, count=100)
 

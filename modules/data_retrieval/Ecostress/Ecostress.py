@@ -40,13 +40,15 @@ except FileNotFoundError:
 with open('/home/tu/tu_tu/' + os.getcwd().split('/')[6] + '/DS_Project/modules/config.yml', 'r') as file: 
     config = yaml.safe_load(file)
 
-# %% Set login parameters (USGS/ERS login)
+
+# %% Create header 
+# Set login parameters (USGS/ERS login)
 login_ERS = {
     'username' : credentials["username"],
     'password' : credentials["password_ERS"]
     }
 
-# %% Request and store token
+# Request and store token
 # Request token
 response = requests.post(config['api']['path'] + 'login', data=json.dumps(login_ERS))
 
@@ -86,7 +88,6 @@ while current_date <= end_date:
     date_list.append(date_element)
     current_date += delta
 
-
 inverted_HW = []
 
 # 
@@ -95,7 +96,6 @@ for dates in date_list:
         inverted_HW.append(dates)
     elif not dateInHeatwave(datetime.datetime.strptime(dates['end'],'%Y-%m-%d %H:%M:%S'),hW_tD):
         inverted_HW.append(dates)
-
 
 
 # %% Set spatial filter;
@@ -118,25 +118,23 @@ month = [{'start': '2022-03-01 00:00:00', 'end': '2022-06-05 00:00:00'}]
 # (up to several hours)
 confirmation = input("Do you want to download the hierarchical files (Y/n): ")
 if confirmation.lower() == "y":
-    #for temporalFilter in heatwaves:
-    # for temporalFilter in tropicalDays:
+
     for temporalFilter in month:
-        # TODO: FIX Error
         downloadH5(credentials, headers, temporalFilter, spatialFilter, config)
 else:
     print("Loop execution cancelled.")
 
 
 # %% Count number of files
-summer = [{'start': '2022-06-01 00:00:00', 'end': '2022-09-01 00:00:00'}]
+month = [{'start': '2022-05-01 00:00:00', 'end': '2022-06-01 00:00:00'}]
 types = ['GEO','CLOUD', 'LSTE']
 # Loop over files
 for t in types: 
     files =  [
         f
         for f in listdir(config['data']['ES_raw']) 
-        if t in f and # and dateInHeatwave(datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), inverted_HW)
-        datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S').year == 2022
+        if t in f and dateInHeatwave(datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), month)
+        #datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S').year == 2022
         ]
         
     print(f'There are {len(files)} {t} files')
@@ -294,20 +292,136 @@ for key in unique_keys:
     print(np.asarray((unique, counts)).T)
     print(' ')
 '''
-# %%
 
-files = [
-    datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S') 
-    for f in listdir(config['data']['ES_tiffs']) 
-    if isfile(join(config['data']['ES_tiffs'], f)) and f.endswith('.tif') and 'LSTE' in f
-    ]
+# %% TODO: Create a loop that creates and stores a mean tif for each first and second half of a month
+from datetime import datetime, timedelta
 
-len([file for file in files if file.year == 2022])
+def split_period(period):
+    result = []
+    format_str = '%Y-%m-%d %H:%M:%S'
+    
+    start_date = datetime.strptime(period[0]['start'], format_str)
+    end_date = datetime.strptime(period[0]['end'], format_str)
+    current_date = start_date
+    
+    while current_date < end_date:
+        month_start = current_date.replace(day=1)
+        next_month_start = (month_start + timedelta(days=31)).replace(day=1)
+        half_duration = (next_month_start - month_start) // 2
+        first_half_end = month_start + half_duration
+        second_half_start = first_half_end + timedelta(seconds=1)
+        second_half_end = next_month_start - timedelta(seconds=1)
+        
+        result.append({
+            'start': current_date.strftime(format_str),
+            'end': first_half_end.strftime(format_str)
+        })
+        
+        result.append({
+            'start': second_half_start.strftime(format_str),
+            'end': second_half_end.strftime(format_str)
+        })
+        
+        current_date = next_month_start
+    
+    return result
+
+period = [{'start': '2022-03-01 00:00:00', 'end': '2022-12-01 00:00:00'}]
+periods = split_period(period)
+
+
+# %% Create an overview over all existing tiffs
+# TODO: Before serializing the code, change the quality measures
+# TODO: Before serialingm, check if there is enough data to split by
+# day and night
+
+#dataOverview = dataQualityOverview([periods[7]], config)
+path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/meanTiff/'
+
+flags = ['day', 'night']
+
+
+for period in periods[6:12]:
+    
+    dataOverview = dataQualityOverview([period], config)
+
+    flag = 'day'
+
+    dataOverview = dataOverview[
+        (pd.to_datetime(dataOverview['dateTime']).dt.hour >= 6) & 
+        (pd.to_datetime(dataOverview['dateTime']).dt.hour <= 20) & 
+        dataOverview.qualityFlag]
+
+
+    # for flag in flags:
+
+        #if flag == 'day': 
+            
+         #   dataOverview = dataOverview[
+         #       (pd.to_datetime(dataOverview['dateTime']).dt.hour >= 6) & 
+         #       (pd.to_datetime(dataOverview['dateTime']).dt.hour <= 18) & 
+         #       dataOverview.qualityFlag]
+
+       # elif flag == 'night':
+       #     dataOverview = dataOverview[
+       #         (pd.to_datetime(dataOverview['dateTime']).dt.hour >= 18) & 
+       #         (pd.to_datetime(dataOverview['dateTime']).dt.hour <= 6) & 
+       #         dataOverview.qualityFlag]
+
+    if dataOverview.shape[0] < 3:
+        print('There are not enogh files to create a high quality mean tif!')
+        continue
+    
+    name = path + period['start'].split(' ')[0] + flag + '.tif'
+    
+    # Store orbit numbers
+    orbitNumbers = dataOverview['orbitNumber'] 
+    # Create and store mean tiff
+    meanTiff, maList = mergeTiffs(orbitNumbers, name, config)
+
+# %% Delete existing tiffs
+
+for file_name in os.listdir(path):
+    file_path = os.path.join(path, file_name)
+    
+    # Check if the path is a file (not a subdirectory)
+    if os.path.isfile(file_path):
+        # Delete the file
+        os.remove(file_path)
+
+
+# %% Plot all tifs in the directory
+
+# Set the directory path where the TIFF images are located
+directory = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/meanTiff'
+
+# Get a list of all TIFF files in the directory
+tiff_files = [file for file in os.listdir(directory) if file.endswith('.tiff') or file.endswith('.tif')]
+tiff_files.sort()
+
+
+# Loop through each TIFF file and plot it
+for tiff_file in tiff_files:
+    # Create the full file path
+    file_path = os.path.join(directory, tiff_file)
+    
+    tif = rasterio.open(file_path)
+    plt.imshow(tif.read()[0],'jet')
+    plt.colorbar(label = "Temperature in Celsius")
+
+    plt.show()
+
+
+
+
+
+
+
 # %% Create a Dataframe to check the quality of all relevant tiffs (in heatwave)
 dataQ = dataQualityOverview(summer, config)
 
 # %% Plot LST tiff by key
-key = '22133_006'
+key = '22546_003'
 
 onlyfiles = [
     f 
@@ -423,7 +537,7 @@ geometries = [
 tif.rio.clip(geometries)
 
 
-
+tif = rasterio.open(path)
 plt.imshow(tif.read()[0],'jet')
 plt.colorbar(label = "Temperature in Celsius")
 

@@ -726,7 +726,10 @@ def meanMaskArray(orbitNumbers, config):
             raise ValueError("Array shapes of lst and cld are not equal.")
     
         elif abs(lst.shape[0]-final_shape[0]) > 10 or abs(lst.shape[1]-final_shape[1]) > 10:
-            raise ValueError("Array shape deviates too much from the desired size")
+            print("Array shape deviates too much from the desired size")
+            continue
+            #raise ValueError("Array shape deviates too much from the desired size")
+
 
         elif lst.shape == final_shape:
             # Transform to array
@@ -793,8 +796,11 @@ def mergeTiffs(orbitNrs, path, config):
     # Set geotransform
     geotransform = (xmin, pixel_size[0], 0, ymax, 0, pixel_size[1])
 
-    # Create geotiff
-    outDir = config['data']['ES_tiffs'].replace('geoTiff/', '') + path
+    if '/' in path: 
+        outDir = path
+    else:
+        # Create geotiff
+        outDir = config['data']['ES_tiffs'].replace('geoTiff/', '') + path
     
     # Store mean array as tiff
     array_to_tiff(mean_array, outDir, geotransform)

@@ -25,6 +25,7 @@ import folium
 import matplotlib.colors as colors
 from rasterio.enums import Resampling
 
+
 # Import all functions from utils
 from utils import *
 
@@ -110,11 +111,40 @@ spatialFilter =  {
         'longitude' : config["bboxes"]["munich"][2]
         }
     }
+from datetime import datetime, timedelta
+
+def split_window(window, window_size, overlap):
+    result = []
+    for window in window:
+        start_date = datetime.strptime(window['start'], '%Y-%m-%d %H:%M:%S')
+        end_date = datetime.strptime(window['end'], '%Y-%m-%d %H:%M:%S')
+        current_date = start_date
+
+        while current_date + timedelta(days=window_size) <= end_date:
+            sub_window = {
+                'start': current_date.strftime('%Y-%m-%d %H:%M:%S'),
+                'end': (current_date + timedelta(days=window_size)).strftime('%Y-%m-%d %H:%M:%S')
+            }
+            result.append(sub_window)
+            current_date += timedelta(days=window_size - overlap)
+
+    return result
+
 
 # Download all files corresponding to the heatwaves
-month = [{'start': '2022-03-01 00:00:00', 'end': '2022-06-02 00:00:00'}]
+month = [
+    {'start': '2022-03-01 00:00:00', 'end': '2022-06-02 00:00:00'},
+    {'start': '2022-08-30 00:00:00', 'end': '2022-12-01 00:00:00'}]
+
+
+months = split_window(month, window_size=10, overlap=1)
+
+
+
 # 
-for temporalFilter in month:
+for temporalFilter in months:
     downloadH5(credentials, headers, temporalFilter, spatialFilter, config)
+
+
 
 
