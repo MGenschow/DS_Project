@@ -1,0 +1,90 @@
+import pandas as pd
+from dash import Dash, dcc, html, Input, Output, State
+import dash_leaflet as dl
+import geopandas as gpd
+
+lat1, lon1 = 48.137154, 11.576124
+
+app = Dash()
+
+input_details = html.Div(
+    [
+        html.Div(
+            [
+                html.Div(
+                    ["Buffer Distance"],
+                    style={"width": "37%", "display": "inline-block"},
+                ),
+                dcc.Input(
+                    value=100,
+                    id="buffer-distance",
+                    type="number",
+                    placeholder="Required",
+                ),
+            ]
+        ),
+    ]
+)
+
+default_map_children = [
+    dl.TileLayer(),
+    dl.FeatureGroup(
+        [
+            dl.EditControl(id="edit_control"),
+        ]
+    ),
+    dl.GeoJSON(id="map-geojsons"),
+]
+
+map_input_results_tab = html.Div(
+    [
+        html.H2("Add Shapes to Map an Area of Interest"),
+        dl.Map(
+            id="leaflet-map",
+            style={"width": "100%", "height": "50vh"},
+            center=[lat1, lon1],
+            zoom=12,
+            children=default_map_children,
+        ),
+    ]
+)
+
+app.layout = html.Div([input_details, map_input_results_tab])
+
+
+@app.callback(
+    Output("map-geojsons", "data"),
+    Input("edit_control", "geojson"),
+    State("buffer-distance", "value"),
+)
+def update_estimates(drawn_geojson, perim_clear):
+    if any([x is None for x in [drawn_geojson, perim_clear]]):
+        # some value has not been provided, so do not continue with calculations
+        return drawn_geojson
+    elif not drawn_geojson["features"]:
+        # some value has not been provided, so do not continue with calculations
+        return drawn_geojson
+
+    gdf = gpd.GeoDataFrame.from_features(
+        drawn_geojson["features"]
+    )  # extract user drawn geometry data from UI
+    gdf = gdf.set_crs(
+        crs=4326
+    )  # Set the initial CRS to specify that this is lat/lon data
+    gdf = gdf.to_crs(
+        crs=gdf.estimate_utm_crs()
+    )  # Let GeoPandas estimate the best CRS and use that for the area calculation
+
+    # create a new geodataframe using buffer that incorporates the perimeter
+    gdf_minus_perim_buffer = gdf["geometry"].buffer(-perim_clear)
+    combine_gdf = pd.concat([gdf["geometry"], gdf_minus_perim_buffer])
+    # convert back to lat, long
+    combine_gdf = combine_gdf.to_crs(crs=4326)
+    # convert back to GeoJSON to be rendered in the dash leaflet map
+    return_geojson_data = combine_gdf.__geo_interface__
+
+    return return_geojson_data
+
+
+if __name__ == "__main__":
+    app.run_server(debug=True, port=8052)

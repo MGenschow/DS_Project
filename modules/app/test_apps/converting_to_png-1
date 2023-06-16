@@ -1,0 +1,10 @@
+from PIL import Image
+
+# Open the .tif file
+tif_image = Image.open("modules/app/data/4736.tif")
+
+# Convert to RGB mode (if necessary)
+tif_image_rgb = tif_image.convert("RGB")
+
+# Save as .png
+tif_image_rgb.save("4736.png", "PNG")
