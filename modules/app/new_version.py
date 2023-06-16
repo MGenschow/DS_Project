@@ -1,15 +1,20 @@
 import dash
+import dash_leaflet as dl
 from dash_iconify import DashIconify
 import dash_mantine_components as dmc
 from dash import dcc, html, dash_table, dcc, Input, Output, State
 import dash_bootstrap_components as dbc
-import folium
 import plotly.graph_objects as go
 import plotly.express as px
 import dash_extensions as de
 from dash_bootstrap_components import Container
+import base64
+from PIL import Image
+from io import BytesIO
+import json
 
-# Import other 
+
+# Import other
 from footer import footer
 
 # Build the app
@@ -28,17 +33,27 @@ options_gif = dict(
     rendererSettings=dict(preserveAspectRatio="xMidYMid slice"),
 )
 
-search_bar = dbc.Row(
-    [
-        dbc.Col(dbc.Input(type="search", placeholder="Search")),
-        dbc.Col(
-            dbc.Button("Search", color="primary", className="ms-2", n_clicks=0),
-            width="auto",
-        ),
-    ],
-    className="g-0 ms-auto flex-nowrap mt-3 mt-md-0",
-    align="center",
+# Preparing the map
+# Create a text output that returns the name of the input image when clicked
+text_output = html.Div(
+    id="text-output", children="Click on the district to get its population density."
 )
+
+# Create an empty image container
+image_container = html.Div(id="image-container")
+
+attribution = (
+    'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors,'
+    '<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'
+)
+
+url = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+
+# Import geojson data
+data = json.load(open("modules/app/data/gemeinden_simplify200.geojson", "r"))
+
+# Load the features.json file
+features = dl.GeoJSON(data=data, zoomToBoundsOnClick=True, id="geojson")
 
 navbar = dbc.Navbar(
     dbc.Container(
@@ -58,12 +73,6 @@ navbar = dbc.Navbar(
                 style={"textDecoration": "none"},
             ),
             dbc.NavbarToggler(id="navbar-toggler", n_clicks=0),
-            dbc.Collapse(
-                search_bar,
-                id="navbar-collapse",
-                is_open=False,
-                navbar=True,
-            ),
         ]
     ),
     color="dark",
@@ -75,7 +84,6 @@ navbar = dbc.Navbar(
 @app.callback(
     Output("navbar-collapse", "is_open"),
     [Input("navbar-toggler", "n_clicks")],
-    [State("navbar-collapse", "is_open")],
 )
 def toggle_navbar_collapse(n, is_open):
     if n:
@@ -162,7 +170,8 @@ def render_page_content(pathname):
             html.Div(
                 [
                     html.H3(
-                        "Temperature in the morning", style={"text-align": "center"}
+                        "Temperature in the morning",
+                        style={"text-align": "center"},
                     ),
                     html.Iframe(
                         id="map",
@@ -180,18 +189,36 @@ def render_page_content(pathname):
             html.Div(
                 [
                     html.H3(
-                        "Temperature in the afternoon", style={"text-align": "center"}
+                        "Temperature in the afternoon",
+                        style={"text-align": "center"},
                     ),
-                    html.Iframe(
-                        id="map",
-                        srcDoc=open("afterNoon.html", "r").read(),
-                        width="100%",
-                        height="600",
-                        className="align-middle",
+                    dl.Map(
+                        [
+                            features,
+                            dl.TileLayer(
+                                url=url,
+                                attribution=attribution,
+                            ),
+                        ],
+                        center=[48.137154, 11.576124],
+                        zoom=12,
+                        id="map_2",
+                        style={
+                            "width": "100%",
+                            "height": "600px",
+                            "margin": "auto",
+                            "display": "block",
+                            "position": "relative",
+                        },
                     ),
+                    html.Br(),
+                    text_output,
+                    html.Br(),
+                    image_container,
                 ]
             )
         ]
+
     return [
         html.Div(
             dbc.Jumbotron(
@@ -203,6 +230,41 @@ def render_page_content(pathname):
             )
         )
     ]
+
+
+@app.callback(
+    [Output("text-output", "children"), Output("image-container", "children")],
+    [Input("geojson", "click_feature")],
+)
+def update_output(click_feature):
+    if click_feature is not None:
+        properties = click_feature["properties"]
+        destatis = properties.get("destatis", {})
+        population_density = destatis.get("population_density", "")
+
+        if population_density:
+            image_path = f"modules/app/data/{population_density}.tif"
+            image = Image.open(image_path)
+            buffered = BytesIO()
+            image.save(buffered, format="PNG")
+            encoded_image = base64.b64encode(buffered.getvalue())
+
+            image_element = html.Img(
+                src=f"data:image/png;base64,{encoded_image.decode()}",
+                width="200px",
+                height="200px",
+            )
+            return (
+                f"Population Density: {population_density} people per square kilometer",
+                image_element,
+            )
+        else:
+            return (
+                "Population density information not available for this district.",
+                None,
+            )
+    else:
+        return "Click on a district to get its population density.", None
 
 
 if __name__ == "__main__":
