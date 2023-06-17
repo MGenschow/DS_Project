@@ -70,7 +70,7 @@ tropicalDays = pd.read_pickle('/pfs/work7/workspace/scratch/tu_zxmav84-ds_projec
 # Combine both
 hW_tD = heatwaves + tropicalDays
 
-# %% Invert heatwave
+# Invert heatwave
 import datetime
 
 start_date = datetime.date(2022, 6, 1)
@@ -90,7 +90,7 @@ while current_date <= end_date:
 
 inverted_HW = []
 
-# 
+# Loop to invert heatwave
 for dates in date_list:
     if not dateInHeatwave(datetime.datetime.strptime(dates['start'],'%Y-%m-%d %H:%M:%S'),hW_tD):
         inverted_HW.append(dates)
@@ -112,10 +112,12 @@ spatialFilter =  {
     }
 
 # %% Download all files corresponding to the heatwaves
-month = [{'start': '2022-03-01 00:00:00', 'end': '2022-06-05 00:00:00'}]
-# %%
 # NOTE: Can take, depending on the parameters, quite some time 
 # (up to several hours)
+
+# Specify period to loop over
+month = [{'start': '2022-03-01 00:00:00', 'end': '2022-06-05 00:00:00'}]
+
 confirmation = input("Do you want to download the hierarchical files (Y/n): ")
 if confirmation.lower() == "y":
 
@@ -124,9 +126,8 @@ if confirmation.lower() == "y":
 else:
     print("Loop execution cancelled.")
 
-
-# %% Count number of files
-month = [{'start': '2022-05-01 00:00:00', 'end': '2022-06-01 00:00:00'}]
+# %% Count number of files for a specific period
+month = [{'start': '2022-01-01 00:00:00', 'end': '2023-01-01 00:00:00'}]
 types = ['GEO','CLOUD', 'LSTE']
 # Loop over files
 for t in types: 
@@ -134,164 +135,43 @@ for t in types:
         f
         for f in listdir(config['data']['ES_raw']) 
         if t in f and dateInHeatwave(datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), month)
-        #datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S').year == 2022
         ]
         
     print(f'There are {len(files)} {t} files')
 
-# Overall, there 145 cloud and lste files and 147 geo files
-# For 2022, there are 134 geo and 132 cloud and lste files
-
 
 # %% Create a tiff for each unique scene
+# Define period to create tiffs
 summer = [{'start': '2022-06-01 00:00:00', 'end': '2022-09-01 00:00:00'}]
-# 
-processHF(summer, config)
 
-# %% Check for the respective tiff files
-types = ['LSTE', 'CLOUD'] 
+# processHF(summer, config)
 
-for t in types: 
-    files = [
-        f 
-        for f in listdir(config['data']['ES_tiffs'])
-        if isfile(join(config['data']['ES_tiffs'], f)) and 
-        f.endswith('.tif') and
-        t in f #and
-        #dateInHeatwave(datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), inverted_HW)
-        ]
-    print(f'There are {len(files)} {t} tiffs')
-# Last time I checked: 118
-# %% There are around 60 tiffs missing 
-# Extract path names
-onlyfiles = [
-    f 
-    for f in listdir(config['data']['ES_raw']) 
-    if isfile(join(config['data']['ES_raw'], f))
-    ]
-    
+
+# %% Check if each LSTE.h5 has a respective tif
+raw_files = listdir(config['data']['ES_raw'])
+
 # Extract keys
-keys = [
-    files.split('_')[3] + '_' + files.split('_')[4] 
-    for files in onlyfiles 
-    # if 'LSTE' in files and  dateInHeatwave(datetime.datetime.strptime(files.split('_')[5], '%Y%m%dT%H%M%S'), hW_tD)
+keys = set(
+    [
+    files.split('_')[3] + '_' + files.split('_')[4]
+    for files in raw_files if 'GEO' in files
     ]
-# Reduce to unique
-unique_keys = set(keys)
+)
 
-# %%Search for missing keys in the tiffs files
-files = [
+tiffs = [
     f 
-    for f in listdir(config['data']['ES_tiffs']) 
-    if isfile(join(config['data']['ES_tiffs'], f))
+    for f in listdir(config['data']['ES_tiffs'])
+    if isfile(join(config['data']['ES_tiffs'], f)) and
+    f.endswith('.tif')
     ]
-#
-count = 0
-for key in unique_keys:
-    l_Tiff = [f for f in files if key in f]
-    l_raw = [f for f in onlyfiles if key in f]
-    if len(l_Tiff) < 4: 
-        print(l_raw)
-        count+=1
 
-print(count)
+for k in keys:
+    l = len([f for f in tiffs if k in f])
 
-# %%
-count = 0
-other_count = 0
-for key in unique_keys:
-    # Check if all files are aivalable
-    if len([f for f in onlyfiles if key in f]) != 3:
-        print(f'There are files missing for the key: {key}')
-        continue
-    
-    # Get file path for the lst file
-    lstF = [f for f in onlyfiles if key in f and 'LSTE' in f][0]
-
-    if os.path.exists(config['data']['ES_tiffs'] + lstF.replace('.h5','_LST.tif')):
-        print('File does already exist.')
-        count +=1
-        continue
-    else: 
-        other_count +=1
+    if l < 1:
+        print(f'There are no tiff files for the key {k}')
 
 
-# %%
-
-for key in unique_keys:
-    # Check if all files are aivalable
-    if len([f for f in onlyfiles if key in f]) != 3:
-        files = [f for f in onlyfiles if key in f]
-        print([f for f in onlyfiles if key in f])
-        print(datetime.datetime.strptime(files[0].split('_')[5], '%Y%m%dT%H%M%S'))
-
-
-# %% 
-for key in unique_keys:
-    cloud = [f for f in files if key in f and f.endswith('tif') and 'Cloud' in f]
-    lst = [f for f in files if key in f and f.endswith('tif') and 'LSTE' in f]
-
-    if len(cloud) != len(lst):
-        print(cloud)
-        print(lst)
-
-
-# %% Plot cipped tiffs 
-'''
-onlyfiles = [
-    f 
-    for f in listdir(config['data']['ES_tiffs']) 
-    if isfile(join(config['data']['ES_tiffs'], f))
-    ]
-keys = [
-    files.split('_')[3] + '_' + files.split('_')[4] 
-    for files in onlyfiles
-    ]
-unique_keys = set(keys)
-# 
-path = config['data']['ES_tiffs']
-# %%
-for key in unique_keys:
-    # Check if all files
-    lst=rasterio.open(
-        os.path.join(path, [f for f in onlyfiles if key in f and "LSTE" in f and 'QC' not in f and f.endswith(".tif")][0])
-        )
-    cld=rasterio.open(
-        os.path.join(path, [f for f in onlyfiles if key in f and "Cloud" in f and f.endswith(".tif")][0])
-        )
-    qc=rasterio.open(
-        os.path.join(path, [f for f in onlyfiles if key in f and 'QC' in f and f.endswith(".tif")][0])
-        )
-    # Plot the images
-    fig, axs = plt.subplots(1, 3, figsize=(12, 6))
-
-    # Plot the LSTE image
-    axs[0].imshow(lst.read(1), cmap='jet')
-    axs[0].set_title('LSTE')
-
-    # Plot the Cloud image
-    axs[1].imshow(cld.read(1), cmap='gray')
-    axs[1].set_title('Cloud')
-
-    # Plot the QC image
-    axs[2].imshow(qc.read(1), cmap='jet')
-    axs[2].set_title('QC')
-
-    # Adjust the spacing between subplots
-    fig.tight_layout()
-
-    # Display the plot
-    plt.show()
-
-# %%
-for key in unique_keys:
-    qc=rasterio.open(
-        os.path.join(path, [f for f in onlyfiles if key in f and 'QC' in f and f.endswith(".tif")][0])
-        )
-    unique, counts = np.unique(qc.read(), return_counts=True)
-    print(np.asarray((unique, counts)).T)
-    print(' ')
-'''
 
 # %% TODO: Create a loop that creates and stores a mean tif for each first and second half of a month
 from datetime import datetime, timedelta
@@ -332,7 +212,8 @@ periods = split_period(period)
 
 # %% Create an overview over all existing tiffs
 # TODO: Before serializing the code, change the quality measures
-# TODO: Before serialingm, check if there is enough data to split by
+# Try to be more sensitive and set a measure for nearly quadratic pictures
+# TODO: Before serializing, check if there is enough data to split by
 # day and night
 
 #dataOverview = dataQualityOverview([periods[7]], config)
@@ -418,26 +299,12 @@ for tiff_file in tiff_files:
 
 
 # %% Create a Dataframe to check the quality of all relevant tiffs (in heatwave)
-dataQ = dataQualityOverview(summer, config)
+# Relevant input is hW_tD and inverted_HW 
+dataQ = dataQualityOverview(inverted_HW, 10, config)
 
 # %% Plot LST tiff by key
-key = '22546_003'
+plot_by_key('22424_007',config)
 
-onlyfiles = [
-    f 
-    for f in listdir(config['data']['ES_tiffs']) 
-    if isfile(join(config['data']['ES_tiffs'], f)) and f.endswith('.tif')
-    ]
-
-lst = rioxarray.open_rasterio(
-    config['data']['ES_tiffs'] + 
-    [f for 
-    f in [p for p in onlyfiles if key in p] 
-    if 'LSTE' in f and '.tif' in f][0]
-    )
-img = np.array(lst)[0]
-plt.imshow(img, cmap='jet')
-plt.show()
 
 # %% 
 # Create DF with relevant tifs for the afternoon
@@ -457,10 +324,13 @@ meanAfterNoon, maList = mergeTiffs(orbitNumbers, name, config)
 
 path = config['data']['ES_tiffs'].replace('geoTiff/','') + name
 
-# %% Plot tiff
+# HW ranges from 20.2 to 44.8
+# Inverted HW ranges from 16.8 to 38
+
+# Plot tiff
 tif = rasterio.open(path)
 
-plt.imshow(tif.read()[0],'jet')
+plt.imshow(tif.read()[0],'jet',vmin=16, vmax=45)
 plt.colorbar(label = "Temperature in Celsius")
 
 plt.show()
@@ -497,8 +367,15 @@ meanMorning, maList = mergeTiffs(orbitNumbers, name, config)
 path = config['data']['ES_tiffs'].replace('geoTiff/','') + name
 
 # %% Plot tiff
+
+# HW ranges from 16.6 to 35.5
+# Inverted HW ranges from 9.6 to 24.2
+
 tif = rasterio.open(path)
-plt.imshow(tif.read()[0],'jet')
+plt.imshow(tif.read()[0],'jet', vmin=9, vmax=36)
+plt.colorbar(label = "Temperature in Celsius")
+
+plt.show()
 
 # %% Plot arrays
 arrays_subplot(maList)
@@ -508,49 +385,32 @@ morning_map = tiffs_to_foliumMap(path)
 morning_map
 
 # Save folium map
-morning_map.save('morning_nonHT.html')
-
-# %%
 # TODO: Reduce map to munich 
 # TODO: Add water to the map
-# %%
-path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/mean_afterNoon.tif'
-lst = rioxarray.open_rasterio(path)
-plt.imshow(lst.data[0])
+morning_map.save('morning_nonHT.html')
 
 # %% 
-tif = rasterio.open(path)
+path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/'
+morningHW = rasterio.open(path + 'mean_Morning_HT.tif')
+afternoonHW = rasterio.open(path +'mean_afterNoon_HT.tif')
 
-geometries = [
-        {
-            'type': 'Polygon',
-            'coordinates': [[
-                [config['bboxes']['munich'][0], config['bboxes']['munich'][1]],
-                [config['bboxes']['munich'][0], config['bboxes']['munich'][3]],
-                [config['bboxes']['munich'][2], config['bboxes']['munich'][3]],
-                [config['bboxes']['munich'][2], config['bboxes']['munich'][1]],
-                [config['bboxes']['munich'][0], config['bboxes']['munich'][1]]
-                ]]
-                }
-                ]
+# %%
 
-tif.rio.clip(geometries)
+diff_NoonMorning = afternoonHW.read()[0] - morningHW.read()[0]
 
+# %%
+diff_NoonMorning[diff_NoonMorning < 0 ] = np.NaN
 
-tif = rasterio.open(path)
-plt.imshow(tif.read()[0],'jet')
+# %%
+# vmin=-2.5, vmax=19
+plt.imshow(diff_NoonMorning,'jet_r', vmin=0, vmax=19)
 plt.colorbar(label = "Temperature in Celsius")
 
 plt.show()
 
 
-# %%
-lst = gdal.Open(path) 
-# Get geotransform
-gt = lst.GetGeoTransform()
 
 # %% Tropical day, tropical night
-
 
 '''
 dwd = pd.read_csv(config['data']['dwd']+'/dwd.csv')

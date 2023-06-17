@@ -31,11 +31,11 @@ parameters_dict = {
         },
     'learningRate': {
         'distribution': 'uniform',
-        'min': 0.05,
-        'max': 0.09
+        'min': 0.065,
+        'max': 0.08
         },
     'batchSize': {
-        'values': list(range(2, 31, 2))
+        'values': list(range(12, 36, 2))
         },
     'optimizer': {
         'values': [

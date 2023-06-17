@@ -4,7 +4,7 @@
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:1
-#SBATCH --time=08:00:00
+#SBATCH --time=12:00:00
 
 #SBATCH --mail-user=aaron.lay@student.uni-tuebingen.de
 #SBATCH --mail-type=BEGIN,END,FAIL

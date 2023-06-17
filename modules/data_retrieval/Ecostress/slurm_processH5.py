@@ -63,12 +63,12 @@ def split_window(window, window_size, overlap):
 
 # Download all files corresponding to the heatwaves
 month = [
-    {'start': '2022-03-01 00:00:00', 'end': '2022-06-05 00:00:00'},
-    {'start': '2022-08-25 00:00:00', 'end': '2022-12-01 00:00:00'}]
+    {'start': '2022-01-01 00:00:00', 'end': '2023-01-01 00:00:00'}
+    ]
 
 
 months = split_window(month, window_size=5, overlap=1)
 
-# 
+# Loop over months
 for period in months:
-    processHF(period, config)
+    processHF([period], config)

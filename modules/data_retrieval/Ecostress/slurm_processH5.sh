@@ -4,7 +4,7 @@
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=50000mb
-#SBATCH --time=10:00:00
+#SBATCH --time=12:00:00
 
 #SBATCH --mail-user=aaron.lay@student.uni-tuebingen.de
 #SBATCH --mail-type=BEGIN,END,FAIL

@@ -246,8 +246,14 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
     # Specify directory for the tiffs
     outDir = config['data']['ES_tiffs']
 
-    # Read in lst file
-    f_lst = h5py.File(fileNameLST)
+    try:
+        # Read in lst file
+        f_lst = h5py.File(fileNameLST)
+
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+        return
+
 
     # Extract begining datetime
     beginDate = np.array(f_lst['StandardMetadata']['RangeBeginningDate']).item().decode('utf-8')
@@ -295,9 +301,13 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
     # Calculate temp to celcius
     lst_SD = kelToCel(lst_SD)
 
+    try:
+        # Read in lst file
+        f_cld = h5py.File(fileNameCld)
 
-    # Read in lst file
-    f_cld = h5py.File(fileNameCld)
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+        return
 
     # Store relative paths of elements in list
     eco_objs = []
@@ -318,7 +328,12 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
     cld_SD = get_zero_vec(cld_SD)
 
     # Read in .h5 file 
-    f_geo = h5py.File(fileNameGeo)
+    try:
+        f_geo = h5py.File(fileNameGeo)
+
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+        return None
 
     # Store relative paths in geo h5 file
     geo_objs = []
@@ -603,7 +618,7 @@ def processHF(timePeriod, config):
                 continue
 
 
-def dataQualityOverview(heatPeriods, config):
+def dataQualityOverview(heatPeriods, tempThresh, config):
     '''
     Generates an overview of data quality from TIFF files based on 
     the provided configuration.
@@ -622,7 +637,8 @@ def dataQualityOverview(heatPeriods, config):
             'orbitNumber',
             'dateTime',
             'cloudCoverage in %',
-            'meanLSTE'
+            'meanLSTE',
+            'ratio'
             ])
 
     # Get all filepaths of the relevant tiffs, TODO: Check if tif in heatwave
@@ -648,6 +664,8 @@ def dataQualityOverview(heatPeriods, config):
         lst = rioxarray.open_rasterio(
             config['data']['ES_tiffs'] + [f for f in orbitFls if 'LSTE' in f and f.endswith('.tif')][0]
             )
+        ratio = max(lst.shape[1:]) / min(lst.shape[1:])
+
         # Open cloud tiff
         cld = rioxarray.open_rasterio(
             config['data']['ES_tiffs'] + [f for f in orbitFls if 'CLOUD' in f and '.tif' in f][0]
@@ -661,12 +679,13 @@ def dataQualityOverview(heatPeriods, config):
             key,
             lst.attrs['recordingTime'],
             mean_value,
-            lst.attrs['meanValue']]
+            lst.attrs['meanValue'],
+            ratio]
 
     # Sort dataQ dataframe by time
     dataQ.sort_values(by=['dateTime'], inplace=True, ignore_index=True)
     # Create a new column qualityFlag based on average temperature and cloud coverage
-    dataQ['qualityFlag'] = (dataQ['meanLSTE'] > 0.5) & (dataQ['cloudCoverage in %'] < 80)
+    dataQ['qualityFlag'] = (dataQ['meanLSTE'] > tempThresh) & (dataQ['cloudCoverage in %'] < 65) & (dataQ['ratio'] < 1.5)
 
     return dataQ
 
@@ -920,3 +939,21 @@ def tiffs_to_foliumMap(tif_path):
     return m
 
 
+
+def plot_by_key(key, config):
+    
+    onlyfiles = [
+        f
+        for f in listdir(config['data']['ES_tiffs'])
+        if isfile(join(config['data']['ES_tiffs'], f)) and f.endswith('.tif')
+        ]
+
+    lst = rioxarray.open_rasterio(
+        config['data']['ES_tiffs'] + 
+        [f for 
+        f in [p for p in onlyfiles if key in p] 
+        if 'LSTE' in f and '.tif' in f][0]
+        )
+    img = np.array(lst)[0]
+    plt.imshow(img, cmap='jet')
+    plt.show()
