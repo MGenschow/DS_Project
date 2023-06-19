@@ -1,28 +1,36 @@
-#%% start-up
-from preprocessing_DWD import DWDScraper
-
+#%% pre-start-up
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import folium
+import pickle
 from folium.plugins import MarkerCluster
+#%% change directory
+home_directory = os.path.expanduser( '~' )
+os.chdir(home_directory + '/DS_Project/modules')
+os.getcwd()
+#%% start-up
 import yaml
-config_path = '/home/tu/tu_tu/tu_zxmny46/DS_Project/modules/config.yml'
+config_path = 'config.yml'
 with open(config_path, 'r') as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
+#%% import DWDScraper
+from data_retrieval.DWD.DWDScraper import DWDScraper
 # %%
 S = DWDScraper()
 #%% get all stations
-S.get_all_stations("2020-01-01", "2022-12-31")
+S.get_all_stations("stations.csv", "2020-01-01", "2022-12-31")
 #%% get all stations
-s = pd.read_csv(config['data']['dwd']+'/meta/stations.csv')
+s = pd.read_csv(config['data']['dwd'] + '/meta/stations.csv')
 s.head()
 # %%
 ids = S.get_relevant_station_ids(s)
+print(ids)
 # %%
 s[s.STATIONS_ID.isin(ids)]
 # %%
-S.scrape("2020-01-01","2022-12-31",ids)
+S.scrape("dwd.csv", "2020-01-01", "2022-12-31", ids)
 # %%
 dwd = pd.read_csv(config['data']['dwd']+'/dwd.csv')
 dwd['MESS_DATUM'] = pd.to_datetime(dwd['MESS_DATUM'], format='%Y-%m-%d %H')
