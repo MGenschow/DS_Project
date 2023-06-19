@@ -53,9 +53,9 @@ class MunichDataset(Dataset):
         if self.transform is not None:
             transformed = self.transform(image=image)
             transformed_image = transformed['image']
-            return transformed_image
+            return transformed_image, image_filepath
         else:
-            return image
+            return image, image_filepath
 
 # %%
 # Test transform analogously to Potsdam test transform
