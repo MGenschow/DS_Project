@@ -102,10 +102,11 @@ def extract_fields(file_path):
                 building['Dachneigung'].append(dachneigung.text)
            
         # ground shape
+        building['GroundSurface_PosList'] = []
         for ground_elem in building_elem.findall('.//bldg:GroundSurface', namespace):
             poslist = ground_elem.find('.//gml:posList', namespace)
             if poslist is not None:
-                building['GroundSurface_PosList'] = poslist.text
+                building['GroundSurface_PosList'].append(poslist.text)
 
         buildings.append(building)
     
@@ -172,11 +173,13 @@ def process_all_gml_files(gml_path):
     df = pd.concat(all_dfs)
     print(f'Processing finished, final dataframe has {len(df)} objects')
     print('\nStarting reprojecting and conversion to GeoPandas')
-    df['geometry'] = df['RoofSurface_PosList'].apply(convert_3d_coordinates_to_polygons)
+    df['geometry'] = df['GroundSurface_PosList'].apply(convert_3d_coordinates_to_polygons)
     gdf = gpd.GeoDataFrame(df, geometry='geometry')
     gdf.set_crs(epsg=25832, inplace=True)
-
     gdf['geometry_4326'] = gdf['geometry'].to_crs("EPSG:4326")
+
+    gdf = gdf[gdf.function.isin(['51009_1610', '53001_1800']) == False]
+    # Get rid of bridges and Überdachungen
     # Get mask for flat and gable roofs
     gdf['Dachneigung'] = gdf['Dachneigung'].apply(lambda x: [float(value) for value in x])
     gdf['is_gable'] = gdf['Dachneigung'].apply(lambda x: any(round(value,2) != 90.0 for value in x))
