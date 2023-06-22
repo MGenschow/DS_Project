@@ -230,7 +230,7 @@ def get_bit(x):
 get_zero_vec = np.vectorize(get_bit)
 
 
-def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
+def createTif(fileNameGeo, fileNameLST, fileNameCld, temperatureRange, config):
     '''
     Process HDF5 files and convert them to GeoTIFF files.
 
@@ -289,14 +289,17 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, config):
     # Read in data
     lst_SD = f_lst[lst_SDS[0]][()]
 
+    # Set max and min values
+    tempMin, tempMax = temperatureRange[beginDateTime.month]
+
     # Set tempertature range
-    tempMin, tempMax = 0, 50
+    # tempMin, tempMax = 0, 50
     # Transfer it to Kelvin and scale it 
     tempMin = (tempMin + 273.15) / 0.02
     tempMax = (tempMax + 273.15) / 0.02
 
-    # Set "wrong values" to 0
-    lst_SD[(lst_SD < tempMin) | (lst_SD > tempMax)] = 0
+    # Set "wrong values" to 0; NOTE: This might lead to strange errors
+    lst_SD[(lst_SD < tempMin) | (lst_SD > tempMax)] = np.mean([tempMin, tempMax])
 
     # Calculate temp to celcius
     lst_SD = kelToCel(lst_SD)
@@ -546,7 +549,7 @@ def array_to_tiff(file, outputDir, geoTrans):
     d, band = None, None
 
 
-def processHF(timePeriod, config):
+def processHF(timePeriod, temperatureRange, config):
     '''
     Processes heatwave data by creating TIFF files for 
     corresponding HDF5 files and deleting existing TIFF files if confirmed.
@@ -611,7 +614,7 @@ def processHF(timePeriod, config):
                 fileNameCld = path + [f for f in onlyfiles if key in f and 'CLOUD' in f][0]
                 print('Start creating a new tif')
                 # Create the respective tifs
-                createTif(fileNameGeo, fileNameLST, fileNameCld, config)
+                createTif(fileNameGeo, fileNameLST, fileNameCld, temperatureRange, config)
 
             else:
                 print('Scence does not fall into the heat period')

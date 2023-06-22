@@ -40,6 +40,29 @@ except FileNotFoundError:
 with open('/home/tu/tu_tu/' + os.getcwd().split('/')[6] + '/DS_Project/modules/config.yml', 'r') as file: 
     config = yaml.safe_load(file)
 
+dwd = pd.read_csv(config['data']['dwd']+'/dwd.csv')
+# Extract id for munich central
+id = 3379
+# Reduce the data to munich central
+mCentral = dwd[dwd['STATIONS_ID'] == id].reset_index(drop=True)
+mCentral.drop('STATIONS_ID', inplace=True,axis=1)
+# Convert the date column to datetime
+mCentral['MESS_DATUM'] = mCentral['MESS_DATUM'].astype('datetime64[ns]')
+
+# Filter the data for the year 2022
+mCentral_2022 = mCentral[mCentral['MESS_DATUM'].dt.year == 2022]
+
+minTemp = mCentral_2022.groupby(mCentral_2022['MESS_DATUM'].dt.month)['TT_TU'].min().to_list()
+maxTemp = mCentral_2022.groupby(mCentral_2022['MESS_DATUM'].dt.month)['TT_TU'].max().to_list()
+
+tempRange = {}
+
+for i in range(1,13):
+    diff = (maxTemp[i-1] - minTemp[i-1])/3
+    tempRange[i] = [round(minTemp[i-1]-diff,2), round(maxTemp[i-1]+(diff*2),2)]
+
+
+
 from datetime import datetime, timedelta
 
 
@@ -71,4 +94,4 @@ months = split_window(month, window_size=5, overlap=1)
 
 # Loop over months
 for period in months:
-    processHF([period], config)
+    processHF([period], tempRange, config)

@@ -3,7 +3,7 @@
 #SBATCH --partition=single
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=50000mb
+#SBATCH --mem=60000mb
 #SBATCH --time=12:00:00
 
 #SBATCH --mail-user=aaron.lay@student.uni-tuebingen.de

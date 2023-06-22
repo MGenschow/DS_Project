@@ -97,6 +97,76 @@ for dates in date_list:
     elif not dateInHeatwave(datetime.datetime.strptime(dates['end'],'%Y-%m-%d %H:%M:%S'),hW_tD):
         inverted_HW.append(dates)
 
+# %%
+dwd = pd.read_csv(config['data']['dwd']+'/dwd.csv')
+# Extract id for munich central
+id = 3379
+# Reduce the data to munich central
+mCentral = dwd[dwd['STATIONS_ID'] == id].reset_index(drop=True)
+mCentral.drop('STATIONS_ID', inplace=True,axis=1)
+# Convert the date column to datetime
+mCentral['MESS_DATUM'] = mCentral['MESS_DATUM'].astype('datetime64[ns]')
+
+# Filter the data for the year 2022
+mCentral_2022 = mCentral[mCentral['MESS_DATUM'].dt.year == 2022]
+
+minTemp = mCentral_2022.groupby(mCentral_2022['MESS_DATUM'].dt.month)['TT_TU'].min().to_list()
+maxTemp = mCentral_2022.groupby(mCentral_2022['MESS_DATUM'].dt.month)['TT_TU'].max().to_list()
+
+tempRange = {}
+
+for i in range(1,13):
+    diff = (maxTemp[i-1] - minTemp[i-1])/3
+    tempRange[i] = [round(minTemp[i-1]-diff,2), round(maxTemp[i-1]+(diff*2),2)]
+    
+    
+# %% Try cloud padding for the follwoing key '21476_003'
+# Get lst tiff: 
+key = '21476_003'
+
+lstPath = [f for f in os.listdir(config['data']['ES_tiffs']) if f.endswith('.tif') and 'LST' in f and key in f]
+cloudPath = [f for f in os.listdir(config['data']['ES_tiffs']) if f.endswith('.tif') and 'CLOUD' in f and key in f]
+
+lst=rasterio.open(os.path.join(config['data']['ES_tiffs'], lstPath[0]))
+cld=rasterio.open(os.path.join(config['data']['ES_tiffs'], cloudPath[0]))
+
+img_lst = lst.read()[0]
+img_cld = cld.read()[0]
+
+masked_array = np.ma.masked_array(img_lst, mask=(img_cld.astype(bool) | (lst.read()[0]<1)))
+
+plt.imshow(masked_array,'jet')
+plt.colorbar(label = "Temperature in Celsius")
+plt.show()
+
+# ChatGPT suggestion
+'''
+import numpy as np
+from scipy.ndimage import binary_dilation
+
+def add_pixels_around_mask(mask, radius):
+    dilated_mask = binary_dilation(mask, iterations=radius)
+    return dilated_mask
+
+# Example usage
+# Assuming you have a binary mask 'cloud_mask' and you want to add a radius of 3 pixels
+cloud_mask = np.array([[0, 0, 0, 0, 0],
+                       [0, 1, 1, 0, 0],
+                       [0, 1, 1, 0, 0],
+                       [0, 0, 0, 0, 0],
+                       [0, 0, 0, 0, 0]])
+
+radius = 3
+dilated_mask = add_pixels_around_mask(cloud_mask, radius)
+
+print("Original mask:")
+print(cloud_mask)
+
+print("Dilated mask:")
+print(dilated_mask)
+
+'''
+
 
 # %% Set spatial filter;
 spatialFilter =  {
@@ -126,7 +196,7 @@ if confirmation.lower() == "y":
 else:
     print("Loop execution cancelled.")
 
-# %% Count number of files for a specific period
+# %% Count the number of files for a specific period
 month = [{'start': '2022-01-01 00:00:00', 'end': '2023-01-01 00:00:00'}]
 types = ['GEO','CLOUD', 'LSTE']
 # Loop over files
@@ -142,10 +212,13 @@ for t in types:
 
 # %% Create a tiff for each unique scene
 # Define period to create tiffs
-summer = [{'start': '2022-06-01 00:00:00', 'end': '2022-09-01 00:00:00'}]
+summer = [{'start': '2022-01-01 00:00:00', 'end': '2022-01-03 00:00:00'}]
 
-# processHF(summer, config)
-
+confirmation = input("Do you want to create tiffs for hierarchical files (Y/n): ")
+if confirmation.lower() == "y":
+    processHF(summer, tempRange, config)
+else:
+    print("Function execution cancelled.")
 
 # %% Check if each LSTE.h5 has a respective tif
 raw_files = listdir(config['data']['ES_raw'])
@@ -206,8 +279,10 @@ def split_period(period):
     
     return result
 
-period = [{'start': '2022-03-01 00:00:00', 'end': '2022-12-01 00:00:00'}]
+period = [{'start': '2022-01-01 00:00:00', 'end': '2023-01-01 00:00:00'}]
 periods = split_period(period)
+
+
 
 
 # %% Create an overview over all existing tiffs
@@ -221,19 +296,37 @@ path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/meanTi
 
 flags = ['day', 'night']
 
+# Delete existing files
+files = os.listdir(path)
 
-for period in periods[6:12]:
+for f in files: 
+    os.remove(os.path.join(path,f))
+
+# %%
+
+dataOverview = dataQualityOverview([periods[7]], 0 ,config)
+
+# %%
+plot_by_key('21476_003', config)
+
+# %%
+temps = [2.1, 4.8]
+
+for period in periods:
     
-    dataOverview = dataQualityOverview([period], config)
+    dataOverview = dataQualityOverview([period],0 ,config)
 
-    flag = 'day'
+    #flag = 'day'
 
     dataOverview = dataOverview[
-        (pd.to_datetime(dataOverview['dateTime']).dt.hour >= 6) & 
-        (pd.to_datetime(dataOverview['dateTime']).dt.hour <= 20) & 
+        (pd.to_datetime(dataOverview['dateTime']).dt.hour >= 4) & 
+        (pd.to_datetime(dataOverview['dateTime']).dt.hour <= 8) & 
         dataOverview.qualityFlag]
+    
+    print(dataOverview[dataOverview.qualityFlag].shape[0])
 
 
+# %%
     # for flag in flags:
 
         #if flag == 'day': 
@@ -303,7 +396,10 @@ for tiff_file in tiff_files:
 dataQ = dataQualityOverview(inverted_HW, 10, config)
 
 # %% Plot LST tiff by key
-plot_by_key('22424_007',config)
+plot_by_key('19797_003',config)
+
+# %%
+f_lst = h5py.File('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/raw_h5/ECOSTRESS_L2_LSTE_25115_005_20221210T094045_0601_01.h5')
 
 
 # %% 
