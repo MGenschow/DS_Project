@@ -13,6 +13,10 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import ToPILImage
+# Other torch imports
+import torch
+import torch.optim as optim
+import torch.nn as nn
 
 # Image utils imports
 from PIL import Image
@@ -280,7 +284,7 @@ def calculate_accuracy(model, test_loader, num_classes):
 
     # Convert dictionary to pandas DataFrame and return
     df = pd.DataFrame(list(accuracy_dict.items()), columns=['Metric', 'Accuracy (%)'])
-
+    
     return df
 
 
@@ -296,7 +300,7 @@ def calculate_accuracy(model, test_loader, num_classes):
 # iterate over the train_loader
 # for i, (images, masks) in enumerate(test_loader):
 #     # stop after the first batch
-#     if i > 1:
+#     if i > 9:
 #         break
 
 #     batch_size = images.shape[0]
