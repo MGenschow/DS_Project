@@ -8,7 +8,7 @@ import h5py
 import subprocess 
 import numpy as np
 import matplotlib.pyplot as plt
-from pyresample import geometry as geom
+from pyresample import geometry as geom 
 from pyresample import kd_tree as kdt
 from os.path import join
 import pyproj
@@ -55,10 +55,11 @@ response = requests.post(config['api']['path'] + 'login', data=json.dumps(login_
 # Set header
 headers = {'X-Auth-Token': response.json()['data']}
 
+
 # %% Import heatwaves
 dates = pd.read_pickle('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/DWD/heatwaves.pkl')
 
-# Combine dates to periods format of heatwaves
+# Combine dates to periods format of heatwaves TODO: Create a function
 heatwaves = heatwave_transform(dates)
 # Add heatwaves from 2021
 heatwaves.append({'start': '2021-06-17 00:00:00', 'end': '2021-06-22 00:00:00'})
@@ -67,106 +68,19 @@ heatwaves.append({'start': '2021-08-13 00:00:00', 'end': '2021-08-16 00:00:00'})
 # Import tropical timeperiods
 tropicalDays = pd.read_pickle('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/tropicalPeriods.pkl')
 
-# Combine both
+
+# Combine heatwaves and heatdays
 hW_tD = heatwaves + tropicalDays
 
-# Invert heatwave
-import datetime
+#  Invert the heatwave
+inverted_HW = invertHeatwave(hW_tD)
 
-start_date = datetime.date(2022, 6, 1)
-end_date = datetime.date(2022, 8, 31)
-date_list = []
 
-delta = datetime.timedelta(days=1)
-current_date = start_date
-
-while current_date <= end_date:
-    date_element = {
-        'start': current_date.strftime('%Y-%m-%d 00:00:00'),
-        'end': (current_date + delta).strftime('%Y-%m-%d 00:00:00')
-    }
-    date_list.append(date_element)
-    current_date += delta
-
-inverted_HW = []
-
-# Loop to invert heatwave
-for dates in date_list:
-    if not dateInHeatwave(datetime.datetime.strptime(dates['start'],'%Y-%m-%d %H:%M:%S'),hW_tD):
-        inverted_HW.append(dates)
-    elif not dateInHeatwave(datetime.datetime.strptime(dates['end'],'%Y-%m-%d %H:%M:%S'),hW_tD):
-        inverted_HW.append(dates)
-
-# %%
+# %% Calculate the temperature range for each month
 dwd = pd.read_csv(config['data']['dwd']+'/dwd.csv')
-# Extract id for munich central
-id = 3379
-# Reduce the data to munich central
-mCentral = dwd[dwd['STATIONS_ID'] == id].reset_index(drop=True)
-mCentral.drop('STATIONS_ID', inplace=True,axis=1)
-# Convert the date column to datetime
-mCentral['MESS_DATUM'] = mCentral['MESS_DATUM'].astype('datetime64[ns]')
 
-# Filter the data for the year 2022
-mCentral_2022 = mCentral[mCentral['MESS_DATUM'].dt.year == 2022]
-
-minTemp = mCentral_2022.groupby(mCentral_2022['MESS_DATUM'].dt.month)['TT_TU'].min().to_list()
-maxTemp = mCentral_2022.groupby(mCentral_2022['MESS_DATUM'].dt.month)['TT_TU'].max().to_list()
-
-tempRange = {}
-
-for i in range(1,13):
-    diff = (maxTemp[i-1] - minTemp[i-1])/3
-    tempRange[i] = [round(minTemp[i-1]-diff,2), round(maxTemp[i-1]+(diff*2),2)]
+tempRange = calculateTempRange(dwd)
     
-    
-# %% Try cloud padding for the follwoing key '21476_003'
-# Get lst tiff: 
-key = '21476_003'
-
-lstPath = [f for f in os.listdir(config['data']['ES_tiffs']) if f.endswith('.tif') and 'LST' in f and key in f]
-cloudPath = [f for f in os.listdir(config['data']['ES_tiffs']) if f.endswith('.tif') and 'CLOUD' in f and key in f]
-
-lst=rasterio.open(os.path.join(config['data']['ES_tiffs'], lstPath[0]))
-cld=rasterio.open(os.path.join(config['data']['ES_tiffs'], cloudPath[0]))
-
-img_lst = lst.read()[0]
-img_cld = cld.read()[0]
-
-masked_array = np.ma.masked_array(img_lst, mask=(img_cld.astype(bool) | (lst.read()[0]<1)))
-
-plt.imshow(masked_array,'jet')
-plt.colorbar(label = "Temperature in Celsius")
-plt.show()
-
-# ChatGPT suggestion
-'''
-import numpy as np
-from scipy.ndimage import binary_dilation
-
-def add_pixels_around_mask(mask, radius):
-    dilated_mask = binary_dilation(mask, iterations=radius)
-    return dilated_mask
-
-# Example usage
-# Assuming you have a binary mask 'cloud_mask' and you want to add a radius of 3 pixels
-cloud_mask = np.array([[0, 0, 0, 0, 0],
-                       [0, 1, 1, 0, 0],
-                       [0, 1, 1, 0, 0],
-                       [0, 0, 0, 0, 0],
-                       [0, 0, 0, 0, 0]])
-
-radius = 3
-dilated_mask = add_pixels_around_mask(cloud_mask, radius)
-
-print("Original mask:")
-print(cloud_mask)
-
-print("Dilated mask:")
-print(dilated_mask)
-
-'''
-
 
 # %% Set spatial filter;
 spatialFilter =  {
@@ -180,6 +94,7 @@ spatialFilter =  {
         'longitude' : config["bboxes"]["munich"][2]
         }
     }
+
 
 # %% Download all files corresponding to the heatwaves
 # NOTE: Can take, depending on the parameters, quite some time 
@@ -196,7 +111,8 @@ if confirmation.lower() == "y":
 else:
     print("Loop execution cancelled.")
 
-# %% Count the number of files for a specific period
+
+# %% QC: Count the number of files for a specific period
 month = [{'start': '2022-01-01 00:00:00', 'end': '2023-01-01 00:00:00'}]
 types = ['GEO','CLOUD', 'LSTE']
 # Loop over files
@@ -212,22 +128,23 @@ for t in types:
 
 # %% Create a tiff for each unique scene
 # Define period to create tiffs
-summer = [{'start': '2022-01-01 00:00:00', 'end': '2022-01-03 00:00:00'}]
+period = [{'start': '2022-01-01 00:00:00', 'end': '2022-01-15 00:00:00'}]
 
 confirmation = input("Do you want to create tiffs for hierarchical files (Y/n): ")
 if confirmation.lower() == "y":
-    processHF(summer, tempRange, config)
+    processHF(period, tempRange, config)
 else:
     print("Function execution cancelled.")
 
-# %% Check if each LSTE.h5 has a respective tif
+
+# %% QC: Check if each LSTE.h5 has a respective tif
 raw_files = listdir(config['data']['ES_raw'])
 
 # Extract keys
 keys = set(
     [
     files.split('_')[3] + '_' + files.split('_')[4]
-    for files in raw_files if 'GEO' in files
+    for files in raw_files if 'LST' in files
     ]
 )
 
@@ -243,129 +160,56 @@ for k in keys:
 
     if l < 1:
         print(f'There are no tiff files for the key {k}')
+        print([f for f in raw_files if k in f])
 
 
+# %% Create a loop that creates and stores a mean tif for each first and second half of a month
 
-# %% TODO: Create a loop that creates and stores a mean tif for each first and second half of a month
-from datetime import datetime, timedelta
-
-def split_period(period):
-    result = []
-    format_str = '%Y-%m-%d %H:%M:%S'
-    
-    start_date = datetime.strptime(period[0]['start'], format_str)
-    end_date = datetime.strptime(period[0]['end'], format_str)
-    current_date = start_date
-    
-    while current_date < end_date:
-        month_start = current_date.replace(day=1)
-        next_month_start = (month_start + timedelta(days=31)).replace(day=1)
-        half_duration = (next_month_start - month_start) // 2
-        first_half_end = month_start + half_duration
-        second_half_start = first_half_end + timedelta(seconds=1)
-        second_half_end = next_month_start - timedelta(seconds=1)
-        
-        result.append({
-            'start': current_date.strftime(format_str),
-            'end': first_half_end.strftime(format_str)
-        })
-        
-        result.append({
-            'start': second_half_start.strftime(format_str),
-            'end': second_half_end.strftime(format_str)
-        })
-        
-        current_date = next_month_start
-    
-    return result
-
+# Split period
 period = [{'start': '2022-01-01 00:00:00', 'end': '2023-01-01 00:00:00'}]
-periods = split_period(period)
-
-
+periods = split_period(period, split_half=False)
 
 
 # %% Create an overview over all existing tiffs
-# TODO: Before serializing the code, change the quality measures
-# Try to be more sensitive and set a measure for nearly quadratic pictures
-# TODO: Before serializing, check if there is enough data to split by
-# day and night
 
-#dataOverview = dataQualityOverview([periods[7]], config)
 path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/meanTiff/'
 
-flags = ['day', 'night']
 
-# Delete existing files
-files = os.listdir(path)
+for period in [periods[0]]:
 
-for f in files: 
-    os.remove(os.path.join(path,f))
+    month = datetime.strptime(periods[0]['start'], '%Y-%m-%d %H:%M:%S').month
 
-# %%
-
-dataOverview = dataQualityOverview([periods[7]], 0 ,config)
-
-# %%
-plot_by_key('21476_003', config)
-
-# %%
-temps = [2.1, 4.8]
-
-for period in periods:
+    minTemp, maxTemp = tempRange[month]
     
-    dataOverview = dataQualityOverview([period],0 ,config)
-
-    #flag = 'day'
+    dataOverview = dataQualityOverview([period], minTemp, 45, config)
 
     dataOverview = dataOverview[
-        (pd.to_datetime(dataOverview['dateTime']).dt.hour >= 4) & 
-        (pd.to_datetime(dataOverview['dateTime']).dt.hour <= 8) & 
+    #    (pd.to_datetime(dataOverview['dateTime']).dt.hour >= 5) & 
+    #    (pd.to_datetime(dataOverview['dateTime']).dt.hour <= 20) & 
         dataOverview.qualityFlag]
     
-    print(dataOverview[dataOverview.qualityFlag].shape[0])
+    print(dataOverview)
 
+    for orbits in dataOverview['orbitNumber']:
+        plot_by_key(orbits, config)
 
 # %%
-    # for flag in flags:
-
-        #if flag == 'day': 
-            
-         #   dataOverview = dataOverview[
-         #       (pd.to_datetime(dataOverview['dateTime']).dt.hour >= 6) & 
-         #       (pd.to_datetime(dataOverview['dateTime']).dt.hour <= 18) & 
-         #       dataOverview.qualityFlag]
-
-       # elif flag == 'night':
-       #     dataOverview = dataOverview[
-       #         (pd.to_datetime(dataOverview['dateTime']).dt.hour >= 18) & 
-       #         (pd.to_datetime(dataOverview['dateTime']).dt.hour <= 6) & 
-       #         dataOverview.qualityFlag]
+    # print(dataOverview[dataOverview.qualityFlag].shape[0])
 
     if dataOverview.shape[0] < 3:
         print('There are not enogh files to create a high quality mean tif!')
         continue
     
-    name = path + period['start'].split(' ')[0] + flag + '.tif'
+    name = path + period['start'].split(' ')[0] + '.tif'
     
     # Store orbit numbers
     orbitNumbers = dataOverview['orbitNumber'] 
     # Create and store mean tiff
     meanTiff, maList = mergeTiffs(orbitNumbers, name, config)
 
-# %% Delete existing tiffs
-
-for file_name in os.listdir(path):
-    file_path = os.path.join(path, file_name)
-    
-    # Check if the path is a file (not a subdirectory)
-    if os.path.isfile(file_path):
-        # Delete the file
-        os.remove(file_path)
 
 
-# %% Plot all tifs in the directory
-
+# %% Plot all mean tiffs
 # Set the directory path where the TIFF images are located
 directory = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/meanTiff'
 
@@ -389,21 +233,16 @@ for tiff_file in tiff_files:
 
 
 
-
-
-# %% Create a Dataframe to check the quality of all relevant tiffs (in heatwave)
+# %% TODO: Structure the following code and create functions 
+# Create a Dataframe to check the quality of all relevant tiffs (in heatwave)
 # Relevant input is hW_tD and inverted_HW 
-dataQ = dataQualityOverview(inverted_HW, 10, config)
+dataQ = dataQualityOverview(inverted_HW, 0, 35, config)
 
 # %% Plot LST tiff by key
 plot_by_key('19797_003',config)
 
-# %%
-f_lst = h5py.File('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/raw_h5/ECOSTRESS_L2_LSTE_25115_005_20221210T094045_0601_01.h5')
 
-
-# %% 
-# Create DF with relevant tifs for the afternoon
+# %% Create DF with relevant tifs for the afternoon
 afterNoon = dataQ[
     # TODO: How to choose the timeslot ?
     (pd.to_datetime(dataQ['dateTime']).dt.hour >= 12 ) & 
@@ -440,6 +279,11 @@ map_afternoon
 
 # Save after noon 
 map_afternoon.save('afterNoon_nonHT.html')
+
+
+
+
+
 
 
 # %% # Create DF with relevant tifs for the morning
@@ -490,11 +334,13 @@ path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/'
 morningHW = rasterio.open(path + 'mean_Morning_HT.tif')
 afternoonHW = rasterio.open(path +'mean_afterNoon_HT.tif')
 
-# %%
 
+
+
+
+
+# %%
 diff_NoonMorning = afternoonHW.read()[0] - morningHW.read()[0]
-
-# %%
 diff_NoonMorning[diff_NoonMorning < 0 ] = np.NaN
 
 # %%
@@ -506,7 +352,10 @@ plt.show()
 
 
 
-# %% Tropical day, tropical night
+
+
+
+# %% TODO: Add to DWD data: Tropical day, tropical night
 
 '''
 dwd = pd.read_csv(config['data']['dwd']+'/dwd.csv')

@@ -58,13 +58,11 @@ maxTemp = mCentral_2022.groupby(mCentral_2022['MESS_DATUM'].dt.month)['TT_TU'].m
 tempRange = {}
 
 for i in range(1,13):
-    diff = (maxTemp[i-1] - minTemp[i-1])/3
-    tempRange[i] = [round(minTemp[i-1]-diff,2), round(maxTemp[i-1]+(diff*2),2)]
-
+    diff = (maxTemp[i-1] - minTemp[i-1])/5
+    tempRange[i] = [round(minTemp[i-1]-diff,2), round(maxTemp[i-1]+(diff*5),2)]
 
 
 from datetime import datetime, timedelta
-
 
 def split_window(window, window_size, overlap):
     result = []
@@ -86,7 +84,7 @@ def split_window(window, window_size, overlap):
 
 # Download all files corresponding to the heatwaves
 month = [
-    {'start': '2022-01-01 00:00:00', 'end': '2023-01-01 00:00:00'}
+    {'start': '2021-01-01 00:00:00', 'end': '2023-01-01 00:00:00'}
     ]
 
 

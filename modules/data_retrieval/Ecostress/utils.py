@@ -24,6 +24,9 @@ import pandas as pd
 import statistics
 import branca.colormap as cm
 import matplotlib.colors as mcolors
+from datetime import datetime, timedelta, date
+from dateutil.relativedelta import relativedelta
+from scipy.ndimage import binary_dilation
 
 
 
@@ -45,10 +48,10 @@ def heatwave_transform(dates):
         if start_date is None:
             start_date = date
             end_date = date
-        elif date - end_date == datetime.timedelta(days=1):
+        elif date - end_date == timedelta(days=1):
             end_date = date
         else:
-            end_date += datetime.timedelta(days=1)
+            end_date += timedelta(days=1)
             # end_date = end_date.replace(hour=0, minute=0, second=0)
 
             heatwaves.append({'start': start_date.strftime('%Y-%m-%d 00:00:00'), 'end': end_date.strftime('%Y-%m-%d 00:00:00')})
@@ -73,8 +76,8 @@ def dateInHeatwave(date, heatwaves):
         bool: True if the date falls within a heatwave, False otherwise.
     '''
     for wave in heatwaves:
-        start_date = datetime.datetime.strptime(wave['start'], '%Y-%m-%d %H:%M:%S')
-        end_date = datetime.datetime.strptime(wave['end'], '%Y-%m-%d %H:%M:%S')
+        start_date = datetime.strptime(wave['start'], '%Y-%m-%d %H:%M:%S')
+        end_date = datetime.strptime(wave['end'], '%Y-%m-%d %H:%M:%S')
         if start_date <= date <= end_date:
             return True
     
@@ -259,17 +262,17 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, temperatureRange, config):
     beginDate = np.array(f_lst['StandardMetadata']['RangeBeginningDate']).item().decode('utf-8')
     beginTime = np.array(f_lst['StandardMetadata']['RangeBeginningTime']).item().decode('utf-8')
     # Combine time and date
-    beginDateTime = datetime.datetime.strptime(beginDate + ' ' + beginTime, '%Y-%m-%d %H:%M:%S.%f')
+    beginDateTime = datetime.strptime(beginDate + ' ' + beginTime, '%Y-%m-%d %H:%M:%S.%f')
 
     # Extract ending date time
     endDate = np.array(f_lst['StandardMetadata']['RangeEndingDate']).item().decode('utf-8')
     endTime = np.array(f_lst['StandardMetadata']['RangeEndingTime']).item().decode('utf-8')
     # Combine date and time
-    endDateTime = datetime.datetime.strptime(endDate + ' ' + endTime,'%Y-%m-%d %H:%M:%S.%f')
+    endDateTime = datetime.strptime(endDate + ' ' + endTime,'%Y-%m-%d %H:%M:%S.%f')
 
     # Calculate "mean" datetime
     recordingTime = (
-        datetime.datetime.
+        datetime.
         fromtimestamp((beginDateTime.timestamp() + endDateTime.timestamp()) / 2).
         strftime("%Y-%m-%d %H:%M:%S")
         )
@@ -287,7 +290,7 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, temperatureRange, config):
     lst_SDS  = [dataset for dataset in lst_SDS if dataset.endswith(tuple(sds))]
 
     # Read in data
-    lst_SD = f_lst[lst_SDS[0]][()]
+    lst_SD = f_lst[lst_SDS[0]][()].astype(np.float32)
 
     # Set max and min values
     tempMin, tempMax = temperatureRange[beginDateTime.month]
@@ -299,7 +302,7 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, temperatureRange, config):
     tempMax = (tempMax + 273.15) / 0.02
 
     # Set "wrong values" to 0; NOTE: This might lead to strange errors
-    lst_SD[(lst_SD < tempMin) | (lst_SD > tempMax)] = np.mean([tempMin, tempMax])
+    lst_SD[(lst_SD < tempMin) | (lst_SD > tempMax)] =np.nan
 
     # Calculate temp to celcius
     lst_SD = kelToCel(lst_SD)
@@ -328,7 +331,8 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, temperatureRange, config):
     cld_SD = f_cld[cld_SDS[0]][()]
 
     # Apply funtion
-    cld_SD = get_zero_vec(cld_SD)
+    cld_SD = get_zero_vec(cld_SD).astype(np.float32)
+
 
     # Read in .h5 file 
     try:
@@ -406,8 +410,8 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, temperatureRange, config):
 
     # Perform K-D Tree nearest neighbor resampling (swath 2 grid conversion)
     # NOTE: This code returns a masked arrays that contain a mask to tag invalid datapoints
-    LSTgeo = kdt.get_sample_from_neighbour_info('nn', areaDef.shape, lst_SD, index, outdex, indexArr, fill_value=0)
-    Cldgeo = kdt.get_sample_from_neighbour_info('nn', areaDef.shape, cld_SD, index, outdex, indexArr, fill_value=0)
+    LSTgeo = kdt.get_sample_from_neighbour_info('nn', areaDef.shape, lst_SD, index, outdex, indexArr, fill_value=np.nan)
+    Cldgeo = kdt.get_sample_from_neighbour_info('nn', areaDef.shape, cld_SD, index, outdex, indexArr, fill_value=np.nan)
 
     #  Define the geotransform
     gt = [areaDef.area_extent[0], ps, 0, areaDef.area_extent[3], 0, -ps]
@@ -459,7 +463,7 @@ def createTif(fileNameGeo, fileNameLST, fileNameCld, temperatureRange, config):
         clipped_tif = tif.rio.clip(geometries) # all_touched = True)
         
         # Mean temp but only for lst: round(np.mean(tif.data),4)
-        clipped_tif.attrs['meanValue'] = round(np.mean(clipped_tif.data), 6)
+        clipped_tif.attrs['meanValue'] = round(np.nanmean(clipped_tif.data), 6)
         # Time as attribute
         clipped_tif.attrs['recordingTime'] = recordingTime
         
@@ -604,7 +608,7 @@ def processHF(timePeriod, temperatureRange, config):
             # Delete variable 
             del f
             # Combine time and date
-            dateTime = datetime.datetime.strptime(date + ' ' + time, '%Y-%m-%d %H:%M:%S.%f')
+            dateTime = datetime.strptime(date + ' ' + time, '%Y-%m-%d %H:%M:%S.%f')
 
             if dateInHeatwave(dateTime, timePeriod):
         
@@ -621,7 +625,7 @@ def processHF(timePeriod, temperatureRange, config):
                 continue
 
 
-def dataQualityOverview(heatPeriods, tempThresh, config):
+def dataQualityOverview(heatPeriods, tempThresh, cloudCoverage, config):
     '''
     Generates an overview of data quality from TIFF files based on 
     the provided configuration.
@@ -634,6 +638,9 @@ def dataQualityOverview(heatPeriods, tempThresh, config):
       data quality, including orbit number, date and time, 
       cloud coverage percentage, and mean land surface temperature.
     '''
+
+    final_shape = (643, 866)
+
     # Create empty data frame
     dataQ = pd.DataFrame(
         columns = [
@@ -641,7 +648,9 @@ def dataQualityOverview(heatPeriods, tempThresh, config):
             'dateTime',
             'cloudCoverage in %',
             'meanLSTE',
-            'ratio'
+            'ratio',
+            'closeToFS',
+            'uniqueLSTValues'
             ])
 
     # Get all filepaths of the relevant tiffs, TODO: Check if tif in heatwave
@@ -649,7 +658,7 @@ def dataQualityOverview(heatPeriods, tempThresh, config):
         f 
         for f in listdir(config['data']['ES_tiffs']) 
         if isfile(join(config['data']['ES_tiffs'], f)) and 
-        f.endswith('.tif') and dateInHeatwave(datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), heatPeriods)
+        f.endswith('.tif') and dateInHeatwave(datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), heatPeriods)
         ]
 
     # Extract all unique keys and reduce to unique values
@@ -669,10 +678,15 @@ def dataQualityOverview(heatPeriods, tempThresh, config):
             )
         ratio = max(lst.shape[1:]) / min(lst.shape[1:])
 
+        differFinalShape = (abs(lst.shape[1]-final_shape[0]) < 10 or abs(lst.shape[2]-final_shape[1]) < 10)
+
+        uniqueValues = len(np.unique(lst.values.flatten()))
+
         # Open cloud tiff
         cld = rioxarray.open_rasterio(
             config['data']['ES_tiffs'] + [f for f in orbitFls if 'CLOUD' in f and '.tif' in f][0]
             )
+
         try:
             mean_value = cld.attrs['meanValue'] * 100
         except KeyError:
@@ -683,12 +697,19 @@ def dataQualityOverview(heatPeriods, tempThresh, config):
             lst.attrs['recordingTime'],
             mean_value,
             lst.attrs['meanValue'],
-            ratio]
+            ratio,
+            differFinalShape,
+            uniqueValues]
 
     # Sort dataQ dataframe by time
     dataQ.sort_values(by=['dateTime'], inplace=True, ignore_index=True)
     # Create a new column qualityFlag based on average temperature and cloud coverage
-    dataQ['qualityFlag'] = (dataQ['meanLSTE'] > tempThresh) & (dataQ['cloudCoverage in %'] < 65) & (dataQ['ratio'] < 1.5)
+    dataQ['qualityFlag'] = (dataQ['meanLSTE'] > tempThresh) & \
+        (dataQ['cloudCoverage in %'] < cloudCoverage) & \
+        (dataQ['ratio'] < 1.5) & \
+        (abs(0-dataQ['meanLSTE']) > 0.001) & \
+        dataQ['closeToFS'] & \
+        (dataQ['uniqueLSTValues'] > 10)
 
     return dataQ
 
@@ -757,6 +778,9 @@ def meanMaskArray(orbitNumbers, config):
             # Transform to array
             img_lst = lst.read()[0]
             img_cld = cld.read()[0]
+
+            # Perform dilation
+            img_cld = binary_dilation(img_cld, iterations=3)
             
             # TODO: Add quality control
             # Create a masked array. In addition to the cloud mask, temperature values below 1 are masked too
@@ -773,6 +797,9 @@ def meanMaskArray(orbitNumbers, config):
             cld_transformed = cld.read(
                 out_shape=(cld.count, final_shape[0], final_shape[1]), resampling=Resampling.bilinear
                 )[0]
+            
+            # Perform dilation
+            cld_transformed = binary_dilation(cld_transformed, iterations=3)
 
             # Store arrays as masked arrey
             masked_array = np.ma.masked_array(lst_transformed, mask=(cld_transformed.astype(bool) | (lst_transformed<1)))
@@ -960,3 +987,100 @@ def plot_by_key(key, config):
     img = np.array(lst)[0]
     plt.imshow(img, cmap='jet')
     plt.show()
+
+
+def split_period(period, split_half=True):
+    result = []
+    format_str = '%Y-%m-%d %H:%M:%S'
+
+    start_date = datetime.strptime(period[0]['start'], format_str)
+    end_date = datetime.strptime(period[0]['end'], format_str)
+    current_date = start_date
+
+    while current_date < end_date:
+        if split_half:
+            month_start = current_date.replace(day=1)
+            next_month_start = (month_start + timedelta(days=31)).replace(day=1)
+            half_duration = (next_month_start - month_start) // 2
+            first_half_end = month_start + half_duration
+            second_half_start = first_half_end + timedelta(seconds=1)
+            second_half_end = next_month_start - timedelta(seconds=1)
+
+            result.append({
+                'start': current_date.strftime(format_str),
+                'end': first_half_end.strftime(format_str)
+            })
+
+            result.append({
+                'start': second_half_start.strftime(format_str),
+                'end': second_half_end.strftime(format_str)
+            })
+
+            current_date = next_month_start
+        else:
+            month_start = current_date.replace(day=1)
+            next_month_start = (month_start + relativedelta(months=1)).replace(day=1)
+            month_end = next_month_start - timedelta(seconds=1)
+
+            result.append({
+                'start': current_date.strftime(format_str),
+                'end': month_end.strftime(format_str)
+            })
+
+            current_date = next_month_start
+
+    return result
+
+
+def invertHeatwave(heatwave):
+    
+    start_date = date(2022, 6, 1)
+    end_date = date(2022, 8, 31)
+    date_list = []
+
+    delta = timedelta(days=1)
+    current_date = start_date
+
+    while current_date <= end_date:
+        date_element = {
+            'start': current_date.strftime('%Y-%m-%d 00:00:00'),
+            'end': (current_date + delta).strftime('%Y-%m-%d 00:00:00')
+        }
+        date_list.append(date_element)
+        current_date += delta
+
+    inverted_HW = []
+
+    # Loop to invert heatwave
+    for dates in date_list:
+        if not dateInHeatwave(datetime.strptime(dates['start'],'%Y-%m-%d %H:%M:%S'), heatwave):
+            inverted_HW.append(dates)
+        elif not dateInHeatwave(datetime.strptime(dates['end'],'%Y-%m-%d %H:%M:%S'), heatwave):
+            inverted_HW.append(dates)
+    
+    return inverted_HW
+
+
+def calculateTempRange(dwd_data):
+    # Extract id for munich central
+    id = 3379
+    # Reduce the data to munich central
+    mCentral = dwd_data[dwd_data['STATIONS_ID'] == id].reset_index(drop=True)
+    mCentral.drop('STATIONS_ID', inplace=True,axis=1)
+    # Convert the date column to datetime
+    mCentral['MESS_DATUM'] = mCentral['MESS_DATUM'].astype('datetime64[ns]')
+
+    # Filter the data for the year 2022
+    mCentral_2022 = mCentral[mCentral['MESS_DATUM'].dt.year == 2022]
+
+    minTemp = mCentral_2022.groupby(mCentral_2022['MESS_DATUM'].dt.month)['TT_TU'].min().to_list()
+    maxTemp = mCentral_2022.groupby(mCentral_2022['MESS_DATUM'].dt.month)['TT_TU'].max().to_list()
+
+    tempRange = {}
+
+    for i in range(1,13):
+        diff = (maxTemp[i-1] - minTemp[i-1])/5
+        tempRange[i] = [round(minTemp[i-1]-diff,2), round(maxTemp[i-1]+(diff*5),2)]
+    
+    return tempRange
+    
