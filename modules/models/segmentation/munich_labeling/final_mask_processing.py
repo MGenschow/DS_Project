@@ -167,17 +167,18 @@ def create_target_mask(orig_tif_path, mask_path,  nutzungsdaten_df, hausumringe_
     ###################### Create final mask
     # Methodology: 
     # - Define everything as impervious surface (background)
-    # - put water on top
     # - add low vegetation
-    # - overlay roads as impoervious
+    # - overlay roads as impervious
     # - overly tree annotations
     # - overlay building bounds
+    # - put water on top
+
     final_mask = np.ones((ann_mask.shape[0], ann_mask.shape[1]))
-    final_mask[nd_mask == 4] = 4
     final_mask[ann_mask == 3] = 3
     final_mask[nd_mask == 6] = 1
     final_mask[ann_mask == 5] = 5
     final_mask[hu_mask == 2] = 2
+    final_mask[nd_mask == 4] = 4
 
     out_name = mask_path.split('/')[-1].split('.')[0] + '.tif'
     out_path = orthophoto_dir + '/labeling_subset/final_masks/' + out_name

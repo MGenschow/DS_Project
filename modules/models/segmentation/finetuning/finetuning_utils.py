@@ -46,7 +46,7 @@ def set_seed(seed):
 
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
-set_seed(42)
+set_seed(123)
 
 set_seed(1234)
 RGB_classes = [
@@ -259,19 +259,25 @@ def calculate_accuracy(model, test_loader, num_classes):
 
             # Calculate per class accuracy
             for i in range(num_classes):
-                correct_pixels_per_class[i] += ((pred.cpu() == label) & (label == i)).sum().item()
-                num_pixels_per_class[i] += (label == i).sum().item()
+                if i in [0,4]:
+                    continue
+                else:
+                    correct_pixels_per_class[i] += ((pred.cpu() == label) & (label == i)).sum().item()
+                    num_pixels_per_class[i] += (label == i).sum().item()
 
     # Calculate and store per class accuracies
     accuracy_dict = {}
     per_class_acc = []
     for i in range(num_classes):
-        if num_pixels_per_class[i] > 0:
-            accuracy = np.round((correct_pixels_per_class[i]/num_pixels_per_class[i])*100, 2)
-            per_class_acc.append(accuracy)
-            accuracy_dict[Label_classes[i]] = accuracy
+        if i in [0,4]:
+                continue
         else:
-            accuracy_dict[Label_classes[i]] = 'No instances in the test set'
+            if num_pixels_per_class[i] > 0:
+                accuracy = np.round((correct_pixels_per_class[i]/num_pixels_per_class[i])*100, 2)
+                per_class_acc.append(accuracy)
+                accuracy_dict[Label_classes[i]] = accuracy
+            else:
+                accuracy_dict[Label_classes[i]] = 'No instances in the test set'
 
     # Calculate and store mean accuracy
     if per_class_acc:
@@ -287,6 +293,82 @@ def calculate_accuracy(model, test_loader, num_classes):
     
     return df
 
+def train_epoch(model, train_loader, epoch):
+    """
+    Trains the model for one epoch using the provided training data.
+
+    Args:
+        model (torch.nn.Module): The model to be trained.
+        train_loader (torch.utils.data.DataLoader): The DataLoader object that provides the training data.
+        epoch (int): The current epoch number.
+
+    Returns:
+        None
+    """
+    model.train()
+    loss_sum = 0
+    for batch_id, (data, label) in enumerate(train_loader):
+        # Send data and label to DEVICE
+        data = data.to(DEVICE)
+        label = label.to(DEVICE)
+
+        with torch.cuda.amp.autocast(): 
+            # Forward Pass:
+            output = model(data)['out']
+
+            # Caluclate Loss
+            loss = LOSS_FUNC(output, label.long())
+
+        # Backward Pass
+        optimizer.zero_grad()
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
+
+        # Comupte loss sum and count batches
+        loss_sum += loss.item()
+        batch_id += 1
+
+        if batch_id%5==0:
+            progress = f'Epoch: {epoch} | Batch {batch_id} / {len(train_loader)} | Loss: {np.round(loss_sum/(batch_id),4)}'
+            print(progress)
+
+
+def train_model(model, train_loader, test_loader, LEARNING_RATE = 0.01, NUM_EPOCHS=1):
+    #################### Training Setup #################### 
+    # Send model to DEVICE
+    model = model.to(DEVICE)    
+
+    # Optimization setup
+    global optimizer
+    global LOSS_FUNC
+    global scaler
+    optimizer = optim.SGD(params=model.parameters(), lr=LEARNING_RATE)
+
+    #weights = [0, 1, 2, 2, 0, 2]
+    #label_weights = torch.FloatTensor(weights).cuda()
+    #LOSS_FUNC = nn.CrossEntropyLoss(weight = label_weights)
+
+    LOSS_FUNC = nn.CrossEntropyLoss()
+    # use torch grad scaler to speed up training and make it more stable
+    scaler = torch.cuda.amp.GradScaler()
+
+    #################### Training #################### 
+    full_result = calculate_accuracy(model, test_loader, 6)
+    display(full_result)
+    print("Start Training ...")
+    
+    for epoch in range(NUM_EPOCHS):
+        train_epoch(model, train_loader, epoch)
+        result = calculate_accuracy(model, test_loader, 6)
+        result.rename(columns = {'Accuracy (%)':f"Epoch {epoch}"}, inplace = True)
+        full_result = pd.concat([full_result, result.iloc[:,1]], axis = 1)
+        display(full_result)
+
+        #################### Saving ####################
+        # Save model to disk
+        #torch.save(model, save_dir + '/' + specs_name+'_epoch'+str(epoch)+'.pth.tar')
+        #torch.save(optimizer, save_dir + '/' + specs_name+'_optimizer.pth.tar'
 
 
 
@@ -300,7 +382,7 @@ def calculate_accuracy(model, test_loader, num_classes):
 # iterate over the train_loader
 # for i, (images, masks) in enumerate(test_loader):
 #     # stop after the first batch
-#     if i > 9:
+#     if i > 3:
 #         break
 
 #     batch_size = images.shape[0]
