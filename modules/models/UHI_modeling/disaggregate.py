@@ -6,9 +6,19 @@ import math
 import os
 import pickle
 import yaml
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import matplotlib.cm as cm
+import folium
+import folium.raster_layers
+import folium.features
+import rasterio
+import rioxarray as rxr
 
 from math import radians, sin, cos, asin, sqrt
 from shapely.geometry import Polygon
+from shapely.geometry import box
+from branca.colormap import LinearColormap
 
 home_directory = os.path.expanduser( '~' )
 os.chdir(home_directory + '/DS_Project/modules')
@@ -127,3 +137,122 @@ def divide_polygon_into_grid(polygon, grid_size_meters):
     grid_gdf.crs = 'EPSG:4326'
     
     return grid_gdf
+#%% pixels_to_foliumMap
+def pixels_to_foliumMap(array, polygon):
+    """
+    Convert pixel array data to a Folium map with overlays.
+
+    Args:
+        array (ndarray): The pixel array data.
+        polygon (Polygon): The polygon representing the bounds of the pixel array.
+
+    Returns:
+        folium.Map: A Folium map with overlays.
+
+    """
+    # Extract the pixel array data
+    data = np.array(array)[0]
+
+    # Define color range for colormap
+    color_range = np.linspace(0, 1, 256)
+    colors_jet_rgba = plt.cm.jet(color_range)
+    colors_jet_hex = [mcolors.rgb2hex(color) for color in colors_jet_rgba]
+
+    # Create colormap and normalize the data
+    cmap = plt.colormaps['jet']
+    norm = colors.Normalize(vmin=data.min(), vmax=data.max())
+    colored_data = cmap(norm(data))
+
+    # Calculate image bounds and corner coordinates
+    image_bounds = box(*array.rio.bounds())
+    min_x, min_y, max_x, max_y = array.rio.bounds()
+    corner_coordinates = [[min_y, min_x], [max_y, max_x]]
+
+    # Create a Folium map centered on the image bounds
+    m = folium.Map(
+        location=[image_bounds.centroid.y, image_bounds.centroid.x],
+        zoom_start=15,
+    )
+
+    # Add a GeoJson overlay for the image bounds
+    folium.GeoJson(
+        image_bounds.__geo_interface__,
+        style_function=lambda x: {'fill': False, 'color': 'orange', 'colorOpacity': 0.7}
+    ).add_to(m)
+
+    # Add a tile layer to the map
+    folium.TileLayer(
+        tiles='CartoDB positron',
+        attr='CartoDB',
+        transparent=True,
+    ).add_to(m)
+
+    # Add the colored data as an ImageOverlay to the map
+    folium.raster_layers.ImageOverlay(
+        colored_data,
+        bounds=corner_coordinates,
+        opacity=0.5,
+        interactive=True,
+        cross_origin=True,
+        pixelated=True,
+        zindex=0.2
+    ).add_to(m)
+
+    # Create a colormap for the data and add it to the map
+    colormap = LinearColormap(
+        colors=colors_jet_hex,
+        vmin=data.min(),
+        vmax=data.max(),
+        max_labels=15
+    )
+    colormap.caption = 'Land surface temperature in celsius'
+    colormap.add_to(m)
+
+    # Add a GeoJson overlay for the polygon
+    folium.GeoJson(
+        polygon.__geo_interface__,
+        style_function=lambda x: {'fill': False, 'color': 'black', 'colorOpacity': 0.7}
+    ).add_to(m)
+
+    return m
+#%% naive_pixel_mean
+def naive_pixel_mean(array, polygon):
+    """
+    Calculate the naive pixel mean within a polygon.
+
+    Args:
+        array (rasterio.io.DatasetReader): The raster dataset.
+        polygon (Polygon): The polygon to calculate the mean within.
+
+    Returns:
+        float: The mean pixel value within the polygon.
+
+    """
+    # Clip the raster dataset using the polygon
+    c = array.rio.clip([polygon], crs=4326, all_touched=True)
+
+    # Calculate the mean of the clipped pixels
+    m = c.mean().values
+
+    return m
+#%% rec_polygon_coords
+def rec_polygon_coords(polygon):
+    """
+    Retrieve the corner coordinates of a rectangle polygon.
+
+    Args:
+        polygon (Polygon): The rectangle polygon.
+
+    Returns:
+        tuple: A tuple containing the minimum x-coordinate, minimum y-coordinate,
+               maximum x-coordinate, and maximum y-coordinate of the rectangle.
+
+    """
+    # Retrieve the points of the polygon's exterior
+    points = list(polygon.exterior.coords)
+
+    # Separate the x and y coordinates
+    x_coordinates, y_coordinates = zip(*points)
+
+    # Return the corner coordinates of the rectangle
+    return min(x_coordinates), min(y_coordinates), max(x_coordinates), max(y_coordinates)
