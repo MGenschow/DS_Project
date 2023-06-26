@@ -1,12 +1,14 @@
 #%% import packages
 import pandas as pd
 import numpy as np
+import geopandas as gpd
 import math
 import os
 import pickle
 import yaml
 
 from math import radians, sin, cos, asin, sqrt
+from shapely.geometry import Polygon
 
 home_directory = os.path.expanduser( '~' )
 os.chdir(home_directory + '/DS_Project/modules')
@@ -72,3 +74,56 @@ def convert_bbox_lon_lat_to_lat_lon(bbox):
 
     # Flatten the converted_bbox list
     return [coord for point in converted_bbox for coord in point]
+#%% divide_polygon_into_grid
+def divide_polygon_into_grid(polygon, grid_size_meters):
+    """
+    Divide a polygon into a grid of smaller polygons.
+
+    Args:
+        polygon (Polygon): The input polygon to be divided.
+        grid_size_meters (float): The size of each grid cell in meters.
+
+    Returns:
+        GeoDataFrame: A GeoDataFrame containing the grid polygons.
+
+    """
+    # Calculate the longitudinal and latitudinal distances of the polygon
+    lon_distance = polygon.bounds[2] - polygon.bounds[0]
+    lat_distance = polygon.bounds[3] - polygon.bounds[1]
+    
+    # Calculate the grid size in terms of longitudinal and latitudinal units
+    lon_grid_size = grid_size_meters / (111320 * math.cos(math.radians(polygon.bounds[1])))
+    lat_grid_size = grid_size_meters / 111320
+    
+    # Initialize a list to store the grid polygons
+    grid_polygons = []
+    
+    # Iterate over the range of longitudinal and latitudinal values to create grid polygons
+    for lon in np.arange(polygon.bounds[0], polygon.bounds[2], lon_grid_size):
+        for lat in np.arange(polygon.bounds[1], polygon.bounds[3], lat_grid_size):
+            # Create a square polygon using the current coordinates and grid sizes
+            square = Polygon([
+                (lon, lat), (lon + lon_grid_size, lat),
+                (lon + lon_grid_size, lat + lat_grid_size), (lon, lat + lat_grid_size)
+            ])
+            
+            # Check if the polygon intersects with the current square
+            if polygon.intersects(square):
+                intersection = polygon.intersection(square)
+                
+                # Check if the intersection area is greater than zero
+                if intersection.area > 0:
+                    # Handle different intersection geometry types
+                    if intersection.geom_type == 'Polygon':
+                        if intersection.equals(square):
+                            grid_polygons.append(intersection)
+                    elif intersection.geom_type == 'MultiPolygon':
+                        for part in intersection:
+                            if part.equals(square):
+                                grid_polygons.append(part)
+    
+    # Create a GeoDataFrame from the grid polygons
+    grid_gdf = gpd.GeoDataFrame(geometry=grid_polygons)
+    grid_gdf.crs = 'EPSG:4326'
+    
+    return grid_gdf
