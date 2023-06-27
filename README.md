@@ -1,10 +1,10 @@
 # **HeatMapper:** Modeling urban heat intensity
 
-<center>
-    <img src="figures/lst_munich.JPG" alt="drawing"  width="300"/>
+<p align="center">
+    <img src="figures/lst_munich.JPG" alt="drawing"  width="1000"/>
     <br>
     &copy; OpenStreetMap
- </center>
+</p>
 
 ## Background
 
@@ -14,12 +14,11 @@ Increasing urbanisation and climate change have led to the evolving and intensif
 
 This project uses land surface temperature data from Ecostress and official property data as well as orthophotos from the Bavarian State Office for Digitisation, Broadband and Surveying. The former data source denotes the dependent variable in our analysis. The latter two data sources were used to extract land cover / land usage (LCLU) characteristics forming the basis of our feature set. We used pre-trained and fine-tuned neural networks to reach a granular segregation of land cover to also detect patterns that are not stored in official data.
 
-<center>
-    <img src="figures/grid_element_all.JPG" alt="drawing"  width="500"/>
+<p align="center">
+    <img src="figures/grid_element_all.JPG" alt="drawing"  width="800"/>
     <br>
     &copy; OpenStreetMap
- </center>
- <br>
+</p>
 
 A linear regression was then used to model the relationship between a neighbourhood's temperature and its surface.
 
@@ -32,7 +31,6 @@ We provide an [interative application](https://github.com/MGenschow/DS_Project) 
 ### Code 
 We have only used the programming language Python in the context of this research project. This Github repository hosts all the code from data acquisition to statistical modeling to app source code. 
 
-<br>
 <br>
 
 ---
