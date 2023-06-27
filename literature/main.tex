@@ -59,7 +59,7 @@ bmargin=2.5cm
 \pagenumbering{arabic}
 
 % configure title
-\title{\vspace{-2cm} Data Science Project \\ On the identification of urban heat islands and its drivers}
+\title{\vspace{-2cm} Data Science Project \\ Modeling urban heat intensity}
 \author{Malte Genschow\thanks{malte.genschow@student.uni-tuebingen.de} , Stefan Glaisner\thanks{stefan.glaisner@student.uni-tuebingen.de} , Stefan Grochowski\thanks{stefan.grochwoski@student.uni-tuebingen.de} , Aaron Lay\thanks{aaron.lay@student.uni-tuebingen.de}}
 \date{\today}
 
@@ -83,14 +83,14 @@ bmargin=2.5cm
 
 \section{Introduction}
 
-Urban heat islands have become an increasingly important topic given the advent of climate change. It has been scientifically proven that high temperatures are inevitably associated with negative consequences for people's health \citep{anderson2009,basu2002,basu2009}. This project within the context of the module \emph{DS500 Data Science Project} at the University of Tübingen aims at identifying urban heat islands in the city of Munich. Furthermore, we establish an connection between urban heat intensity (\acrshort{uhi}) and potential causative factors, and visualise the effects we find on an interactive map.
+Urban heat islands have become an increasingly important topic given the advent of climate change and increasing urbanisation. High temperatures are not only inevitably associated with negative consequences for human health \citep{anderson2009,basu2002,basu2009} but also considerably restrict people in their daily lifes, whether at work or in their leisure time. This project within the context of the module \emph{DS500 Data Science Project} at the University of Tübingen aims at identifying urban heat islands in the city of Munich and modeling the relationship between urban heat intensity (\acrshort{uhi}) and potential causative factors - mainly derived from land cover and land use characteristics.
 
 
 \section{Urban heat islands}
 
 Neighbourhoods with a high building density often do not cool down sufficiently at night - the heat accumulates and becomes a health risk for the residents. Scientists call this phenomenon the urban heat island effect. During evening and night hours, the difference in temperatures between the city and the suburbs can sometimes be greater than 5°C. In inner cities, the risk of a tropical night (a night with minimum temperature above 20°C) is thus considerably higher. So-called tropical nights with temperatures above 20°C put a strain on the body because the heat makes it difficult to regenerate during sleep. But heat is not only a permanent challenge at night, but also during the day - which is what makes it so dangerous. Fluid loss can lead to circulatory problems, vascular occlusion and, in the worst case, heart or kidney failure. If the body is no longer able to sweat sufficiently, there is a risk of fatal overheating.
 
-The urban heat island effect is therefore particularly problematic when temperatures are high (on consecutive days), in so-called heat waves \citep{gasparrini2011}. Therefore, our analysis of urban heat intensity is primarily based on weather data that was recorded during the time of a heat wave.
+The urban heat island effect is therefore particularly problematic if temperatures are high on consecutive days \citep{gasparrini2011}. Such periods are also conventionally referred to as heat waves. Therefore, our analysis of urban heat intensity is based on temperature data that was recorded during the time of a heat wave. However, there are many ways to characterise periods as heat waves. We would like to highlight two methods in particular, one of which we have used.
 
 
 \section{Heat wave detection}
@@ -106,7 +106,7 @@ HIF = & -42.379 + 2.0490T + 10.1433H + (-0.2248)TH + (-6.8378 \times 10^{-3})T^2
 \end{aligned}
 \end{equation}
 
-Another prominent index was developed by \citet{nws2011}. It is based on various nested conditions and is nicely described in \citet{anderson2013}. These apparent temperature estimates can then be used for the detection of heatwaves which is thoroughly described in the next section.
+Another prominent index was developed by \citet{nws2011}. It is based on various nested conditions and is nicely described in \citet{anderson2013}. These estimates of apparent temperature can then be used for the detection of heatwaves which is thoroughly described in the next section.
 
 \subsection{Annual series method}
 
@@ -120,89 +120,50 @@ Using this approach and data from the Munich central DWD weather station for 202
 
 \subsection{Recurrence probabilities}
 
-There has been several approaches to add some substance to the mere identification of heat waves by testing their statistical significance based on recurrence probability estimates. We follow \citet{mearns1984} and \citet{kysely2010} by fitting an ARMA(1,1) process to observed Munich data from 2019 to 2022 and then comparing the observed data to 100,000 simulations of the estimated time series model. \\
-Our empirical results suggest that all the heatwaves and in particular the one in July was highly statistically significant.
+There has been several approaches to add some substance to the mere identification of heat waves by testing their statistical significance based on recurrence probability estimates. We follow \citet{mearns1984} and \citet{kysely2010} by fitting an ARMA(1,1) process to daily maximum temperatures observed from 2014 to 2022 in the months of June, July and August. Comparing the actually observed data for 2022 to 100,000 simulations of the estimated time series model suggests that all the heatwaves and in particular the one in July was highly statistically significant and quite unlikely in its nature.
 
 
 \section{Modeling urban heat intensity}
 
 \subsection{Urban heat intensity}
 
-The main variable of interest considering our research question is urban heat intensity (UHI). Similarly to the vast majority of the literature, we concentrate on surface/skin UHI \citep{deilami2018}. Typically, UHI is defined as the difference of land surface temperature (\acrshort{lst}) between urban/built-up areas and non-urban/rural areas. However, we follow many other research papers by not focusing on the UHI specifically but by exploring the relationship between LST and selected spatial-temporal factors.\\
-Another potential and somewhat new approach would be to consider the difference between day- and nighttime temperatures as - according to the urban heat island effect - we would expect to see a larger difference for urban heat islands than elsewhere. Nevertheless, in the end we opted for the former approach as there was too little heterogeneity in the day-nighttime-differential.
+The main variable of interest considering our research question is urban heat intensity. Similarly to the vast majority of the literature, we concentrate on surface/skin UHI \citep{deilami2018}. Typically, UHI is defined as the difference of land surface temperature (\acrshort{lst}) between urban/built-up areas and non-urban/rural areas. However, we follow many other research papers by not focusing on the UHI specifically but by exploring the relationship between LST and selected spatial-temporal factors \citep{deilami2018}.\\
+Another potential and somewhat new approach would be to consider the difference between day- and nighttime temperatures as - according to the urban heat island effect - we would expect to see a smaller difference for urban heat islands than elsewhere (as urban heat islands do not cool down at night). Nevertheless, in the end we opted for the former approach as there was too little heterogeneity in the day-nighttime-differential.
 
 \subsection{Feature engineering}
 
-One of the key aspects of this data science project is to complement the identification of heat islands with the identification of potential causative factors that drive them. Hence, the extraction of features from visual data such as satellite images and orthophots represented one of the greatest and, above all, most important challenges. In addition to extracting the prominent normalized difference vegetation index (\acrshort{ndvi}), we classified the land cover and land use (\acrshort{lclu}) for the respective Munich area using orthophotos from the \citet{bayern2018}. For this, however, a deep neural network had to be finetuned using supervised classification beforehand so that the classification on the unlabeled Bayern data reaches an appropriate level of precision. The deep learning model was trained using data from the 'Potsdam Data Set for the 2D Semantic Labeling Contest' \citepalias{isprs2012} and the LoveDA data being "A Remote Sensing Land-Cover Dataset for Domain Adaptive Semantic Segmentation" \citep{loveda2021}. The extracted features here are first of all continuous and refer to the proportion of the area occupied by the LCLU pattern. Classified patterns are roads, trees, water and buildings.
+One of the key aspects of this data science project is to complement the identification of heat islands with the identification of potential causative factors that drive them. Hence, the extraction of features from official property data and orthophotos provided by the Bavarian State Office for Digitisation, Broadband and Surveying \citep{bayern2018}. The official ready-to-use (i.e. already classified) data is complemented by a deep neural network that was fine-tuned using supervised classification to predict granular land cover and land usage characteristics (\acrshort{lclu}) for the unlabeled Munich data set. The deep learning model was trained using the LoveDA dataset \citep{loveda2021}. The extracted features here are first of all continuous and refer to the proportion of the area occupied by the LCLU pattern. Hence, the values for these features lie in the range between 0 and 1. Classified patterns are roads, trees, water, buildings, low vegetation and impervious surface.\\
+As a proxy for winds, we have included the average height of buildings as an additional control variable in our model. The data comes from a 3D model provided by the Bavarian State Office for Digitisation, Broadband and Surveying \citep{bayern2018} as well. Accordingly, this variable is not limited upwards by 1.
 
-\subsection{Correlative model}
+\subsection{Causal model}
 
 \citet{deilami2018} point out that that in the empirical literature on the relationship of UHI and potential causative factors, OLS is the predominant methodological approach together with the Pearson correlation coefficient. However, we emphasise that both methods are not capable of accounting for all the interactions and nonlinearities that are present in our ecosystem. Furthermore, we are also not interested in a simple treatment effect estimate but rather care about modeling "What If" scenarios (e.g. what would this inner city area would look like if there were more trees).\\
-Still, the dependent/target variable $Y$ in our context is UHI measured by LST. Our feature set $X$ consists of various LCLU characteristics that were thoroughly described in the section above. Unfortunately, our model only incorporates spatial heterogeneity and cannot account for temporal variation, too, as, for instance, done by \citet{seebacher2019}. This is because the orthophotos were only available for a certain point of time, namely March 2021. Since a large part of our feature set is based on this data source, we have no temporal heterogeneity here. However, even over a period of several years, we would not expect any major changes here, as a cityscape changes only very slowly and the temporal variation would be minimal anyway.
+Still, the dependent/target variable $Y$ in our context is UHI measured by LST. Our feature set $X$ consists of various LCLU characteristics that were thoroughly described in the section above. Unfortunately, our model only incorporates spatial heterogeneity and cannot account for temporal variation, too, as, for instance, done by \citet{seebacher2019}. This is because the orthophotos were only available for a certain point of time, namely tbd. Since a large part of our feature set is based on this data source, we have no temporal heterogeneity here. However, even over a period of several years, we would not expect any major changes here, as a cityscape changes only very slowly and the temporal variation would be minimal anyway.
 
 Both $Y$ and $X$ are observed for a predefined bounding box around Munich. Thus, we are talking about a very large observation that is limited in granularity by the coarsest pixel resolution. In our case, this refers to the LST data \citep{ecostress2019} where one pixel measures 70m by 70m. Given this constraint, we now divide our one large observation into several small observations by dividing our bounding box around Munich into a grid of several small 100m by 100m sections. For each grid element, we can now disaggregate our $Y$ and $X$ estimates.\\
 Let us now denote a single 100m by 100m grid element by subscript $i$. Our goal is now to best approximate our conditional expectation function $E[ Y \mid X ]$. Put differently, the LST for grid element $i$ can be represented as a function of features $X_i$ and some unobserved error term:
 \begin{equation}
 Y_i = f(X_i) + u_i
 \end{equation}
-We can think of $f(\cdot)$ being any (non)-linear prediction function from our Machine Learning toolbox. Despite their increased popularity and high predictive power, we excluded neural networks from our function set due to their black box character. Following \citet{seebacher2019}, we tested a random forest, a decision tree, a support vector machine and a naive bayes using 10-fold cross validation to choose the best model (in terms of the mean squared error (\acrshort{mse})).
+We can think of $f(\cdot)$ being any (non)-linear prediction function from our Machine Learning toolbox. However, to be able to establish causal interpretations, we employ a linear regression model that incorporates poylnomials and interactions of order 3 for all features to account for non-linearities and interactions.
 
 
 \section{Limitations}
 
-As for any research project there are few limitations that we want to address here. First, our correlative model only incorporates a proxy for wind circulation for a specific location. As wind underlies a quite sophisticated meteorological process, our model most likely does not fully account for this factor.\\
-\citet{deilami2018} also point to the fact that our world is three-dimensional and features such as tree canopy compared to vegetation area might hold more explanatory power with regard to UHI.
+\citet{deilami2018} point to the fact that our world is three-dimensional and features such as tree canopy compared to vegetation area might hold more explanatory power with regard to UHI.
 
-Considering the feature engineering, one potential advantageous approach would be to employ a soc-called spectral mixture analysis (\acrshort{sma}) to account for the fact that a single pixel might be partly covered by vegetation and impervious surface at the same time \citep{ridd1995}. However, given the very high 40cm resolution of the orthophotos from the \citet{bayern2018}, this might be negligible here.
+Considering the feature engineering, one potential advantageous approach would be to employ a soc-called spectral mixture analysis (\acrshort{sma}) to account for the fact that a single pixel might be partly covered by vegetation and impervious surface at the same time \citep{ridd1995}. However, given the very high 40cm resolution of the orthophotos, this might be negligible here.
 
 \section{Accessibility of Results}
 
 Our statistical analysis as well as the data preparation code can be found in our \href{https://github.com/MGenschow/DS_Project}{Github repository}. The final app that visualises our findings for the city of Munich is available \href{https://github.com/MGenschow/DS_Project}{here}.
 
 
-\section{Data sources}
-
-\defcitealias{dwd2017}{\textcolor{black}{DWD (}2017\textcolor{black}{)}}
-\defcitealias{isprs2012}{\textcolor{black}{ISPRS (}2012\textcolor{black}{)}}
-
-The biggest effort in this project was certainly the connection of various data sources. The following table provides an overview of all data sources and their use within the scope of this project:
-
-\begin{table}[H]
-\footnotesize
-\begin{center}
-\caption{Data sources \label{data}}
-\begin{tabularx}{\textwidth}{XXX}
- & & \\
-\hline
-Data source & Use Case & Details   \\
-\hline
-\addlinespace[0.3cm]
-Ecostress \citep{ecostress2019} & Land surface temperature & 70m resolution \\
-Landsat-8 \citep{landsat2016} & NVDI vegetation index & 30m resolution \\
-\citetalias{isprs2012} & Feature classification model training & 5cm resolution, labelled segmentation data \\
-Love DA \citep{loveda2021} & Feature classification model training & 30cm resolution, labelled segmentation data \\
-\citet{bayern2018} & Feature classification & 40cm resolution \\
-\citetalias{dwd2017} & Heatwave detection & hourly local metereological data from official DWD weather stations \\
-\citet{underground2014} & Wind data & 20 minute metereological data from private weather stations \\
-\hline
-\end{tabularx}
-\end{center}
-\end{table}
-\vspace{-1.5cm}
-\begin{center}
-\begin{minipage}[H]{\textwidth}
-\scriptsize
-For further information (incl. URLs) consult the references at the bottom data.
-\end{minipage}
-\end{center}
-\vspace{0.5cm}
-
+\newpage
+\printglossary[type=\acronymtype, nonumberlist, title={Abbreviations}]
 
 \newpage
 \pagenumbering{Roman}
 \bibliography{ref}
-
-\newpage
-\printglossary[type=\acronymtype, nonumberlist, title={Abbreviations}]
 
 \end{document}
