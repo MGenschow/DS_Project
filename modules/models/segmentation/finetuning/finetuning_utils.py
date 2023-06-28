@@ -24,6 +24,8 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import matplotlib.pyplot as plt
 
+QUIET = True
+
 # %%
 # Load config file and get potsdam data path
 import yaml
@@ -92,7 +94,8 @@ def get_file_paths():
     mask_files = glob(orthophoto_dir + '/labeling_subset/final_masks/*.tif')
     image_files = glob(orthophoto_dir + '/labeling_subset/images/*.tif')
 
-    print(f"Indexing files in orthophotos/labeling_subset... \nFound: \t {len(image_files)} Images \n\t {len(mask_files)} Mask")
+    if QUIET == False:
+        print(f"Indexing files in orthophotos/labeling_subset... \nFound: \t {len(image_files)} Images \n\t {len(mask_files)} Mask")
 
     # Get base name of all files and create dict with image and mask file paths
     pattern = '\d+_+\d+_patch_\d{1,2}_\d{1,2}'
@@ -126,8 +129,9 @@ def train_test_split(file_paths:dict, test_size:float=0.2):
     train_keys, test_keys = train_test_split(list(file_paths.keys()), test_size=test_size)
     train_dict = {i:file_paths[key] for i,key in enumerate(train_keys)}
     test_dict = {i:file_paths[key] for i,key in enumerate(test_keys)}
-    print(f"Length of all files: {len(file_paths)}")
-    print(f"Length of train ({len(train_dict)}) and test ({len(test_dict)}): {len(train_dict)+len(test_dict)}")
+    if QUIET == False:
+        print(f"Length of all files: {len(file_paths)}")
+        print(f"Length of train ({len(train_dict)}) and test ({len(test_dict)}): {len(train_dict)+len(test_dict)}")
     return train_dict, test_dict
 
 # %% [markdown]
@@ -196,7 +200,8 @@ def get_munich_tuning_loaders(batch_size=2):
     test_loader = DataLoader(MunichTuningDataset(test_dict, transform=test_transform),
                             batch_size = batch_size, 
                             num_workers = 2)
-    print(f"Length of train loader: {len(train_loader)}; Length of test loader: {len(test_loader)} with batch size {batch_size}")
+    if QUIET == False:
+        print(f"Length of train loader: {len(train_loader)}; Length of test loader: {len(test_loader)} with batch size {batch_size}")
 
     return train_loader, test_loader
 

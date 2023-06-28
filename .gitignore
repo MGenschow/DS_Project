@@ -146,3 +146,4 @@ dmypy.json
 *gemeinden_simplify200.geojson
 
 modules/models/segmentation/wandb/
+wandb/
