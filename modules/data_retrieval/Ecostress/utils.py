@@ -780,12 +780,11 @@ def meanMaskArray(orbitNumbers, config):
             img_cld = cld.read()[0]
 
             # Perform dilation
-            img_cld = binary_dilation(img_cld, iterations=3)
+            # img_cld = binary_dilation(img_cld, iterations=3)
             
             # TODO: Add quality control
             # Create a masked array. In addition to the cloud mask, temperature values below 1 are masked too
-            masked_array = np.ma.masked_array(img_lst, mask=(img_cld.astype(bool) | (lst.read()[0]<1)))
-        
+            masked_array = np.ma.masked_array(img_lst, mask=(img_cld.astype(bool) | np.isnan(img_lst)))
             # Store masked arrays in a list
             maskedArraysL.append(masked_array)
     
@@ -799,10 +798,10 @@ def meanMaskArray(orbitNumbers, config):
                 )[0]
             
             # Perform dilation
-            cld_transformed = binary_dilation(cld_transformed, iterations=3)
+            #cld_transformed = binary_dilation(cld_transformed, iterations=3)
 
             # Store arrays as masked arrey
-            masked_array = np.ma.masked_array(lst_transformed, mask=(cld_transformed.astype(bool) | (lst_transformed<1)))
+            masked_array = np.ma.masked_array(lst_transformed, mask=(cld_transformed.astype(bool) | np.isnan(lst_transformed)))
             # Store masked arrays in a list
             maskedArraysL.append(masked_array)
 
@@ -969,9 +968,13 @@ def tiffs_to_foliumMap(tif_path):
     return m
 
 
+def plot_by_key(key, data ,config):
 
-def plot_by_key(key, config):
-    
+    if data == 'LSTE': 
+        colormap = 'jet'
+    else: 
+        colormap = None
+
     onlyfiles = [
         f
         for f in listdir(config['data']['ES_tiffs'])
@@ -982,10 +985,10 @@ def plot_by_key(key, config):
         config['data']['ES_tiffs'] + 
         [f for 
         f in [p for p in onlyfiles if key in p] 
-        if 'LSTE' in f and '.tif' in f][0]
+        if data in f and '.tif' in f][0]
         )
     img = np.array(lst)[0]
-    plt.imshow(img, cmap='jet')
+    plt.imshow(img, cmap=colormap)
     plt.show()
 
 
@@ -1084,3 +1087,30 @@ def calculateTempRange(dwd_data):
     
     return tempRange
     
+
+def meanTiff(period, insideHeatwave, config):
+
+    # Create a Dataframe to check the quality of all relevant tiffs (in heatwave)
+    dataQ = dataQualityOverview(period, 0, 25, config)
+
+    # Create DF with relevant tifs for the morning
+    morning = dataQ[
+        (pd.to_datetime(dataQ['dateTime']).dt.hour >= 5) & 
+        (pd.to_datetime(dataQ['dateTime']).dt.hour <= 8) & 
+        dataQ['qualityFlag']
+        ]
+
+    # Create DF with relevant tifs for the afternoon
+    afterNoon = dataQ[
+        (pd.to_datetime(dataQ['dateTime']).dt.hour >= 12 ) & 
+        (pd.to_datetime(dataQ['dateTime']).dt.hour <= 16) & 
+        dataQ['qualityFlag']
+        ]
+    if insideHeatwave:
+        # Create and store mean tiff
+        meanAfterNoon, maList = mergeTiffs(morning['orbitNumber'], 'avgMorning_HW.tif', config)
+        meanAfterNoon, maList = mergeTiffs(afterNoon['orbitNumber'], 'avgAfterNoon_HW.tif', config)
+    else:
+        # Create and store mean tiff
+        meanAfterNoon, maList = mergeTiffs(morning['orbitNumber'], 'avgMorning_nonHW.tif', config)
+        meanAfterNoon, maList = mergeTiffs(afterNoon['orbitNumber'], 'avgAfterNoon_nonHW.tif', config)

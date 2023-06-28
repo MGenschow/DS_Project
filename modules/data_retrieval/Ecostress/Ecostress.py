@@ -76,7 +76,7 @@ hW_tD = heatwaves + tropicalDays
 inverted_HW = invertHeatwave(hW_tD)
 
 
-# %% Calculate the temperature range for each month
+# Calculate the temperature range for each month
 dwd = pd.read_csv(config['data']['dwd']+'/dwd.csv')
 
 tempRange = calculateTempRange(dwd)
@@ -144,7 +144,7 @@ raw_files = listdir(config['data']['ES_raw'])
 keys = set(
     [
     files.split('_')[3] + '_' + files.split('_')[4]
-    for files in raw_files if 'LST' in files
+    for files in raw_files if 'LSTE' in files
     ]
 )
 
@@ -175,7 +175,7 @@ periods = split_period(period, split_half=False)
 path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/meanTiff/'
 
 
-for period in [periods[0]]:
+for period in [periods[5]]:
 
     month = datetime.strptime(periods[0]['start'], '%Y-%m-%d %H:%M:%S').month
 
@@ -190,15 +190,15 @@ for period in [periods[0]]:
     
     print(dataOverview)
 
-    for orbits in dataOverview['orbitNumber']:
-        plot_by_key(orbits, config)
+    #for orbits in dataOverview['orbitNumber']:
+    #    plot_by_key(orbits,'LSTE', config)
+    #    plot_by_key(orbits,'Cloud', config)
 
-# %%
     # print(dataOverview[dataOverview.qualityFlag].shape[0])
 
-    if dataOverview.shape[0] < 3:
-        print('There are not enogh files to create a high quality mean tif!')
-        continue
+    #if dataOverview.shape[0] < 2:
+    #    print('There are not enogh files to create a high quality mean tif!')
+    #    continue
     
     name = path + period['start'].split(' ')[0] + '.tif'
     
@@ -207,7 +207,13 @@ for period in [periods[0]]:
     # Create and store mean tiff
     meanTiff, maList = mergeTiffs(orbitNumbers, name, config)
 
+# %% 
 
+tif = rasterio.open('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/meanTiff/2022-06-01.tif')
+plt.imshow(tif.read()[0],'jet')
+plt.colorbar(label = "Temperature in Celsius")
+
+plt.show()
 
 # %% Plot all mean tiffs
 # Set the directory path where the TIFF images are located
@@ -230,17 +236,23 @@ for tiff_file in tiff_files:
     plt.show()
 
 
+# %% 
+meanTiff(hW_tD,insideHeatwave=True, config=config)
+meanTiff(inverted_HW, insideHeatwave=False, config=config)
+
+# %%
+# Plot tiff
+tif = rasterio.open('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/avgMorning_nonHW.tif')
+
+plt.imshow(tif.read()[0],'jet') # ,vmin=16, vmax=45)
+plt.colorbar(label = "Temperature in Celsius")
+
+plt.show()
 
 
 
-# %% TODO: Structure the following code and create functions 
-# Create a Dataframe to check the quality of all relevant tiffs (in heatwave)
-# Relevant input is hW_tD and inverted_HW 
+# %% 
 dataQ = dataQualityOverview(inverted_HW, 0, 35, config)
-
-# %% Plot LST tiff by key
-plot_by_key('19797_003',config)
-
 
 # %% Create DF with relevant tifs for the afternoon
 afterNoon = dataQ[
@@ -249,11 +261,15 @@ afterNoon = dataQ[
     (pd.to_datetime(dataQ['dateTime']).dt.hour <= 16) & 
     dataQ['qualityFlag']
     ]
-
+# %%
+for o in afterNoon.orbitNumber:
+    plot_by_key(o,'LSTE', config)
+    plot_by_key(o,'Cloud', config)
+# %%
 name = 'mean_afterNoon_nonHT.tif'
 
 # Store orbit numbers
-orbitNumbers = afterNoon['orbitNumber'] 
+orbitNumbers = afterNoon['orbitNumber']
 # Create and store mean tiff
 meanAfterNoon, maList = mergeTiffs(orbitNumbers, name, config)
 
@@ -270,6 +286,7 @@ plt.colorbar(label = "Temperature in Celsius")
 
 plt.show()
 
+
 # %%Plot arrays
 arrays_subplot(maList)
 
@@ -282,11 +299,9 @@ map_afternoon.save('afterNoon_nonHT.html')
 
 
 
-
-
-
-
 # %% # Create DF with relevant tifs for the morning
+dataQ = dataQualityOverview(inverted_HW, 0, 25, config)
+
 morning = dataQ[
     # TODO: How to choose the timeslot ?
     (pd.to_datetime(dataQ['dateTime']).dt.hour >= 5) & 
@@ -294,8 +309,14 @@ morning = dataQ[
     dataQ['qualityFlag']
     ]
 
+# %% 
+for o in morning[morning.qualityFlag].orbitNumber:
+    plot_by_key(o,'LSTE', config)
+    plot_by_key(o,'Cloud', config)
+
+# %%
 # Set name
-name = 'mean_Morning_nonHT.tif'
+name = mean_Morning_nonHT.tif'
 
 # Store orbit numbers
 orbitNumbers = morning['orbitNumber']
@@ -326,17 +347,13 @@ morning_map
 
 # Save folium map
 # TODO: Reduce map to munich 
-# TODO: Add water to the map
+
 morning_map.save('morning_nonHT.html')
 
 # %% 
 path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/'
 morningHW = rasterio.open(path + 'mean_Morning_HT.tif')
 afternoonHW = rasterio.open(path +'mean_afterNoon_HT.tif')
-
-
-
-
 
 
 # %%
