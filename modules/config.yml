@@ -20,6 +20,7 @@ data:
 # Bounding Boxes for locations we analyze
 bboxes: 
   munich: [11.310790,47.980475,11.855986,48.385189]
+  munich_grid: [11.405869,48.043660,11.755371,48.227875]
 api:
   path: https://m2m.cr.usgs.gov/api/api/json/stable/
 wandb:
