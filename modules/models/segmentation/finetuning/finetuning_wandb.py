@@ -196,8 +196,8 @@ sweep_config['metric'] = metric
 parameters_dict = {
     'learningRate': {
         'distribution': 'uniform',
-        'min': 1e-7,
-        'max': 1e-3
+        'min': 0.0001,
+        'max': 0.1
         },
     'batchSize': {
         'values': list(range(2, 10, 2))
@@ -223,7 +223,7 @@ wandb.login(key = key)
 # %%
 # Assign device
 assign_device()
-sweep_id = wandb.sweep(sweep_config, project="Finetuning")
+sweep_id = wandb.sweep(sweep_config, project="Munich_Tuning")
 
-wandb.agent(sweep_id, train_model_sweep, count=100)
+wandb.agent(sweep_id, train_model_sweep, count=500)
 # %%
