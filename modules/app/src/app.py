@@ -9,12 +9,40 @@ from navbar import navbar
 app = dash.Dash(
     __name__,
     use_pages=True,
-    external_stylesheets=[dbc.themes.CYBORG],
+    external_stylesheets=[dbc.themes.SOLAR],
     meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}],
 )
 server = app.server
 
-sidebar = dbc.Nav(
+# --------------------
+# SIDEBAR STYLE
+# --------------------
+
+# Define the style for the sidebar and the content
+SIDEBAR_STYLE = {
+    "position": "fixed",
+    "top": 55,
+    "left": 0,
+    "bottom": 0,
+    "width": "16rem",
+    "padding": "2rem 1rem",
+    "background-color": "#456789",
+    "zIndex": 1,  # Set the sidebar above the content
+}
+
+# Padding for the page content
+CONTENT_STYLE = {
+    "margin-left": "18rem",
+    "margin-right": "2rem",
+    "padding": "2rem 1rem",
+    "zIndex": 0,  # Set the content below the sidebar
+}
+
+sidebar = sidebar = html.Div([
+        html.H2("Sidebar", className="display-4"),
+        html.Hr(),
+        html.P("Menu", className="lead"),
+        dbc.Nav(
             [
                 dbc.NavLink(
                     [
@@ -28,6 +56,8 @@ sidebar = dbc.Nav(
             vertical=True,
             pills=True,
             className="bg-light",
+            )], 
+            style=SIDEBAR_STYLE,
 )
 
 app.layout = dbc.Container([
@@ -44,7 +74,7 @@ app.layout = dbc.Container([
             dbc.Col(
                 [
                     sidebar
-                ], xs=4, sm=4, md=2, lg=2, xl=2, xxl=2),
+                ], xs=4, sm=4, md=2, lg=2, xl=2, xxl=2, className="sticky-top"),
 
             dbc.Col(
                 [
@@ -52,11 +82,11 @@ app.layout = dbc.Container([
                 ], xs=8, sm=8, md=10, lg=10, xl=10, xxl=10)
         ]
     ), 
-
     dbc.Row(footer)
-
-], fluid=True)
-
+    ], 
+    fluid=True
+)
 
 if __name__ == "__main__":
     app.run(debug=True)
+

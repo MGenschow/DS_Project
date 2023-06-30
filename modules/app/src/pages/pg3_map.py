@@ -12,6 +12,7 @@ import base64
 from PIL import Image
 from io import BytesIO
 import json
+from pathlib import Path
 
 # To create meta tag for each page, define the title, image, and description.
 dash.register_page(__name__,
@@ -80,6 +81,8 @@ layout = html.Div(
 
 # --------------------
 
+
+
 @callback(
     [Output("text-output", "children"), Output("image-container", "children")],
     [Input("geojson", "click_feature")],
@@ -89,9 +92,10 @@ def update_output(click_feature):
         properties = click_feature["properties"]
         destatis = properties.get("destatis", {})
         population_density = destatis.get("population_density", "")
+        
+        image_path = f"/Users/skyfano/Documents/Data_Science_Project/DS_Project/modules/app/src/assets/{population_density}.tif"
 
-        if population_density:
-            image_path = f"/Users/skyfano/Documents/Data_Science_Project/DS_Project/modules/app/src/assets/{population_density}.tif"
+        if population_density and Path(image_path).exists():
             image = Image.open(image_path)
             buffered = BytesIO()
             image.save(buffered, format="PNG")
@@ -108,7 +112,7 @@ def update_output(click_feature):
             )
         else:
             return (
-                "Population density information not available for this district.",
+                "Population density information not available for this district or no picture available for the given population density.",
                 ' ',
             )
     else:

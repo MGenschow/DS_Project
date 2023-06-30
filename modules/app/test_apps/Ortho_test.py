@@ -27,7 +27,7 @@ attribution = (
 url = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
 
 # Import geojson data
-data = json.load(open("modules/app/data/gemeinden_simplify200.geojson", "r"))
+data = json.load(open("/Users/skyfano/Documents/Data_Science_Project/DS_Project/modules/app/src/assets/gemeinden_simplify200.geojson", "r"))
 
 # Load the features.json file
 features = dl.GeoJSON(data=data, zoomToBoundsOnClick=True, id="geojson")
@@ -72,7 +72,7 @@ def update_output(click_feature):
         population_density = destatis.get("population_density", "")
 
         if population_density:
-            image_path = f"modules/app/data/{population_density}.tif"
+            image_path = f"/Users/skyfano/Documents/Data_Science_Project/DS_Project/modules/app/src/assets/{population_density}.tif"
             image = Image.open(image_path)
             buffered = BytesIO()
             image.save(buffered, format="PNG")

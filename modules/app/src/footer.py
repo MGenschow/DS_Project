@@ -4,8 +4,7 @@ import dash_mantine_components as dmc
 from dash import dcc, html, dash_table, dcc, Input, Output, State
 import dash_bootstrap_components as dbc
 
-
-# Create a universal footer for the app
+# Create a footer for the app
 footer = html.Div(
     [
         dbc.Container(
@@ -17,7 +16,7 @@ footer = html.Div(
                                 # logo and name
                                 # dmc.Image(width=35, height=35, src=logo),
                                 dmc.Text(
-                                    "Feel the heat",
+                                    "HeatMapper - Unveiling Munich's Hidden Heat Islands",
                                     style={"fontSize": 20},
                                 )
                             ]
@@ -25,43 +24,159 @@ footer = html.Div(
                         # columns with authors
                         dbc.Col(
                             [
-                                # dmc.Text("Autoren"),
-                                # Yvette
-                                # DashIconify(icon="openmoji:woman-student", width=20),
-                                (
-                                    dmc.HoverCard(
-                                        shadow="md",
-                                        children=[
-                                            dmc.HoverCardTarget("Stefan Grochowski"),
-                                            dmc.HoverCardDropdown(
-                                                [
-                                                    dmc.Group(
-                                                        [
-                                                            dmc.Anchor(
-                                                                DashIconify(
-                                                                    icon="bi:file-person",
-                                                                    width=40,
-                                                                ),
-                                                                href="https://www.linkedin.com/in/stefan-grochowski-a13185166/",
-                                                                target="_blank",
-                                                            ),
-                                                            dmc.Anchor(
-                                                                DashIconify(
-                                                                    icon="bi:github",
-                                                                    width=40,
-                                                                ),
-                                                                href="https://github.com/stefgr1",
-                                                                target="_blank",
-                                                            ),
-                                                        ],
-                                                        p=0,
-                                                    )
-                                                ]
-                                            ),
-                                        ],
-                                        position="top",
-                                    )
-                                ),
+                                dbc.Row(
+                                    [
+                                        dbc.Col(
+                                            [
+                                                dmc.HoverCard(
+                                                    shadow="md",
+                                                    children=[
+                                                        dmc.HoverCardTarget("Stefan Grochowski"),
+                                                        dmc.HoverCardDropdown(
+                                                            [
+                                                                dmc.Group(
+                                                                    [
+                                                                        dmc.Anchor(
+                                                                            DashIconify(
+                                                                                icon="bi:file-person",
+                                                                                width=40,
+                                                                            ),
+                                                                            href="https://www.linkedin.com/in/stefan-grochowski-a13185166/",
+                                                                            target="_blank",
+                                                                        ),
+                                                                        dmc.Anchor(
+                                                                            DashIconify(
+                                                                                icon="bi:github",
+                                                                                width=40,
+                                                                            ),
+                                                                            href="https://github.com/stefgr1",
+                                                                            target="_blank",
+                                                                        ),
+                                                                    ],
+                                                                    p=0,
+                                                                )
+                                                            ]
+                                                        ),
+                                                    ],
+                                                    position="top",
+                                                )
+                                            ],
+                                            width={"size": "auto"},  # Set width to "auto" to allow the HoverCard to adjust its size
+                                        ),
+                                        dbc.Col(
+                                            [
+                                                dmc.HoverCard(
+                                                    shadow="md",
+                                                    children=[
+                                                        dmc.HoverCardTarget("Malte Genschow"),
+                                                        dmc.HoverCardDropdown(
+                                                            [
+                                                                dmc.Group(
+                                                                    [
+                                                                        dmc.Anchor(
+                                                                            DashIconify(
+                                                                                icon="bi:file-person",
+                                                                                width=40,
+                                                                            ),
+                                                                            href="https://www.linkedin.com/in/malte-genschow/",
+                                                                            target="_blank",
+                                                                        ),
+                                                                        dmc.Anchor(
+                                                                            DashIconify(
+                                                                                icon="bi:github",
+                                                                                width=40,
+                                                                            ),
+                                                                            href="https://github.com/MGenschow",
+                                                                            target="_blank",
+                                                                        ),
+                                                                    ],
+                                                                    p=0,
+                                                                )
+                                                            ]
+                                                        ),
+                                                    ],
+                                                    position="top",
+                                                )
+                                            ],
+                                            width={"size": "auto"},  # Set width to "auto" to allow the HoverCard to adjust its size
+                                        ),
+                                        dbc.Col(
+                                            [
+                                                dmc.HoverCard(
+                                                    shadow="md",
+                                                    children=[
+                                                        dmc.HoverCardTarget("Aaron Lay"),
+                                                        dmc.HoverCardDropdown(
+                                                            [
+                                                                dmc.Group(
+                                                                    [
+                                                                        dmc.Anchor(
+                                                                            DashIconify(
+                                                                                icon="bi:file-person",
+                                                                                width=40,
+                                                                            ),
+                                                                            href="https://www.linkedin.com/in/lay-aaron/",
+                                                                            target="_blank",
+                                                                        ),
+                                                                        dmc.Anchor(
+                                                                            DashIconify(
+                                                                                icon="bi:github",
+                                                                                width=40,
+                                                                            ),
+                                                                            href="https://github.com/AaronLay",
+                                                                            target="_blank",
+                                                                        ),
+                                                                    ],
+                                                                    p=0,
+                                                                )
+                                                            ]
+                                                        ),
+                                                    ],
+                                                    position="top",
+                                                )
+                                            ],
+                                            width={"size": "auto"},  # Set width to "auto" to allow the HoverCard to adjust its size
+                                        ),
+                                        dbc.Col(
+                                            [
+                                                dmc.HoverCard(
+                                                    shadow="md",
+                                                    children=[
+                                                        dmc.HoverCardTarget("Stefan Glaisner"),
+                                                        dmc.HoverCardDropdown(
+                                                            [
+                                                                dmc.Group(
+                                                                    [
+                                                                        dmc.Anchor(
+                                                                            DashIconify(
+                                                                                icon="bi:file-person",
+                                                                                width=40,
+                                                                            ),
+                                                                            href="https://www.linkedin.com/in/stefan-glaisner-0a3894152/",
+                                                                            target="_blank",
+                                                                        ),
+                                                                        dmc.Anchor(
+                                                                            DashIconify(
+                                                                                icon="bi:github",
+                                                                                width=40,
+                                                                            ),
+                                                                            href="https://github.com/stefan-1997",
+                                                                            target="_blank",
+                                                                        ),
+                                                                    ],
+                                                                    p=0,
+                                                                )
+                                                            ]
+                                                        ),
+                                                    ],
+                                                    position="top",
+                                                )
+                                            ],
+                                            width={"size": "auto"},  # Set width to "auto" to allow the HoverCard to adjust its size
+                                        ),
+                                    ],
+                                    className="d-flex justify-content-center",  # Added this class to center the HoverCards
+                                )
                             ]
                         ),
                         # column with disclaimer and uni link
@@ -72,7 +187,7 @@ footer = html.Div(
                                     href="https://github.com/MGenschow/DS_Project",
                                     target="_blank",
                                 ),
-                                dbc.Col(
+                        dbc.Col(
                                     [
                                         dmc.Text(
                                             [
@@ -93,8 +208,8 @@ footer = html.Div(
                     ],
                     className="fixed-bottom",
                     style={
-                        "background-color": "#579852",
-                        "padding": "2rem 1rem", #
+                        "background-color": "#123456",
+                        "padding": "2rem 1rem",
                         "width": "100%",
                     },
                 )

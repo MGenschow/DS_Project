@@ -16,38 +16,37 @@ dash.register_page(__name__,
                    description='Maps that display the temperature in the morning and afternoon.'
 )
 
-# Create another tab for the temperature comparison
 layout = html.Div(
-                [
-                    html.H3(
-                        "Temperature comparison",
-                        style={"text-align": "center"},
-                    ),
-                    html.Br(),html.Br(),
-                    html.H5(
-                        "Temperature in the morning",
-                        style={"text-align": "center"},
-                    ),
-                    html.Iframe(
-                        id="map",
-                        srcDoc=open("/Users/skyfano/Documents/Data_Science_Project/DS_Project/modules/app/src/assets/morning.html", "r").read(),
-                        width="100%",
-                        height="600",
-                        className="align-middle",
-                    ),
-                    html.Br(),
-                    html.Br(),
-                    html.H5(
-                        "Temperature in the afternoon",
-                        style={"text-align": "center"},
-                    ),
-                    html.Br(),
-                    html.Iframe(
-                        id="map",
-                        srcDoc=open("/Users/skyfano/Documents/Data_Science_Project/DS_Project/modules/app/src/assets/afternoon.html", "r").read(),
-                        width="100%",
-                        height="600",
-                        className="align-middle",
-                    ),
-                ]
-            )
+    [
+        html.H3(
+            "Temperature comparison",
+            style={"text-align": "center"},
+        ),
+        html.Br(),html.Br(),
+        html.H5(
+            "Temperature in the morning",
+            style={"text-align": "center"},
+        ),
+        html.Iframe(
+            id="morning_map",
+            srcDoc=open("/Users/skyfano/Documents/Data_Science_Project/DS_Project/modules/app/src/assets/morning.html", "r").read(),
+            width="100%",
+            height="600",
+            className="align-middle",
+        ),
+        html.Br(),
+        html.Br(),
+        html.H5(
+            "Temperature in the afternoon",
+            style={"text-align": "center"},
+        ),
+        html.Br(),
+        html.Iframe(
+            id="afternoon_map",
+            srcDoc=open("/Users/skyfano/Documents/Data_Science_Project/DS_Project/modules/app/src/assets/afternoon.html", "r").read(),
+            width="100%",
+            height="600",
+            className="align-middle",
+        ),
+    ]
+)
