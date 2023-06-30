@@ -24,6 +24,7 @@ from shapely.geometry import box
 import folium
 import matplotlib.colors as colors
 from rasterio.enums import Resampling
+import tifffile
 
 # Import all functions from utils
 from utils import *
@@ -41,7 +42,7 @@ with open('/home/tu/tu_tu/' + os.getcwd().split('/')[6] + '/DS_Project/modules/c
     config = yaml.safe_load(file)
 
 
-# %% Create header 
+# %% Create header for the API call
 # Set login parameters (USGS/ERS login)
 login_ERS = {
     'username' : credentials["username"],
@@ -59,26 +60,25 @@ headers = {'X-Auth-Token': response.json()['data']}
 # %% Import heatwaves
 dates = pd.read_pickle('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/DWD/heatwaves.pkl')
 
-# Combine dates to periods format of heatwaves TODO: Create a function
+# Transform heatwaves
+
 heatwaves = heatwave_transform(dates)
 # Add heatwaves from 2021
 heatwaves.append({'start': '2021-06-17 00:00:00', 'end': '2021-06-22 00:00:00'})
 heatwaves.append({'start': '2021-08-13 00:00:00', 'end': '2021-08-16 00:00:00'})
 
 # Import tropical timeperiods
-tropicalDays = pd.read_pickle('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/tropicalPeriods.pkl')
-
+# tropicalDays = pd.read_pickle('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/tropicalPeriods.pkl')
 
 # Combine heatwaves and heatdays
-hW_tD = heatwaves + tropicalDays
+# hW_tD = heatwaves + tropicalDays
 
 #  Invert the heatwave
-inverted_HW = invertHeatwave(hW_tD)
+inverted_HW = invertHeatwave(heatwaves)
 
 
 # Calculate the temperature range for each month
 dwd = pd.read_csv(config['data']['dwd']+'/dwd.csv')
-
 tempRange = calculateTempRange(dwd)
     
 
@@ -128,7 +128,7 @@ for t in types:
 
 # %% Create a tiff for each unique scene
 # Define period to create tiffs
-period = [{'start': '2022-01-01 00:00:00', 'end': '2022-01-15 00:00:00'}]
+period = [{'start': '2022-01-01 00:00:00', 'end': '2023-01-01 00:00:00'}]
 
 confirmation = input("Do you want to create tiffs for hierarchical files (Y/n): ")
 if confirmation.lower() == "y":
@@ -170,25 +170,24 @@ period = [{'start': '2022-01-01 00:00:00', 'end': '2023-01-01 00:00:00'}]
 periods = split_period(period, split_half=False)
 
 
-# %% Create an overview over all existing tiffs
-
+# %% Create an mean tiff for all months
+'''
 path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/meanTiff/'
 
-
-for period in [periods[5]]:
+for period in periods:
 
     month = datetime.strptime(periods[0]['start'], '%Y-%m-%d %H:%M:%S').month
 
     minTemp, maxTemp = tempRange[month]
     
-    dataOverview = dataQualityOverview([period], minTemp, 45, config)
+    dataOverview = dataQualityOverview([period], minTemp, 25, config)
 
     dataOverview = dataOverview[
-    #    (pd.to_datetime(dataOverview['dateTime']).dt.hour >= 5) & 
-    #    (pd.to_datetime(dataOverview['dateTime']).dt.hour <= 20) & 
+        (pd.to_datetime(dataOverview['dateTime']).dt.hour >= 6) & 
+        (pd.to_datetime(dataOverview['dateTime']).dt.hour <= 19) & 
         dataOverview.qualityFlag]
     
-    print(dataOverview)
+    # print(dataOverview)
 
     #for orbits in dataOverview['orbitNumber']:
     #    plot_by_key(orbits,'LSTE', config)
@@ -196,172 +195,112 @@ for period in [periods[5]]:
 
     # print(dataOverview[dataOverview.qualityFlag].shape[0])
 
-    #if dataOverview.shape[0] < 2:
-    #    print('There are not enogh files to create a high quality mean tif!')
-    #    continue
-    
-    name = path + period['start'].split(' ')[0] + '.tif'
-    
     # Store orbit numbers
     orbitNumbers = dataOverview['orbitNumber'] 
-    # Create and store mean tiff
-    meanTiff, maList = mergeTiffs(orbitNumbers, name, config)
 
-# %% 
+    name = path + period['start'].split(' ')[0] + '.tif'
 
-tif = rasterio.open('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/meanTiff/2022-06-01.tif')
-plt.imshow(tif.read()[0],'jet')
-plt.colorbar(label = "Temperature in Celsius")
+    if dataOverview.shape[0] == 0: 
+        continue
+    
+    elif dataOverview.shape[0] < 2:
+        files = [
+            f 
+            for f in os.listdir(config['data']['ES_tiffs']) if orbitNumbers.iloc[0] in f
+            ]
+        # Extract path of lst and cloud
+        lst=rasterio.open(
+            os.path.join(config['data']['ES_tiffs'], [f for f in files if "LSTE" in f and f.endswith(".tif")][0])
+            )
+        cld=rasterio.open(
+            os.path.join(config['data']['ES_tiffs'], [f for f in files if "Cloud" in f and f.endswith(".tif")][0])
+            )
 
-plt.show()
+        # masked_array = np.ma.masked_array(lst.read()[0], mask=(cld.read()[0].astype(bool) | np.isnan(lst.read()[0])),fill_value=np.NaN)
+        masked_array = np.where(cld.read()[0].astype(bool),np.NaN,lst.read()[0])
 
-# %% Plot all mean tiffs
-# Set the directory path where the TIFF images are located
-directory = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/meanTiff'
+        tifffile.imwrite(name, masked_array)
+    #    print('There are not enogh files to create a high quality mean tif!')
+    #    continue
+    else:
+        # Create and store mean tiff
+        meanTiff, maList = mergeTiffs(orbitNumbers, name, config)
+'''
+# %% Plot all 12 tiff files in one plot
+path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/meanTiff/'
 
-# Get a list of all TIFF files in the directory
-tiff_files = [file for file in os.listdir(directory) if file.endswith('.tiff') or file.endswith('.tif')]
+tiff_files = [file for file in os.listdir(path) if file.endswith('.tif')]
 tiff_files.sort()
 
+rows, cols = 4, 3
 
-# Loop through each TIFF file and plot it
-for tiff_file in tiff_files:
-    # Create the full file path
-    file_path = os.path.join(directory, tiff_file)
-    
-    tif = rasterio.open(file_path)
-    plt.imshow(tif.read()[0],'jet')
-    plt.colorbar(label = "Temperature in Celsius")
+# Create the subplot
+fig, axes = plt.subplots(rows, cols, figsize=(12, 12))
 
-    plt.show()
+# Loop through the TIFF files and plot them in the subplot
+for i, file in enumerate(tiff_files):
+    row = i // cols
+    col = i % cols
+    tif = rasterio.open(os.path.join(path, file))
+    axes[row, col].imshow(tif.read()[0],'jet') #, vmin=-15, vmax=45)
+    axes[row, col].set_title(file)
+
+# Adjust the spacing between subplots
+plt.tight_layout()
+
+# Display the subplot
+plt.show()
 
 
-# %% 
-meanTiff(hW_tD,insideHeatwave=True, config=config)
+# %% Create mean tiffs for inside and outside the heatwaves for 
+# Morning and afternoon 
+meanTiff(heatwaves, insideHeatwave=True, config=config)
 meanTiff(inverted_HW, insideHeatwave=False, config=config)
 
-# %%
-# Plot tiff
-tif = rasterio.open('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/avgMorning_nonHW.tif')
+# %% Plot the respective tiff
+path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/avgMorning_nonHW.tif'
+tif = rasterio.open(path)
 
 plt.imshow(tif.read()[0],'jet') # ,vmin=16, vmax=45)
 plt.colorbar(label = "Temperature in Celsius")
 
 plt.show()
 
+# %% Plot tif over a interactive open street map
+
+map_afternoon = tiffs_to_foliumMap(path, True)
+map_afternoon
+
+# Save map
+# map_afternoon.save('afterNoon_nonHT.html')
 
 
-# %% 
-dataQ = dataQualityOverview(inverted_HW, 0, 35, config)
+# %% Create a data quality overview for a selected period
+dataQ = dataQualityOverview(inverted_HW, 0, 25, config)
 
-# %% Create DF with relevant tifs for the afternoon
-afterNoon = dataQ[
-    # TODO: How to choose the timeslot ?
+# %% Create DF with relevant tifs for the respective period
+dataQ_selected = dataQ[
+    # Morning: 5-8, Afternoon: 12-16
     (pd.to_datetime(dataQ['dateTime']).dt.hour >= 12 ) & 
     (pd.to_datetime(dataQ['dateTime']).dt.hour <= 16) & 
     dataQ['qualityFlag']
     ]
-# %%
-for o in afterNoon.orbitNumber:
-    plot_by_key(o,'LSTE', config)
-    plot_by_key(o,'Cloud', config)
-# %%
-name = 'mean_afterNoon_nonHT.tif'
-
-# Store orbit numbers
-orbitNumbers = afterNoon['orbitNumber']
-# Create and store mean tiff
-meanAfterNoon, maList = mergeTiffs(orbitNumbers, name, config)
-
-path = config['data']['ES_tiffs'].replace('geoTiff/','') + name
-
-# HW ranges from 20.2 to 44.8
-# Inverted HW ranges from 16.8 to 38
-
-# Plot tiff
-tif = rasterio.open(path)
-
-plt.imshow(tif.read()[0],'jet',vmin=16, vmax=45)
-plt.colorbar(label = "Temperature in Celsius")
-
-plt.show()
-
-
-# %%Plot arrays
-arrays_subplot(maList)
-
-# %% Plot tif over a interactive open street map
-map_afternoon = tiffs_to_foliumMap(path)
-map_afternoon
-
-# Save after noon 
-map_afternoon.save('afterNoon_nonHT.html')
-
-
-
-# %% # Create DF with relevant tifs for the morning
-dataQ = dataQualityOverview(inverted_HW, 0, 25, config)
-
-morning = dataQ[
-    # TODO: How to choose the timeslot ?
-    (pd.to_datetime(dataQ['dateTime']).dt.hour >= 5) & 
-    (pd.to_datetime(dataQ['dateTime']).dt.hour <= 8) & 
-    dataQ['qualityFlag']
-    ]
-
-# %% 
-for o in morning[morning.qualityFlag].orbitNumber:
+# %% Plot all relevant tiffd
+for o in dataQ_selected.orbitNumber:
     plot_by_key(o,'LSTE', config)
     plot_by_key(o,'Cloud', config)
 
-# %%
-# Set name
-name = mean_Morning_nonHT.tif'
 
-# Store orbit numbers
-orbitNumbers = morning['orbitNumber']
-
-# Create and store mean tiff
-meanMorning, maList = mergeTiffs(orbitNumbers, name, config)
-
-# Set path 
-path = config['data']['ES_tiffs'].replace('geoTiff/','') + name
-
-# %% Plot tiff
-
-# HW ranges from 16.6 to 35.5
-# Inverted HW ranges from 9.6 to 24.2
-
-tif = rasterio.open(path)
-plt.imshow(tif.read()[0],'jet', vmin=9, vmax=36)
-plt.colorbar(label = "Temperature in Celsius")
-
-plt.show()
-
-# %% Plot arrays
-arrays_subplot(maList)
-
-# %% Plot tif over a interactive open street map
-morning_map = tiffs_to_foliumMap(path)
-morning_map
-
-# Save folium map
-# TODO: Reduce map to munich 
-
-morning_map.save('morning_nonHT.html')
-
-# %% 
+# %% Create a tiff with the difference of Afternoon and Morning
 path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/'
-morningHW = rasterio.open(path + 'mean_Morning_HT.tif')
-afternoonHW = rasterio.open(path +'mean_afterNoon_HT.tif')
+morningHW = rasterio.open(path + 'avgMorning_HW.tif')
+afternoonHW = rasterio.open(path +'avgAfterNoon_HW.tif')
 
-
-# %%
+# Calculate the difference
 diff_NoonMorning = afternoonHW.read()[0] - morningHW.read()[0]
-diff_NoonMorning[diff_NoonMorning < 0 ] = np.NaN
+#diff_NoonMorning[diff_NoonMorning < 0 ] = np.NaN
 
-# %%
-# vmin=-2.5, vmax=19
+# Plot the difference
 plt.imshow(diff_NoonMorning,'jet_r', vmin=0, vmax=19)
 plt.colorbar(label = "Temperature in Celsius")
 
@@ -369,11 +308,82 @@ plt.show()
 
 
 
+# %% Create an address searching fiel and select the respective grid
+import geopandas
+import geopy
+import folium
+from shapely.geometry import Point, Polygon
+import pickle
+
+# %%
+def check_coordinates_in_bbox(latitude, longitude, bounding_box):
+    point = Point(longitude, latitude)
+    bbox_polygon = Polygon([(bounding_box[0], bounding_box[1]), (bounding_box[0], bounding_box[3]),
+                            (bounding_box[2], bounding_box[3]), (bounding_box[2], bounding_box[1])])
+    return bbox_polygon.contains(point)
+
+# %% Load the grid
+with open('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/uhi_model/grid/grid_250_a.pkl', 'rb') as file:
+    grid = pickle.load(file)
+
+# %% Search an adress
+
+adress = input("Input your adress in the follwing format (Dorfstraße 5, Tübingen): ")
+
+try:
+    locator = geopy.geocoders.Nominatim(user_agent='myGeocoder')
+    location = locator.geocode(adress + ', Germany')
+except:
+    print('Invalid adress')
+
+if check_coordinates_in_bbox(location.latitude, location.longitude, bbox):
+    is_inside = False
+    i = 0
+
+    while not is_inside and i < grid.shape[0]:
+    
+        polygon_coords = Polygon(grid.geometry[i])
+
+        point_coordinates = (location.longitude, location.latitude)
+        point = Point(point_coordinates)
+    
+        is_inside = polygon_coords.contains(point)
+
+        i+=1
+
+    if is_inside:
+    
+        polygon = Polygon(polygon_coords)
+
+        # Calculate the centroid of the polygon for centering the map
+        centroid = polygon.centroid
+
+        # Create a folium map centered on the centroid
+        m = folium.Map(location=[centroid.y, centroid.x], zoom_start=12)
+
+        # Convert the polygon coordinates to a format compatible with folium
+        polygon_coords = list(polygon.exterior.coords)
+        polygon_coords = [[coord[1], coord[0]] for coord in polygon_coords]
+
+        # Create a folium polygon and add it to the map
+        folium.Polygon(locations=polygon_coords, color='blue', fill_color='blue', fill_opacity=0.4).add_to(m)
+
+        # Add a marker for the point to the map
+        folium.Marker(location=[location.latitude, location.longitude], popup="Point").add_to(m)
+
+        # Display the map
+        display(m)
+    
+    else:
+        print('Adress doesnt fall into defined grid.')
+
+else:
+    print('Your adress doesnt fall into the defined area.')
 
 
 
-# %% TODO: Add to DWD data: Tropical day, tropical night
-
+# %% TODO: The following could would be only necessary if we would use heatdays
+# in addition to heatwaves
 '''
 dwd = pd.read_csv(config['data']['dwd']+'/dwd.csv')
 

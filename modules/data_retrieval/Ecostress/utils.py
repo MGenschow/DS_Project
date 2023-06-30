@@ -709,7 +709,8 @@ def dataQualityOverview(heatPeriods, tempThresh, cloudCoverage, config):
         (dataQ['ratio'] < 1.5) & \
         (abs(0-dataQ['meanLSTE']) > 0.001) & \
         dataQ['closeToFS'] & \
-        (dataQ['uniqueLSTValues'] > 10)
+        (dataQ['uniqueLSTValues'] > 250) & \
+        (dataQ['orbitNumber'] != '23388_006')
 
     return dataQ
 
@@ -780,7 +781,7 @@ def meanMaskArray(orbitNumbers, config):
             img_cld = cld.read()[0]
 
             # Perform dilation
-            # img_cld = binary_dilation(img_cld, iterations=3)
+            img_cld = binary_dilation(img_cld, iterations=2)
             
             # TODO: Add quality control
             # Create a masked array. In addition to the cloud mask, temperature values below 1 are masked too
@@ -798,7 +799,7 @@ def meanMaskArray(orbitNumbers, config):
                 )[0]
             
             # Perform dilation
-            #cld_transformed = binary_dilation(cld_transformed, iterations=3)
+            cld_transformed = binary_dilation(cld_transformed, iterations=2)
 
             # Store arrays as masked arrey
             masked_array = np.ma.masked_array(lst_transformed, mask=(cld_transformed.astype(bool) | np.isnan(lst_transformed)))
@@ -888,7 +889,7 @@ def arrays_subplot(masked_array_list):
     plt.show()
 
 
-def tiffs_to_foliumMap(tif_path):
+def tiffs_to_foliumMap(tif_path, pixelated):
     '''
     Create a folium map with an overlay of a GeoTIFF image.
 
@@ -904,7 +905,7 @@ def tiffs_to_foliumMap(tif_path):
     data = np.array(lst)[0]
 
     # Create a masked array
-    data = np.ma.masked_array(data, mask = data < 1)
+    # data = np.ma.masked_array(data, mask = data < 1)
 
     # Set the color range from 'jet' colormap
     color_range = np.linspace(0, 1, 256)
@@ -931,6 +932,7 @@ def tiffs_to_foliumMap(tif_path):
     m = folium.Map(
         location=[image_bounds.centroid.y, image_bounds.centroid.x],
         zoom_start=10,
+        crs='EPSG4326'
      )
     #
     folium.GeoJson(image_bounds.__geo_interface__).add_to(m)
@@ -949,8 +951,9 @@ def tiffs_to_foliumMap(tif_path):
             opacity=0.6,
             interactive=True,
             cross_origin=False,
-            pixelated=False,
-            zindex=0.2
+            pixelated=pixelated,
+            zindex=0.2,
+            interpolation="nearest"
         ).add_to(m)
 
     # Create the colormap legend with 'jet' colormap colors
