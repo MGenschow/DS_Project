@@ -4,10 +4,10 @@ import pickle
 import numpy as np 
 import geopandas as gpd
 from glob import glob
-%cd ../models/segmentation
+%cd ../pretraining/
 #from loveda_utils import map_label2rgb, idx2rgb, idx2label
 from munich_utils import *
-%cd ../../final_data_processing
+%cd ../inference
 import matplotlib.pyplot as plt
 #import torch
 #from torchvision.transforms import ToPILImage
@@ -93,18 +93,25 @@ def create_mask_tif(prediction, orig_tif_path, nutzungsdaten_df, out_name, repro
         os.remove('temp.tif')
 
     ############### Recode Predictions to facilitate nutzungsdaten from Opendata Bayern ################
-    # Recode all water predictions to forest
-    prediction[prediction == 4] = 5
-    # Overlay actual water mask
-    prediction[nd_mask == 4] = 4
-    # Overlay streets mask
-    prediction[nd_mask == 5] = 5
-    # Overlay train mask
-    prediction[nd_mask == 6] = 6
+    # Methodology: 
+    # - Define everything as impervious surface (background)
+    # - add low vegetation predictions
+    # - overlay roads from Nutzungsdaten
+    # - add tree predictions
+    # - add building predictions
+    # - overlay water from Nutzungsdaten
+
+    final_mask = np.ones((prediction.shape[0], prediction.shape[1]))
+    final_mask[prediction == 3] = 3
+    final_mask[nd_mask == 6] = 6
+    final_mask[prediction == 5] = 5
+    final_mask[prediction == 2] = 2
+    final_mask[nd_mask == 4] = 4
+
 
     # Write final prediction to tif
     with rasterio.open(out_name, 'w', **new_profile) as dst:
-        dst.write(prediction, 1)
+        dst.write(final_mask, 1)
 
     if reproject:
         # Read in again, reproject and save again
@@ -124,7 +131,7 @@ def process_all_patches():
     print(f"Using {DEVICE} as DEVICE")
 
     # Load the model
-    model = torch.load(config['data']['model_weights']+'/own_training/loveda_DeepLabV3_r101_epochs15_lr0-01/loveda_DeepLabV3_r101_epochs15_lr0-01_epoch12.pth.tar', map_location=torch.device('cpu'))
+    model = torch.load(config['data']['model_weights']+'/finetuning/model.pt', map_location=torch.device('cpu'))
     model = model.to(DEVICE)
     model.eval()
 
@@ -193,7 +200,7 @@ for file in tqdm(all_masks, leave = False):
 gdf = gpd.GeoDataFrame(pd.concat(all_gdfs))
 gdf.crs = 'EPSG:25832'
 
-with open(config['data']['data'] + '/uhi_model/input/input.pkl', 'wb') as file:
+
+with open(config['data']['data'] + '/uhi_model/raw/input.pkl', 'wb') as file:         
     pickle.dump(gdf, file)
-
-
+# %% 
