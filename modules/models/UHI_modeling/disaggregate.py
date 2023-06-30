@@ -25,6 +25,12 @@ os.chdir(home_directory + '/DS_Project/modules')
 config_path = 'config.yml'
 with open(config_path, 'r') as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
+#%% define paths
+path = config['data']['data'] + '/uhi_model/'
+path_raw = path + 'raw/'
+path_visual = path + 'visual/'
+path_grid = path + 'grid/'
+path_model = path + 'model/'
 #%% haversine
 def haversine(lon1, lat1, lon2, lat2):
     """
@@ -84,6 +90,42 @@ def convert_bbox_lon_lat_to_lat_lon(bbox):
 
     # Flatten the converted_bbox list
     return [coord for point in converted_bbox for coord in point]
+#%% create_polygon_from_coord
+def create_polygon_from_coord(coordinates):
+    """
+    Create a polygon from the given coordinates.
+
+    Args:
+        coordinates (list): A list of four coordinates representing the bounding box of the polygon.
+                            The order of the coordinates should be [lon1, lat1, lon2, lat2],
+                            where lon1 represents the longitude of the lower-left corner,
+                            lat1 represents the latitude of the lower-left corner,
+                            lon2 represents the longitude of the upper-right corner,
+                            and lat2 represents the latitude of the upper-right corner.
+
+    Returns:
+        GeoDataFrame: A GeoDataFrame containing a single polygon geometry representing the bounding box.
+                      The GeoDataFrame has the 'EPSG:4326' coordinate reference system (CRS).
+
+    """
+    # Define the vertices of the polygon using the given coordinates
+    vertices = [
+        (coordinates[0], coordinates[3]),
+        (coordinates[2], coordinates[3]),
+        (coordinates[2], coordinates[1]),
+        (coordinates[0], coordinates[1])
+    ]
+
+    # Create a Polygon geometry from the vertices
+    polygon = Polygon(vertices)
+
+    # Create a GeoDataFrame with the polygon geometry
+    polygon_gdf = gpd.GeoDataFrame(geometry=[polygon])
+
+    # Set the coordinate reference system (CRS) of the GeoDataFrame
+    polygon_gdf.crs = 'EPSG:4326'
+
+    return polygon_gdf
 #%% divide_polygon_into_grid
 def divide_polygon_into_grid(polygon, grid_size_meters):
     """
@@ -135,8 +177,144 @@ def divide_polygon_into_grid(polygon, grid_size_meters):
     # Create a GeoDataFrame from the grid polygons
     grid_gdf = gpd.GeoDataFrame(geometry=grid_polygons)
     grid_gdf.crs = 'EPSG:4326'
+
+    # Create IDs
+    grid_gdf['id'] = 1000000 + np.arange(1,len(grid_gdf)+1)
     
     return grid_gdf
+#%% calculate_surface_coverage
+def calculate_surface_coverage(grid, inp, surface_labels):
+    """
+    Calculate the surface coverage fractions for each square in a grid.
+
+    Args:
+        grid (GeoDataFrame): A GeoDataFrame representing the grid squares.
+        inp (GeoDataFrame): A GeoDataFrame representing the surface polygons.
+        surface_labels (list): A list of surface labels to consider.
+
+    Returns:
+        DataFrame: A pandas DataFrame containing the results with the following columns:
+                   - 'id': The identifier of the square.
+                   - 'surface_fractions': A dictionary containing the surface label as key and
+                                         the corresponding fraction as value.
+
+    """
+    # Create an empty list to store the results
+    results = []
+
+    # Iterate over each square in the grid dataframe
+    for idx, square in grid.iterrows():
+        # Get the geometry of the square
+        square_geom = square.geometry
+
+        # Create an empty dictionary to store surface areas
+        surface_areas = {label: 0 for label in surface_labels}
+
+        # Iterate over each surface polygon in the inp dataframe
+        for inp_idx, surface_polygon in inp.iterrows():
+            # Get the intersection between the square and surface polygon
+            intersection = square_geom.intersection(surface_polygon.geometry)
+
+            # Check if the intersection is valid and non-empty
+            if not intersection.is_empty and intersection.area > 0:
+                # Calculate the area of the intersection
+                intersection_area = intersection.area
+
+                # Get the surface label for the current polygon
+                surface_label = surface_polygon['label']
+
+                # Update the surface area dictionary
+                surface_areas[surface_label] += intersection_area
+
+        # Calculate the total area of the square
+        square_area = square_geom.area
+
+        # Calculate the fraction of each surface type in the square
+        surface_fractions = {surface_label: area / square_area for surface_label, area in surface_areas.items()}
+
+        # Append the results for the current square to the list
+        results.append({'id': square['id'], 'surface_fractions': surface_fractions})
+
+    # Convert the list of results to a pandas DataFrame
+    result_df = pd.DataFrame(results)
+
+    return result_df
+#%% calculate_average_height
+def calculate_average_height(grid, wind):
+    """
+    Calculate the average height within each square of a grid based on the intersection with wind polygons.
+
+    Args:
+        grid (GeoDataFrame): A GeoDataFrame representing the grid with square polygons.
+        wind (GeoDataFrame): A GeoDataFrame representing the wind polygons with measured heights.
+
+    Returns:
+        DataFrame: A pandas DataFrame with the calculated average heights for each square in the grid.
+
+    """
+    # Create an empty list to store the results
+    results = []
+
+    # Iterate over each square in the grid GeoDataFrame
+    for idx, square in grid.iterrows():
+        # Get the geometry of the square
+        square_geom = square.geometry
+        a = square_geom.area
+
+        # Initialize the average height to zero for each square
+        avg_height = 0
+
+        # Iterate over each wind polygon in the wind GeoDataFrame
+        for w_idx, w_polygon in wind.iterrows():
+            # Get the intersection between the square and wind polygon
+            intersection = square_geom.intersection(w_polygon.geometry_4326)
+
+            # Check if the intersection is valid and non-empty
+            if not intersection.is_empty and intersection.area > 0:
+                # Add the weighted height value of the wind polygon to the average height of the square
+                avg_height += (intersection.area / a) * w_polygon.measuredHeight
+
+        # Append the average height for the current square to the results list
+        results.append(avg_height)
+
+    # Convert the list of results to a pandas DataFrame
+    result_df = pd.DataFrame({'id': grid['id'], 'avg_height': results})
+
+    return result_df
+
+#%% convert_to_surface_dataframe
+def convert_dict_to_cols(df):
+    """
+    Convert a DataFrame column containing dictionaries to separate columns.
+
+    Args:
+        df (DataFrame): A pandas DataFrame containing a column with dictionaries.
+
+    Returns:
+        DataFrame: A new DataFrame with the dictionaries converted to separate columns.
+
+    """
+    def extract_values(row):
+        """
+        Extract the values from a dictionary in a DataFrame row.
+
+        Args:
+            row (Series): A row from a pandas DataFrame.
+
+        Returns:
+            Series: A pandas Series containing the values extracted from the dictionary.
+
+        """
+        return pd.Series(row['surface_fractions'])
+
+    # Apply the extract_values function to each row of the DataFrame
+    new_df = df.apply(extract_values, axis=1)
+
+    # Concatenate the original DataFrame with the new DataFrame containing the extracted values
+    concat_df = pd.concat([df, new_df], axis=1)
+
+    return concat_df
+
 #%% pixels_to_foliumMap
 def pixels_to_foliumMap(array, polygon):
     """
@@ -160,7 +338,7 @@ def pixels_to_foliumMap(array, polygon):
 
     # Create colormap and normalize the data
     cmap = plt.colormaps['jet']
-    norm = colors.Normalize(vmin=data.min(), vmax=data.max())
+    norm = mcolors.Normalize(vmin=data.min(), vmax=data.max())
     colored_data = cmap(norm(data))
 
     # Calculate image bounds and corner coordinates
@@ -172,6 +350,7 @@ def pixels_to_foliumMap(array, polygon):
     m = folium.Map(
         location=[image_bounds.centroid.y, image_bounds.centroid.x],
         zoom_start=15,
+        crs='EPSG4326'
     )
 
     # Add a GeoJson overlay for the image bounds
@@ -215,26 +394,6 @@ def pixels_to_foliumMap(array, polygon):
     ).add_to(m)
 
     return m
-#%% naive_pixel_mean
-def naive_pixel_mean(array, polygon):
-    """
-    Calculate the naive pixel mean within a polygon.
-
-    Args:
-        array (rasterio.io.DatasetReader): The raster dataset.
-        polygon (Polygon): The polygon to calculate the mean within.
-
-    Returns:
-        float: The mean pixel value within the polygon.
-
-    """
-    # Clip the raster dataset using the polygon
-    c = array.rio.clip([polygon], crs=4326, all_touched=True)
-
-    # Calculate the mean of the clipped pixels
-    m = c.mean().values
-
-    return m
 #%% rec_polygon_coords
 def rec_polygon_coords(polygon):
     """
@@ -256,3 +415,44 @@ def rec_polygon_coords(polygon):
 
     # Return the corner coordinates of the rectangle
     return min(x_coordinates), min(y_coordinates), max(x_coordinates), max(y_coordinates)
+#%% pixel mean functions
+def naive_pixel_mean(array, polygon):
+    c = array.rio.clip([polygon], crs=4326, all_touched=True)
+    m = c.mean().values
+
+    return m.item()
+
+def naive_pixel_mean_wrapper(row):
+    polygon = row.geometry
+    result = naive_pixel_mean(lst_array, polygon)
+
+    return result
+
+def weighted_pixel_mean(array, polygon, a=70):
+    c = array.rio.clip([polygon], crs=4326, all_touched=True)
+    minx, miny, maxx, maxy = c.rio.bounds()
+    p_minx, p_miny, p_maxx, p_maxy = rec_polygon_coords(polygon)
+
+    bottom = haversine(p_minx, p_miny, p_minx, miny)*1000
+    right = haversine(p_maxx, p_miny, maxx, p_miny)*1000
+    top = haversine(p_maxx, p_maxy, p_maxx, maxy)*1000
+    left = haversine(p_minx, p_maxy, minx, p_maxy)*1000
+
+    weights = np.ones_like(c[0].values)
+
+    weights[0,:] = left/a
+    weights[c.shape[0]-1,:] = right/a
+    weights[:,0] = top/a
+    weights[:,c.shape[1]-1] = bottom/a
+
+    weights[weights > 1] = 1
+
+    m = np.average(c[0].values,axis=None,weights=weights)
+
+    return weights, m
+
+def weighted_pixel_mean_wrapper(row):
+    polygon = row.geometry
+    _, result = weighted_pixel_mean(lst_array, polygon)
+    
+    return result
