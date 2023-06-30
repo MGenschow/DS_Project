@@ -9,7 +9,7 @@ import plotly.express as px
 import dash_extensions as de
 from dash_bootstrap_components import Container
 
-# Import other 
+# Import other
 from footer import footer
 
 # Build the app

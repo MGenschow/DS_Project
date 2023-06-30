@@ -94,7 +94,7 @@ footer = html.Div(
                     className="fixed-bottom",
                     style={
                         "background-color": "#579852",
-                        "padding": "2rem 1rem",
+                        "padding": "2rem 1rem", #
                         "width": "100%",
                     },
                 )
