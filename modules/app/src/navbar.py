@@ -28,7 +28,7 @@ navbar = dbc.Navbar(
                         dbc.Col(html.Img(src=PLOTLY_LOGO, height="30px")),
                         dbc.Col(dbc.NavbarBrand("Navbar", className="ms-2")),
                     ],
-                    align="center",
+                    align="left",
                     className="g-0",
                 ),
                 href="https://plotly.com",

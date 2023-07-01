@@ -30,7 +30,7 @@ SIDEBAR_STYLE = {
     "width": "16rem",
     "padding": "2rem 1rem",
     "background-color": "#456789",
-    "zIndex": 1,  # Set the sidebar above the content
+    "zIndex": 0,  # Set the sidebar above the content
 }
 
 # Padding for the page content
