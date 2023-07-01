@@ -1,12 +1,12 @@
 import dash
 from dash import html, dcc, callback, Input, Output, State
 import dash_bootstrap_components as dbc
+import os
 
 from footer import footer
 from navbar import navbar
 
 mode = "fre"
-
 
 # Build the app
 app = dash.Dash(
