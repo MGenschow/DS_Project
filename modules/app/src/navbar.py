@@ -1,24 +1,3 @@
-import dash
-import dash_bootstrap_components as dbc
-
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-
-app.layout = dbc.NavbarSimple(
-    children=[
-        dbc.NavItem(dbc.NavLink("Link", href="#")),
-        # Add as many links as you'd like
-    ],
-    brand="My Title",
-    brand_href="#",
-    fluid=True,  # Set this to True for the navbar to extend full width
-    color="primary",
-    dark=True, # Adjust text color with 'dark'
-)
-
-if __name__ == "__main__":
-    app.run_server(debug=True)
-
-
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, html, callback
 from dash_bootstrap_components._components.Container import Container

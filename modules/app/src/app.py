@@ -5,6 +5,9 @@ import dash_bootstrap_components as dbc
 from footer import footer
 from navbar import navbar
 
+mode = "fre"
+
+
 # Build the app
 app = dash.Dash(
     __name__,
@@ -87,6 +90,11 @@ app.layout = dbc.Container([
     fluid=True
 )
 
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    if mode == "dev":
+        app.run_server(debug=True, port=8050)
+    else:
+        app.run_server(host='0.0.0.0')
+
 
