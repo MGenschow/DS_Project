@@ -316,7 +316,7 @@ def convert_dict_to_cols(df):
     return concat_df
 
 #%% pixels_to_foliumMap
-def pixels_to_foliumMap(array, polygon):
+def pixels_to_foliumMap(array, polygon, crs='EPSG4326'):
     """
     Convert pixel array data to a Folium map with overlays.
 
@@ -350,7 +350,7 @@ def pixels_to_foliumMap(array, polygon):
     m = folium.Map(
         location=[image_bounds.centroid.y, image_bounds.centroid.x],
         zoom_start=15,
-        crs='EPSG4326'
+        crs=crs
     )
 
     # Add a GeoJson overlay for the image bounds
@@ -422,9 +422,9 @@ def naive_pixel_mean(array, polygon):
 
     return m.item()
 
-def naive_pixel_mean_wrapper(row):
+def naive_pixel_mean_wrapper(row, array):
     polygon = row.geometry
-    result = naive_pixel_mean(lst_array, polygon)
+    result = naive_pixel_mean(array, polygon)
 
     return result
 
@@ -433,17 +433,24 @@ def weighted_pixel_mean(array, polygon, a=70):
     minx, miny, maxx, maxy = c.rio.bounds()
     p_minx, p_miny, p_maxx, p_maxy = rec_polygon_coords(polygon)
 
-    bottom = haversine(p_minx, p_miny, p_minx, miny)*1000
-    right = haversine(p_maxx, p_miny, maxx, p_miny)*1000
-    top = haversine(p_maxx, p_maxy, p_maxx, maxy)*1000
-    left = haversine(p_minx, p_maxy, minx, p_maxy)*1000
+    bottom = a - haversine(p_minx, p_miny, p_minx, miny)*1000
+    right = a - haversine(p_maxx, p_miny, maxx, p_miny)*1000
+    top = a - haversine(p_maxx, p_maxy, p_maxx, maxy)*1000
+    left = a - haversine(p_minx, p_maxy, minx, p_maxy)*1000
 
     weights = np.ones_like(c[0].values)
 
-    weights[0,:] = left/a
-    weights[c.shape[0]-1,:] = right/a
-    weights[:,0] = top/a
-    weights[:,c.shape[1]-1] = bottom/a
+    ro = weights.shape[0] - 1
+    co = weights.shape[1] - 1
+
+    weights[:,0] = left/a
+    weights[:,co] = right/a
+    weights[0,:] = top/a
+    weights[ro,:] = bottom/a
+    weights[0,0] = (left/a)*(top/a)
+    weights[0,co] = (right/a)*(top/a)
+    weights[ro,0] = (left/a)*(bottom/a)
+    weights[ro,co] = (right/a)*(bottom/a)
 
     weights[weights > 1] = 1
 
@@ -451,8 +458,8 @@ def weighted_pixel_mean(array, polygon, a=70):
 
     return weights, m
 
-def weighted_pixel_mean_wrapper(row):
+def weighted_pixel_mean_wrapper(row, array):
     polygon = row.geometry
-    _, result = weighted_pixel_mean(lst_array, polygon)
+    _, result = weighted_pixel_mean(array, polygon)
     
     return result
