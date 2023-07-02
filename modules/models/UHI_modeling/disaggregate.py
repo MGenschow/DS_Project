@@ -438,7 +438,10 @@ def weighted_pixel_mean(array, polygon, a=70):
     top = a - haversine(p_maxx, p_maxy, p_maxx, maxy)*1000
     left = a - haversine(p_minx, p_maxy, minx, p_maxy)*1000
 
-    weights = np.ones_like(c[0].values)
+    npy = c[0].values
+    npy[np.isnan(npy)] = np.nanmean(npy)   
+
+    weights = np.ones_like(npy)
 
     ro = weights.shape[0] - 1
     co = weights.shape[1] - 1
@@ -454,7 +457,7 @@ def weighted_pixel_mean(array, polygon, a=70):
 
     weights[weights > 1] = 1
 
-    m = np.average(c[0].values,axis=None,weights=weights)
+    m = np.average(npy,axis=None,weights=weights)
 
     return weights, m
 
