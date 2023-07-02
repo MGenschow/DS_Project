@@ -15,11 +15,12 @@ import json
 from pathlib import Path
 import pickle
 
+''' kann das hier weg? Weil alle Paket sind oben mit drin!!!
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_bootstrap_components as dbc
-
+'''
 # To create meta tag for each page, define the title, image, and description.
 dash.register_page(__name__,
                    path='/Map',  # '/' is home page and it represents the url
