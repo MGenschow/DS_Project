@@ -931,8 +931,7 @@ def tiffs_to_foliumMap(tif_path, pixelated):
     #  Initiate map
     m = folium.Map(
         location=[image_bounds.centroid.y, image_bounds.centroid.x],
-        zoom_start=10,
-        crs='EPSG4326'
+        zoom_start=10
      )
     #
     folium.GeoJson(image_bounds.__geo_interface__).add_to(m)

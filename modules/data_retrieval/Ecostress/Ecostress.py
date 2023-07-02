@@ -170,62 +170,6 @@ period = [{'start': '2022-01-01 00:00:00', 'end': '2023-01-01 00:00:00'}]
 periods = split_period(period, split_half=False)
 
 
-# %% Create an mean tiff for all months
-'''
-path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/meanTiff/'
-
-for period in periods:
-
-    month = datetime.strptime(periods[0]['start'], '%Y-%m-%d %H:%M:%S').month
-
-    minTemp, maxTemp = tempRange[month]
-    
-    dataOverview = dataQualityOverview([period], minTemp, 25, config)
-
-    dataOverview = dataOverview[
-        (pd.to_datetime(dataOverview['dateTime']).dt.hour >= 6) & 
-        (pd.to_datetime(dataOverview['dateTime']).dt.hour <= 19) & 
-        dataOverview.qualityFlag]
-    
-    # print(dataOverview)
-
-    #for orbits in dataOverview['orbitNumber']:
-    #    plot_by_key(orbits,'LSTE', config)
-    #    plot_by_key(orbits,'Cloud', config)
-
-    # print(dataOverview[dataOverview.qualityFlag].shape[0])
-
-    # Store orbit numbers
-    orbitNumbers = dataOverview['orbitNumber'] 
-
-    name = path + period['start'].split(' ')[0] + '.tif'
-
-    if dataOverview.shape[0] == 0: 
-        continue
-    
-    elif dataOverview.shape[0] < 2:
-        files = [
-            f 
-            for f in os.listdir(config['data']['ES_tiffs']) if orbitNumbers.iloc[0] in f
-            ]
-        # Extract path of lst and cloud
-        lst=rasterio.open(
-            os.path.join(config['data']['ES_tiffs'], [f for f in files if "LSTE" in f and f.endswith(".tif")][0])
-            )
-        cld=rasterio.open(
-            os.path.join(config['data']['ES_tiffs'], [f for f in files if "Cloud" in f and f.endswith(".tif")][0])
-            )
-
-        # masked_array = np.ma.masked_array(lst.read()[0], mask=(cld.read()[0].astype(bool) | np.isnan(lst.read()[0])),fill_value=np.NaN)
-        masked_array = np.where(cld.read()[0].astype(bool),np.NaN,lst.read()[0])
-
-        tifffile.imwrite(name, masked_array)
-    #    print('There are not enogh files to create a high quality mean tif!')
-    #    continue
-    else:
-        # Create and store mean tiff
-        meanTiff, maList = mergeTiffs(orbitNumbers, name, config)
-'''
 # %% Plot all 12 tiff files in one plot
 path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/meanTiff/'
 
@@ -380,6 +324,63 @@ if check_coordinates_in_bbox(location.latitude, location.longitude, bbox):
 else:
     print('Your adress doesnt fall into the defined area.')
 
+
+# %% Create an mean tiff for all months
+'''
+path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/meanTiff/'
+
+for period in periods:
+
+    month = datetime.strptime(periods[0]['start'], '%Y-%m-%d %H:%M:%S').month
+
+    minTemp, maxTemp = tempRange[month]
+    
+    dataOverview = dataQualityOverview([period], minTemp, 25, config)
+
+    dataOverview = dataOverview[
+        (pd.to_datetime(dataOverview['dateTime']).dt.hour >= 6) & 
+        (pd.to_datetime(dataOverview['dateTime']).dt.hour <= 19) & 
+        dataOverview.qualityFlag]
+    
+    # print(dataOverview)
+
+    #for orbits in dataOverview['orbitNumber']:
+    #    plot_by_key(orbits,'LSTE', config)
+    #    plot_by_key(orbits,'Cloud', config)
+
+    # print(dataOverview[dataOverview.qualityFlag].shape[0])
+
+    # Store orbit numbers
+    orbitNumbers = dataOverview['orbitNumber'] 
+
+    name = path + period['start'].split(' ')[0] + '.tif'
+
+    if dataOverview.shape[0] == 0: 
+        continue
+    
+    elif dataOverview.shape[0] < 2:
+        files = [
+            f 
+            for f in os.listdir(config['data']['ES_tiffs']) if orbitNumbers.iloc[0] in f
+            ]
+        # Extract path of lst and cloud
+        lst=rasterio.open(
+            os.path.join(config['data']['ES_tiffs'], [f for f in files if "LSTE" in f and f.endswith(".tif")][0])
+            )
+        cld=rasterio.open(
+            os.path.join(config['data']['ES_tiffs'], [f for f in files if "Cloud" in f and f.endswith(".tif")][0])
+            )
+
+        # masked_array = np.ma.masked_array(lst.read()[0], mask=(cld.read()[0].astype(bool) | np.isnan(lst.read()[0])),fill_value=np.NaN)
+        masked_array = np.where(cld.read()[0].astype(bool),np.NaN,lst.read()[0])
+
+        tifffile.imwrite(name, masked_array)
+    #    print('There are not enogh files to create a high quality mean tif!')
+    #    continue
+    else:
+        # Create and store mean tiff
+        meanTiff, maList = mergeTiffs(orbitNumbers, name, config)
+'''
 
 
 # %% TODO: The following could would be only necessary if we would use heatdays
