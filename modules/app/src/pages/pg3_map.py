@@ -133,11 +133,13 @@ controls_card = dbc.Card(
 )
 
 
-
-
 # Storage for the land cover information to allows multiple usage of callback output
 lu_storage = html.Div(id='lu_storage', style={'display': 'none'})
 lu_storage_initial = html.Div(id='lu_storage_initial', style={'display': 'none'})
+
+image_container = html.Div(id="image-container")
+mask_container = html.Div(id="mask-container")
+
 
 
 # Layout
@@ -148,11 +150,13 @@ layout = dbc.Container(
         dbc.Col(html.Div(
                 [   
                     lu_storage, lu_storage_initial,
-                    dbc.Row([temp_card], justify="center"),
+                    dbc.Row([dbc.Col(image_container, width=6), dbc.Col(mask_container, width=6)], justify="center"),
                     html.Br(),
-                    dbc.Row([land_cover_card], justify="center"),
+                    dbc.Row(dbc.Col([temp_card], width=12), justify="center"),
                     html.Br(),
-                    dbc.Row([controls_card], justify="center"),                    
+                    dbc.Row(dbc.Col([land_cover_card], width=12), justify="center"),
+                    html.Br(),
+                    dbc.Row(dbc.Col([controls_card], width=12), justify="center"),
                 ]
             ), width = 4)
     ])], 
@@ -166,7 +170,8 @@ layout = dbc.Container(
 
 ########## Grid Information ##########
 @callback(
-    [Output("grid_id", "children"), Output("temp_mean", "children"), Output("lu_storage", "children"), Output("lu_storage_initial", "children")],
+    [Output("grid_id", "children"), Output("temp_mean", "children"), Output("lu_storage", "children"), 
+     Output("lu_storage_initial", "children"), Output("image-container", "children"), Output("mask-container", "children")],
     [Input("grid", "click_feature")],
 )
 def update_grid_info(click_feature):
@@ -187,14 +192,42 @@ def update_grid_info(click_feature):
     trees = np.round(properties["trees"] * 100, 2)
     road = np.round(properties["road"] * 100, 2)
 
+    # Return Image
+    image_path = f"modules/app/src/assets/orthophotos/{grid_id}.png"
+    image = Image.open(image_path)
+    buffered = BytesIO()
+    image.save(buffered, format="PNG")
+    encoded_image = base64.b64encode(buffered.getvalue())
+
+    image_element = dbc.Card(
+    [
+        dbc.CardImg(src=f"data:image/png;base64,{encoded_image.decode()}", top=True),
+        dbc.CardBody(
+            html.P("Orthophoto", className="card-text")
+        ),
+    ],
+    style={"width": "12rem"},
+)
+
+    mask_element = dbc.Card(
+    [
+        dbc.CardImg(src=f"data:image/png;base64,{encoded_image.decode()}", top=True),
+        dbc.CardBody(
+            html.P("LULC Prediction", className="card-text")
+        ),
+    ],
+    style={"width": "12rem"},
+)
+
+
     return (
         f"Grid: {grid_id}",
         f"Ø Temperature: {np.round(properties['wLST'], 2)}",
         [impervious, building, low_vegetation, water, trees, road],
         [impervious, building, low_vegetation, water, trees, road],
-
+        image_element, 
+        mask_element
     )
-
 
 ########## Progress Graph ##########
 # @callback(
