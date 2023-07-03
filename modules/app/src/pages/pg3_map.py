@@ -29,7 +29,8 @@ dash.register_page(__name__,
                    name='Map with Heat information ',  # name of page, commonly used as name of link
                    title='Map',  # title that appears on browser's tab
                    #image='pg1.png',  # image in the assets folder
-                   description='Final map of our project'
+                   description='Final map of our project',
+                   icon = "fa-sharp fa-solid fa-map-location-dot"
 )
 
 # Data Import

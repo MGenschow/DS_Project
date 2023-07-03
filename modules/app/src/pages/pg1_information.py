@@ -16,8 +16,8 @@ dash.register_page(__name__,
                    title='Beat the heat',  # title that appears on browser's tab
                    #image='pg1.png',  # image in the assets folder
                    description='Histograms are the new bar charts.',
-                   icon="bi:house-door-fill"
-                   #icon="fa-sharp fa-solid fa-map-location-dot"
+                   #icon="bi:house-door-fill"
+                   icon="fa-sharp fa-solid fa-map-location-dot"
 )
 
 # Gif url and options definition for gif
