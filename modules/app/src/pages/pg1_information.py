@@ -17,7 +17,7 @@ dash.register_page(__name__,
                    #image='pg1.png',  # image in the assets folder
                    description='Histograms are the new bar charts.',
                    #icon="bi:house-door-fill"
-                   icon="fa-sharp fa-solid fa-map-location-dot"
+                   icon="fa-sharp fa-solid fa-circle-info"
 )
 
 # Gif url and options definition for gif

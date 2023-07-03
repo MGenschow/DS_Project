@@ -27,7 +27,7 @@ sidebar = html.Div(
                         dbc.NavLink(
                             [
                                 html.I(className=page.get("icon")),
-                                html.Span(page["name"], className="ms-2"),
+                                html.Span(page["name"], className="ms-3"),
                             ],
                             href=page["path"],
                             active="exact",
