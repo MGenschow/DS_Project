@@ -31,7 +31,8 @@
 }
 
 .sidebar .nav-link:hover {
-    background-color: rgb(15, 63, 63);
+    background-color: rgb(32, 158, 158);
+    /*background-color: rgb(15, 63, 63);*/
 }
 
 /* hide the navlink labels by default */
