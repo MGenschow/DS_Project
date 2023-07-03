@@ -8,7 +8,8 @@
     padding: 2rem 1rem;
     background-color: #cbd3dd;
     z-index: 1050;
-    transition: width 0.1s ease-in-out;
+    transition: width rgb(32, 158, 158);
+    text-align: left;
 }
 
 /* when the user hovers on the sidebar, expand it */
@@ -28,6 +29,8 @@
 .sidebar .nav-link i {
     width: 1rem;
     color: rgb(15, 63, 63);
+    transition: background-color 0.1s ease-in-out;
+    text-align: center;
 }
 
 .sidebar .nav-link:hover {

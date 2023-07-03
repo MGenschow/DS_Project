@@ -66,10 +66,10 @@ app.layout = dbc.Container([
             dbc.Col(
                 [
                     dash.page_container
-                ], xs=8, sm=8, md=10, lg=10, xl=10, xxl=10)
+                ], xs=8, sm=8, md=10, lg=10, xl=10, xxl=10),
+            dbc.Col([footer] , xs=4, sm=4, md=2, lg=2, xl=2, xxl=2, className="sticky-bottom")
         ]
-    ), 
-    dbc.Row(footer)
+    )
     ], 
     fluid=True
 )

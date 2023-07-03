@@ -17,7 +17,7 @@ footer = html.Div(
                                 # dmc.Image(width=35, height=35, src=logo),
                                 dmc.Text(
                                     "HeatMapper - Unveiling Munich's Hidden Heat Islands",
-                                    style={"fontSize": 20},
+                                    style={"fontSize": 15},
                                 )
                             ]
                         ),
@@ -191,15 +191,16 @@ footer = html.Div(
                                     [
                                         dmc.Text(
                                             [
-                                                "Dieses Projekt wird im Rahmen des Studiengangs Masterstudiengangs ",
+                                                "Die ist ein Projekt des Studiengangs Masterstudiengangs ",
+                                                html.Br(),
                                                 dmc.Anchor(
                                                     "Data Science in Business and Economics",
                                                     href="https://uni-tuebingen.de/fakultaeten/wirtschafts-und-sozialwissenschaftliche-fakultaet/faecher/fachbereich-wirtschaftswissenschaft/wirtschaftswissenschaft/studium/studiengaenge/master/msc-data-science-in-business-and-economics/",
                                                     underline=False,
                                                 ),
-                                                " an der Universität Tübingen entwickelt.",
+                                                " an der Universität Tübingen.",
                                             ],
-                                            style={"fontSize": 10},
+                                            style={"fontSize": 10, },
                                         )
                                     ]
                                 ),
