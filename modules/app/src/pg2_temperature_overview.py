@@ -10,10 +10,11 @@ import dash_bootstrap_components as dbc
 # To create meta tag for each page, define the title, image, and description.
 dash.register_page(__name__,
                    path='/temperature',  # '/' is home page and it represents the url
-                   name='Comparison of temperatures during the day',  # name of page, commonly used as name of link
+                   name='Temperature trend',  # name of page, commonly used as name of link
                    title='Map of temperatures',  # title that appears on browser's tab
                    image='pg1.png',  # image in the assets folder
-                   description='Maps that display the temperature in the morning and afternoon.'
+                   description='Maps that display the temperature in the morning and afternoon.', 
+                   icon="fa-sharp fa-solid fa-temperature-three-quarters"
 )
 
 layout = html.Div(
