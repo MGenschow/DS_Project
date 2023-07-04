@@ -477,52 +477,121 @@ def rec_polygon_coords(polygon):
     return min(x_coordinates), min(y_coordinates), max(x_coordinates), max(y_coordinates)
 #%% pixel mean functions
 def naive_pixel_mean(array, polygon):
+    """
+    Calculate the mean pixel value within a given polygon using a naive approach.
+
+    Args:
+        array (Rasterio DatasetReader): The raster array.
+        polygon (Polygon): The polygon representing the area of interest.
+
+    Returns:
+        float: The mean pixel value within the polygon.
+
+    """
+    # Clip the raster array to the polygon extent
     c = array.rio.clip([polygon], crs=4326, all_touched=True)
+    
+    # Calculate the mean pixel value
     m = c.mean().values
 
     return m.item()
 
+
 def naive_pixel_mean_wrapper(row, array):
+    """
+    Wrapper function to calculate the mean pixel value within a polygon for a row in a DataFrame.
+
+    Args:
+        row (Series): A row in a DataFrame containing a 'geometry' column representing the polygon.
+        array (Rasterio DatasetReader): The raster array.
+
+    Returns:
+        float: The mean pixel value within the polygon.
+
+    """
+    # Extract the polygon from the row
     polygon = row.geometry
+    
+    # Calculate the mean pixel value using the naive_pixel_mean function
     result = naive_pixel_mean(array, polygon)
 
     return result
 
+
 def weighted_pixel_mean(array, polygon, a=70):
+    """
+    Calculate the weighted mean pixel value within a given polygon.
+
+    Args:
+        array (Rasterio DatasetReader): The raster array.
+        polygon (Polygon): The polygon representing the area of interest.
+        a (float, optional): The weighting factor. Default is 70.
+
+    Returns:
+        tuple: A tuple containing the weights array and the weighted mean pixel value.
+
+    """
+    # Clip the raster array to the polygon extent
     c = array.rio.clip([polygon], crs=4326, all_touched=True)
+    
+    # Calculate the bounds of the clipped array
     minx, miny, maxx, maxy = c.rio.bounds()
+    
+    # Calculate the coordinates of the rectangle polygon
     p_minx, p_miny, p_maxx, p_maxy = rec_polygon_coords(polygon)
-
-    bottom = a - haversine(p_minx, p_miny, p_minx, miny)*1000
-    right = a - haversine(p_maxx, p_miny, maxx, p_miny)*1000
-    top = a - haversine(p_maxx, p_maxy, p_maxx, maxy)*1000
-    left = a - haversine(p_minx, p_maxy, minx, p_maxy)*1000
-
+    
+    # Calculate the weights based on the distances between the polygon and the clipped array bounds
+    bottom = a - haversine(p_minx, p_miny, p_minx, miny) * 1000
+    right = a - haversine(p_maxx, p_miny, maxx, p_miny) * 1000
+    top = a - haversine(p_maxx, p_maxy, p_maxx, maxy) * 1000
+    left = a - haversine(p_minx, p_maxy, minx, p_maxy) * 1000
+    
+    # Retrieve the pixel values from the clipped array
     npy = c[0].values
-    npy[np.isnan(npy)] = np.nanmean(npy)   
-
+    npy[np.isnan(npy)] = np.nanmean(npy)
+    
+    # Create a weights array with ones of the same shape as npy
     weights = np.ones_like(npy)
-
+    
+    # Calculate the indices of the last row and column in the weights array
     ro = weights.shape[0] - 1
     co = weights.shape[1] - 1
-
-    weights[:,0] = left/a
-    weights[:,co] = right/a
-    weights[0,:] = top/a
-    weights[ro,:] = bottom/a
-    weights[0,0] = (left/a)*(top/a)
-    weights[0,co] = (right/a)*(top/a)
-    weights[ro,0] = (left/a)*(bottom/a)
-    weights[ro,co] = (right/a)*(bottom/a)
-
+    
+    # Assign the weights based on the distances to the appropriate edges
+    weights[:, 0] = left / a
+    weights[:, co] = right / a
+    weights[0, :] = top / a
+    weights[ro, :] = bottom / a
+    weights[0, 0] = (left / a) * (top / a)
+    weights[0, co] = (right / a) * (top / a)
+    weights[ro, 0] = (left / a) * (bottom / a)
+    weights[ro, co] = (right / a) * (bottom / a)
+    
+    # Cap the weights at 1
     weights[weights > 1] = 1
-
-    m = np.average(npy,axis=None,weights=weights)
+    
+    # Calculate the weighted mean pixel value
+    m = np.average(npy, axis=None, weights=weights)
 
     return weights, m
 
+
 def weighted_pixel_mean_wrapper(row, array):
+    """
+    Wrapper function to calculate the weighted mean pixel value within a polygon for a row in a DataFrame.
+
+    Args:
+        row (Series): A row in a DataFrame containing a 'geometry' column representing the polygon.
+        array (Rasterio DatasetReader): The raster array.
+
+    Returns:
+        float: The weighted mean pixel value within the polygon.
+
+    """
+    # Extract the polygon from the row
     polygon = row.geometry
+    
+    # Calculate the weighted mean pixel value using the weighted_pixel_mean function
     _, result = weighted_pixel_mean(array, polygon)
     
     return result
