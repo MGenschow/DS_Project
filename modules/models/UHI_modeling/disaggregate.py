@@ -239,6 +239,66 @@ def calculate_surface_coverage(grid, inp, surface_labels):
     result_df = pd.DataFrame(results)
 
     return result_df
+#%% calculate_surface_coverage_fast
+def calculate_surface_coverage_fast(grid, inp):
+    """
+    Calculate the surface coverage fractions for each square in a grid.
+
+    Args:
+        grid (GeoDataFrame): A GeoDataFrame representing the grid squares.
+        inp (GeoDataFrame): A GeoDataFrame representing the surface polygons.
+
+    Returns:
+        DataFrame: A pandas DataFrame containing the results with the following columns:
+                   - 'id': The identifier of the square.
+                   - 'surface_fractions': A dictionary containing the surface label as key and
+                                         the corresponding fraction as value.
+
+    """
+    # Create an empty DataFrame to store the results
+    result_df = pd.DataFrame()
+
+    # Iterate over each square in the grid GeoDataFrame
+    for idx, square in grid.iterrows():
+        
+        # Get the geometry of the square
+        square_geom = square.geometry
+        
+        # Create a subset GeoDataFrame with the square geometry
+        subset = gpd.GeoDataFrame(geometry=[square_geom])
+        
+        # Perform intersection between the surface polygons and the subset
+        intersection = gpd.overlay(inp, subset, how='intersection')
+
+        # Calculate the total area of the total square
+        total_area = square_geom.area
+
+        # Calculate the area of the labels
+        intersection['area'] = intersection.geometry.area
+
+        # Calculate the area for each surface label and divide by the total area to get fractions
+        grouped = (intersection.groupby('label')['area'].sum() / total_area).reset_index()
+        
+        # Transpose the DataFrame and set the surface labels as the index
+        grouped = grouped.set_index('label').T.reset_index(drop=True)
+        
+        # Add the 'id' column with the identifier of the square
+        grouped['id'] = square['id']
+
+        # Append the results for the current square to the DataFrame
+        result_df = pd.concat([result_df, grouped])
+
+    # Reset the index and column names
+    result_df = result_df.reset_index(drop=True)
+    result_df.index.name = None
+    
+    # Reorder the columns
+    result_df = result_df[['id', 'building', 'impervious', 'low vegetation', 'road', 'trees', 'water']]
+    
+    # Fill missing values with zero
+    result_df.fillna(0, inplace=True)
+
+    return result_df
 #%% calculate_average_height
 def calculate_average_height(grid, wind):
     """
