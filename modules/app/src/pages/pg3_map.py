@@ -208,10 +208,14 @@ def update_grid_info(click_feature):
     ],
     style={"width": "12rem"},
 )
-
+    mask_path = f"modules/app/src/assets/predictions/{grid_id}.png"
+    mask = Image.open(mask_path)
+    buffered = BytesIO()
+    mask.save(buffered, format="PNG")
+    encoded_mask = base64.b64encode(buffered.getvalue())
     mask_element = dbc.Card(
     [
-        dbc.CardImg(src=f"data:image/png;base64,{encoded_image.decode()}", top=True),
+        dbc.CardImg(src=f"data:image/png;base64,{encoded_mask.decode()}", top=True),
         dbc.CardBody(
             html.P("LULC Prediction", className="card-text")
         ),
