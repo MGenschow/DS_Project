@@ -47,31 +47,60 @@ sidebar = html.Div(
 
 
 
-app.layout = dbc.Container([
-    dbc.Row(navbar), 
-    dbc.Row([
-        dbc.Col(html.Div("HeatMapper - Unveiling Munich's Hidden Heat Islands",
-                         style={'fontSize':50, 'textAlign':'center'}))
-    ]),
-
-    html.Hr(),
-
-    dbc.Row(
-        [
-            dbc.Col(
-                [
-                    sidebar
-                ], xs=4, sm=4, md=2, lg=2, xl=2, xxl=2, className="sticky-top"),
-
-            dbc.Col(
-                [
-                    dash.page_container
-                ], xs=8, sm=8, md=10, lg=10, xl=10, xxl=10),
-            dbc.Col([footer] , xs=4, sm=4, md=2, lg=2, xl=2, xxl=2, className="sticky-bottom")
-        ]
-    )
-    ], 
-    fluid=True
+app.layout = html.Div(
+    style={"overflow": "auto"},
+    children=[
+        dbc.Container(
+            [
+                dbc.Row(navbar),
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            html.Div(
+                                "HeatMapper - Unveiling Munich's Hidden Heat Islands",
+                                style={"fontSize": 50, "textAlign": "center"},
+                            )
+                        )
+                    ]
+                ),
+                html.Hr(),
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            [sidebar],
+                            xs=4,
+                            sm=4,
+                            md=2,
+                            lg=2,
+                            xl=2,
+                            xxl=2,
+                            className="sticky-top",
+                        ),
+                        dbc.Col(
+                            [dash.page_container],
+                            xs=8,
+                            sm=8,
+                            md=10,
+                            lg=10,
+                            xl=10,
+                            xxl=10,
+                        ),
+                        dbc.Col(
+                            [footer],
+                            xs=4,
+                            sm=4,
+                            md=2,
+                            lg=2,
+                            xl=2,
+                            xxl=2,
+                            className="sticky-bottom",
+                        ),
+                    ]
+                ),
+            ],
+            fluid=True,
+        )
+    ],
 )
 
 if __name__ == "__main__":

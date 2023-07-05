@@ -144,6 +144,8 @@ dmypy.json
 *.out
 *settings.json
 *gemeinden_simplify200.geojson
+Pipfile
+Pipfile.lock
 
 modules/models/segmentation/wandb/
 wandb/
