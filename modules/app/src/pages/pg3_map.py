@@ -15,6 +15,7 @@ import json
 from pathlib import Path
 import pickle
 import numpy as np
+import pandas as pd
 from dash.exceptions import PreventUpdate
 
 ''' kann das hier weg? Weil alle Paket sind oben mit drin!!!
@@ -35,7 +36,7 @@ dash.register_page(__name__,
 
 # Data Import
 with open('modules/app/src/assets/final_200_a.pkl', 'rb') as f:
-    gdf = pickle.load(f)
+    gdf = pd.read_pickle(f)
 gdf_json = json.loads(gdf[['geometry', 'id', 'wLST', 'impervious',
        'building', 'low vegetation', 'water', 'trees', 'road', 'ignore']].to_json())
 
