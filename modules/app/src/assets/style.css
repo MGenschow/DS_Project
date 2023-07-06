@@ -22,7 +22,7 @@
     width: 100%;
     overflow: hidden;
     white-space: nowrap;
-    background-color: cbd3dd;
+    background-color: #cbd3dd;
 }
 
 /* fix the width of the icons */
@@ -49,7 +49,7 @@
 .sidebar:hover .nav-link span {
     visibility: visible;
     opacity: 1;
-    color: black;
+    color: white;
 }
 
 /* container for the sidebar header. make sure the contents don't wrap when

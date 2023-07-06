@@ -73,6 +73,8 @@ layout = dbc.Container(
     [
         # Placehoder for storage objetcs
         lu_storage, lu_storage_initial,
+        html.Br(),
+        html.Br(),
         dbc.Row(
             [
                 dbc.Col(

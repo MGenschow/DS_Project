@@ -19,7 +19,8 @@ app = dash.Dash(
 sidebar = html.Div(
     [
         html.Div(
-            [
+            [   
+                html.Br(),
                 html.Hr(),
                 html.P("Menu", className="lead"),
                 dbc.Nav(
@@ -50,9 +51,10 @@ sidebar = html.Div(
 app.layout = html.Div(
     style={"overflow": "auto"},
     children=[
+        navbar,
         dbc.Container(
-            [
-                dbc.Row(navbar),
+            [   
+                #dbc.Row(navbar),
                 html.Br(),
                 dbc.Row(
                     [
