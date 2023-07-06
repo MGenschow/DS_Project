@@ -3,14 +3,14 @@ from dash import html, dcc, callback, Input, Output, State
 import dash_bootstrap_components as dbc
 import os
 
-from footer import footer
+from footer_2 import footer
 from navbar import navbar
 
 
 app = dash.Dash(
     __name__,
     use_pages=True,
-    external_stylesheets=[dbc.themes.SOLAR, dbc.icons.FONT_AWESOME],
+    external_stylesheets=[dbc.themes.LUX, dbc.icons.FONT_AWESOME],
     meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}],
 )
 
@@ -53,17 +53,7 @@ app.layout = html.Div(
         dbc.Container(
             [
                 dbc.Row(navbar),
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            html.Div(
-                                "HeatMapper - Unveiling Munich's Hidden Heat Islands",
-                                style={"fontSize": 50, "textAlign": "center"},
-                            )
-                        )
-                    ]
-                ),
-                html.Hr(),
+                html.Br(),
                 dbc.Row(
                     [
                         dbc.Col(
@@ -85,21 +75,12 @@ app.layout = html.Div(
                             xl=11,
                             xxl=11,
                         ),
-                        dbc.Col(
-                            [footer],
-                            xs=4,
-                            sm=4,
-                            md=2,
-                            lg=2,
-                            xl=2,
-                            xxl=2,
-                            className="sticky-bottom",
-                        ),
                     ]
                 ),
             ],
             fluid=True,
-        )
+        ),
+        footer
     ],
 )
 

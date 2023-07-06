@@ -223,7 +223,10 @@ layout = dbc.Container(
                     class_name='m-1'
                 )
             ]
-        )
+        ),
+        html.Hr(),
+        html.Br(),
+        html.Br(),
     ],
     style={"height": "100vh"},
     fluid=True
