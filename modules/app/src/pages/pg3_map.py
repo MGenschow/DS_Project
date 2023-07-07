@@ -18,6 +18,9 @@ import numpy as np
 import pandas as pd
 from dash.exceptions import PreventUpdate
 
+from dash_extensions.javascript import arrow_function
+
+
 
 dash.register_page(__name__,
                    path='/Map',  # '/' is home page and it represents the url
@@ -44,14 +47,28 @@ esri_attribution = (' | Tiles: &copy; <a href="http://www.esri.com/">Esri</a>' '
 
 # Central Map Element
 map_element = dl.Map(
+    [
     dl.LayersControl(
         [dl.BaseLayer(dl.TileLayer(url = url, attribution = attribution + esri_attribution),checked=True, name = 'ESRI Satellite')] + 
         [dl.BaseLayer(dl.TileLayer(), name = 'OpenStreetMap', )] + 
-        [dl.Overlay(dl.LayerGroup(
-            dl.GeoJSON(data=gdf_json, id="grid", options={"style":{"color":"blue", 'weight':2, 'opacity':1, 'fillOpacity': 0}})), 
-                            name="Grid", 
-                            checked=True)]
+        [dl.Overlay(
+            dl.LayerGroup(
+                dl.GeoJSON(data=gdf_json, 
+                            id="grid", 
+                            options={"style":{"color":"blue", 'weight':2, 'opacity':1, 'fillOpacity': 0}},
+                            hoverStyle=arrow_function(dict(weight=3, color='#d62f2f', dashArray='')),
+                            #zoomToBounds=True
+                            )
+                        ), 
+            name="Grid", 
+            checked=True)]
     ),
+    dl.GeoJSON(
+                        id="last_clicked_grid", 
+                        options={"style":{"color":"red", 'weight':3, 'opacity':1, 'fillOpacity': 0.4}},
+                        #zoomToBounds=True
+                    )
+    ],
     center=[48.137154, 11.576124],
     style={'width': '100%', 'height': '45vh', 'margin': "auto", "display": "block"},
     zoom=13)
@@ -61,6 +78,7 @@ map_element = dl.Map(
 # Storage for the land cover information to allows multiple usage of callback output
 lu_storage = html.Div(id='lu_storage', style={'display': 'none'})
 lu_storage_initial = html.Div(id='lu_storage_initial', style={'display': 'none'})
+grid_id_storage = html.Div(id = 'grid_id_storage', style={'display': 'none'})
 
 # Image Containers: 
 image_container = html.Div(id="image-container")
@@ -72,7 +90,7 @@ mask_container = html.Div(id="mask-container")
 layout = dbc.Container(
     [
         # Placehoder for storage objetcs
-        lu_storage, lu_storage_initial,
+        lu_storage, lu_storage_initial, grid_id_storage,
         html.Br(),
         html.Br(),
         dbc.Row(
@@ -240,8 +258,9 @@ layout = dbc.Container(
 
 ########## Grid Information ##########
 @callback(
-    [Output("grid_id", "children"), Output("temp_mean", "children"), Output("lu_storage", "children"), 
-     Output("lu_storage_initial", "children"), Output("image-container", "children"), Output("mask-container", "children")],
+    [Output("grid_id", "children"), Output('grid_id_storage', 'children'), Output("temp_mean", "children"), 
+     Output("lu_storage", "children"), Output("lu_storage_initial", "children"), Output("image-container", "children"), 
+     Output("mask-container", "children")],
     [Input("grid", "click_feature")],
 )
 def update_grid_info(click_feature):
@@ -296,15 +315,27 @@ def update_grid_info(click_feature):
                 html.Img(src = f"data:image/png;base64,{encoded_mask.decode()}", width = 300), html.Br(),
             ])
 
-
     return (
         f"{grid_id}",
+        grid_id,
         f"{np.round(properties['wLST'], 2)}°C",
         [impervious, building, low_vegetation, water, trees, road],
         [impervious, building, low_vegetation, water, trees, road],
         ortho_image, 
-        mask_element
+        mask_element,
     )
+
+@callback(
+    Output('last_clicked_grid', 'data'),
+    [Input('grid_id_storage', 'children')])
+def subset_grid(value):
+    sub_data = [feature for feature in gdf_json['features'] if feature['properties']['id'] == value]
+    sub_data_json = {
+        'type': 'FeatureCollection',
+        'features': sub_data}
+    return sub_data_json
+
+
 
 
 # Initial Slider Values
