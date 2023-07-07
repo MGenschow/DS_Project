@@ -57,6 +57,7 @@ def haversine(lon1, lat1, lon2, lat2):
     c = 2 * asin(sqrt(a))
     r = 6371  # Radius of earth in kilometers. Use 3956 for miles. Determines return value units.
     return c * r
+
 #%% convert_lon_lat_to_lat_lon
 def convert_lon_lat_to_lat_lon(point):
     """
@@ -70,6 +71,7 @@ def convert_lon_lat_to_lat_lon(point):
 
     """
     return [point[1], point[0]]
+
 #%%
 def convert_bbox_lon_lat_to_lat_lon(bbox):
     """
@@ -90,6 +92,7 @@ def convert_bbox_lon_lat_to_lat_lon(bbox):
 
     # Flatten the converted_bbox list
     return [coord for point in converted_bbox for coord in point]
+
 #%% create_polygon_from_coord
 def create_polygon_from_coord(coordinates):
     """
@@ -126,6 +129,7 @@ def create_polygon_from_coord(coordinates):
     polygon_gdf.crs = 'EPSG:4326'
 
     return polygon_gdf
+
 #%% divide_polygon_into_grid
 def divide_polygon_into_grid(polygon, grid_size_meters):
     """
@@ -182,6 +186,7 @@ def divide_polygon_into_grid(polygon, grid_size_meters):
     grid_gdf['id'] = 1000000 + np.arange(1,len(grid_gdf)+1)
     
     return grid_gdf
+
 #%% calculate_surface_coverage
 def calculate_surface_coverage(grid, inp, surface_labels):
     """
@@ -239,6 +244,7 @@ def calculate_surface_coverage(grid, inp, surface_labels):
     result_df = pd.DataFrame(results)
 
     return result_df
+
 #%% calculate_surface_coverage_fast
 def calculate_surface_coverage_fast(grid, inp):
     """
@@ -299,6 +305,71 @@ def calculate_surface_coverage_fast(grid, inp):
     result_df.fillna(0, inplace=True)
 
     return result_df
+
+#%% calculate_surface_coverage_super_fast
+def calculate_surface_coverage_super_fast(grid, inp, surface_labels):
+    """
+    Calculate the surface coverage fractions for each square in a grid using a super-fast approach.
+
+    Args:
+        grid (GeoDataFrame): A GeoDataFrame representing the grid squares.
+        inp (GeoDataFrame): A GeoDataFrame representing the surface polygons.
+        surface_labels (list): A list of surface labels.
+
+    Returns:
+        DataFrame: A pandas DataFrame containing the results with the following columns:
+                   - 'id': The identifier of the square.
+                   - 'surface_fractions': A dictionary containing the surface label as key and
+                                         the corresponding fraction as value.
+
+    """
+    # Create an empty list to store the results
+    results = []
+
+    # Iterate over each square in the grid dataframe
+    for idx, square in grid.iterrows():
+        # Get the geometry of the square
+        square_geom = square.geometry
+
+        # Create a bounding box from the square's coordinates
+        bbox = box(*rec_polygon_coords(square_geom))
+
+        # Select the surface polygons that intersect with the bounding box
+        sub = inp[inp.geometry.intersects(bbox)]
+
+        # Create an empty dictionary to store surface areas
+        surface_areas = {label: 0 for label in surface_labels}
+
+        # Iterate over each surface polygon in the inp dataframe
+        for sub_idx, surface_polygon in sub.iterrows():
+            # Get the intersection between the square and surface polygon
+            intersection = square_geom.intersection(surface_polygon.geometry)
+
+            # Check if the intersection is valid and non-empty
+            if not intersection.is_empty and intersection.area > 0:
+                # Calculate the area of the intersection
+                intersection_area = intersection.area
+
+                # Get the surface label for the current polygon
+                surface_label = surface_polygon['label']
+
+                # Update the surface area dictionary
+                surface_areas[surface_label] += intersection_area
+
+        # Calculate the total area of the square
+        square_area = square_geom.area
+
+        # Calculate the fraction of each surface type in the square
+        surface_fractions = {surface_label: area / square_area for surface_label, area in surface_areas.items()}
+
+        # Append the results for the current square to the list
+        results.append({'id': square['id'], 'surface_fractions': surface_fractions})
+
+    # Convert the list of results to a pandas DataFrame
+    result_df = pd.DataFrame(results)
+
+    return result_df
+
 #%% calculate_average_height
 def calculate_average_height(grid, wind):
     """
@@ -327,6 +398,57 @@ def calculate_average_height(grid, wind):
         # Iterate over each wind polygon in the wind GeoDataFrame
         for w_idx, w_polygon in wind.iterrows():
             # Get the intersection between the square and wind polygon
+            intersection = square_geom.intersection(w_polygon.geometry_4326)
+
+            # Check if the intersection is valid and non-empty
+            if not intersection.is_empty and intersection.area > 0:
+                # Add the weighted height value of the wind polygon to the average height of the square
+                avg_height += (intersection.area / a) * w_polygon.measuredHeight
+
+        # Append the average height for the current square to the results list
+        results.append(avg_height)
+
+    # Convert the list of results to a pandas DataFrame
+    result_df = pd.DataFrame({'id': grid['id'], 'avg_height': results})
+
+    return result_df
+
+#%% calculate_average_height_super_fast
+def calculate_average_height_super_fast(grid, wind):
+    """
+    Calculate the average height within each square of a grid based on the intersection with wind polygons using a quicker approach.
+
+    Args:
+        grid (GeoDataFrame): A GeoDataFrame representing the grid with square polygons.
+        wind (GeoDataFrame): A GeoDataFrame representing the wind polygons with measured heights.
+
+    Returns:
+        DataFrame: A pandas DataFrame with the calculated average heights for each square in the grid.
+
+    """
+    # Create an empty list to store the results
+    results = []
+
+    # Iterate over each square in the grid GeoDataFrame
+    for idx, square in grid.iterrows():
+        # Get the geometry of the square
+        square_geom = square.geometry
+
+        # Create a bounding box from the square's coordinates
+        bbox = box(*rec_polygon_coords(square_geom))
+
+        # Select the surface polygons that intersect with the bounding box
+        sub = wind[wind.geometry_4326.intersects(bbox)]
+
+        # Get the total area of the square
+        a = square_geom.area
+
+        # Initialize the average height to zero for each square
+        avg_height = 0
+
+        # Iterate over each polygon in the subset GeoDataFrame
+        for s_idx, w_polygon in sub.iterrows():
+            # Get the intersection between the square and subset polygon
             intersection = square_geom.intersection(w_polygon.geometry_4326)
 
             # Check if the intersection is valid and non-empty
@@ -454,6 +576,7 @@ def pixels_to_foliumMap(array, polygon, crs='EPSG4326'):
     ).add_to(m)
 
     return m
+
 #%% rec_polygon_coords
 def rec_polygon_coords(polygon):
     """
@@ -475,6 +598,7 @@ def rec_polygon_coords(polygon):
 
     # Return the corner coordinates of the rectangle
     return min(x_coordinates), min(y_coordinates), max(x_coordinates), max(y_coordinates)
+
 #%% pixel mean functions
 def naive_pixel_mean(array, polygon):
     """

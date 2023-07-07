@@ -36,7 +36,7 @@ coordinates = config['bboxes']['munich_grid']
 polygon_gdf = create_polygon_from_coord(coordinates=coordinates)
 grid = divide_polygon_into_grid(polygon_gdf.geometry[0], grid_size_meters)
 print("Number of grid elements: " + str(len(grid)))
-with open(path_grid + 'grid_' + str(grid_size_meters) + '_c.pkl', 'wb') as file:
+with open(path_grid + 'grid_' + str(grid_size_meters) + '_a.pkl', 'wb') as file:
     pickle.dump(grid, file)
 #%% get raw input data
 with open(path_raw + 'input.pkl', 'rb') as file:
@@ -49,10 +49,10 @@ inp = inp[inp.geometry.intersects(bbox)]
 wind = wind[wind.geometry_4326.intersects(bbox)]
 #%% get surface fractions
 surface_labels = inp.label.unique().tolist()
-result = calculate_surface_coverage(grid, inp, surface_labels)
+result = calculate_surface_coverage_super_fast(grid, inp, surface_labels)
 surface_df = convert_dict_to_cols(result)
 #%% get average height
-height = calculate_average_height(grid, wind)
+height = calculate_average_height_super_fast(grid, wind)
 features = gpd.GeoDataFrame(pd.merge(surface_df, height, on='id', how='inner'))
 print("Number of rows in feature dataframe: " + str(len(features)))
 #%% get raw lst data
@@ -68,5 +68,5 @@ final = gpd.GeoDataFrame(pd.merge(grid, features, on='id', how='inner'))
 print("Number of rows in final dataframe: " + str(len(final)))
 print(final.head(10))
 #%% save data
-with open(path + 'final_' + str(grid_size_meters) + '_c.pkl', 'wb') as file:
+with open(path + 'final_' + str(grid_size_meters) + '_a.pkl', 'wb') as file:
     pickle.dump(final, file)
