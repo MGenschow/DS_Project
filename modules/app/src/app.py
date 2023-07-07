@@ -3,7 +3,7 @@ from dash import html, dcc, callback, Input, Output, State
 import dash_bootstrap_components as dbc
 import os
 
-from footer_2 import footer
+from footer import footer
 from navbar import navbar
 
 

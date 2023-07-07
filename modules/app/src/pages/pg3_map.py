@@ -17,6 +17,8 @@ import pickle
 import numpy as np
 import pandas as pd
 from dash.exceptions import PreventUpdate
+import statsmodels.api as sm
+from sklearn.preprocessing import PolynomialFeatures
 
 from dash_extensions.javascript import arrow_function
 
@@ -34,8 +36,29 @@ dash.register_page(__name__,
 # Data Import
 with open('modules/app/src/assets/final_200_a.pkl', 'rb') as f:
     gdf = pd.read_pickle(f)
+
+gdf['pred'] = gdf.wLST
+gdf['avg_height'] = 10
 gdf_json = json.loads(gdf[['geometry', 'id', 'wLST', 'impervious',
-       'building', 'low vegetation', 'water', 'trees', 'road', 'ignore']].to_json())
+       'building', 'low vegetation', 'water', 'trees', 'road', 'ignore', 'pred', 'avg_height']].to_json())
+
+# Model Import
+with open('modules/app/src/assets/Causal_Model_250_a.pkl', 'rb') as f:
+    model = pd.read_pickle(f)
+
+# Utility function for model prediction
+def create_polynomials(final, features_interact, features_no_interact):
+    poly_features = PolynomialFeatures(degree=2, include_bias=False, interaction_only=False)
+    X_poly = poly_features.fit_transform(final[features_interact])
+    X_poly = pd.DataFrame(X_poly, columns=poly_features.get_feature_names_out(features_interact))
+    X_poly = pd.concat([X_poly, final[features_no_interact]], axis=1)
+
+    return X_poly
+
+features = ['const','building','low vegetation','water','trees','road','avg_height']
+features_interact = ['building','low vegetation','water','trees','road']
+features_no_interact = ['const','avg_height']
+
 
 
 ####################### Map Element ##########################
@@ -77,8 +100,10 @@ map_element = dl.Map(
 ########################## Storage Elements ####################
 # Storage for the land cover information to allows multiple usage of callback output
 lu_storage = html.Div(id='lu_storage', style={'display': 'none'})
-lu_storage_initial = html.Div(id='lu_storage_initial', style={'display': 'none'})
 grid_id_storage = html.Div(id = 'grid_id_storage', style={'display': 'none'})
+avg_height_storage = html.Div(id = 'avg_height_storage', style={'display': 'none'})
+initial_pred_storage = html.Div(id = 'initial_pred_storage', style={'display': 'none'})
+
 
 # Image Containers: 
 image_container = html.Div(id="image-container")
@@ -90,7 +115,7 @@ mask_container = html.Div(id="mask-container")
 layout = dbc.Container(
     [
         # Placehoder for storage objetcs
-        lu_storage, lu_storage_initial, grid_id_storage,
+        lu_storage, grid_id_storage, avg_height_storage, initial_pred_storage,
         html.Br(),
         html.Br(),
         dbc.Row(
@@ -124,9 +149,9 @@ layout = dbc.Container(
                                         #html.Br(),
                                         html.Div([
                                             html.Span("Δ Temperature: ", style={"font-size": "1rem"}),
-                                            html.Span("0°C", id='temp_delta', style={"font-weight": "bold", "font-size": "1.4rem"}), html.Br(),
+                                            html.Span(id='temp_delta', style={"font-weight": "bold", "font-size": "1.4rem"}), html.Br(),
                                             html.Span("Predicted Temperature: ", style={"font-size": "1rem"}),
-                                            html.Span("0°C", id='temp_pred', style={"font-weight": "bold", "font-size": "1.4rem"})
+                                            html.Span(id='temp_pred', style={"font-weight": "bold", "font-size": "1.4rem"})
                                         ])
                                     ])
                                 ],
@@ -259,8 +284,8 @@ layout = dbc.Container(
 ########## Grid Information ##########
 @callback(
     [Output("grid_id", "children"), Output('grid_id_storage', 'children'), Output("temp_mean", "children"), 
-     Output("lu_storage", "children"), Output("lu_storage_initial", "children"), Output("image-container", "children"), 
-     Output("mask-container", "children")],
+     Output("lu_storage", "children"), Output("image-container", "children"), 
+     Output("mask-container", "children"), Output('avg_height_storage', 'children'), Output('initial_pred_storage', 'children')],
     [Input("grid", "click_feature")],
 )
 def update_grid_info(click_feature):
@@ -281,6 +306,10 @@ def update_grid_info(click_feature):
     trees = np.round(properties["trees"] * 100, 2)
     road = np.round(properties["road"] * 100, 2)
 
+    # Get characteristics for model inference
+    avg_height = properties['avg_height']
+    initial_pred = properties['pred']
+
     # Orthophoto Card Content
     image_path = f"modules/app/src/assets/orthophotos/{grid_id}.png"
     image = Image.open(image_path)
@@ -300,7 +329,7 @@ def update_grid_info(click_feature):
             style = {"position": "absolute", 
                     "bottom": "0", 
                     "right": "0", 
-                    "font-size": "0.8rem"})
+                    "font-size": "0.7rem"})
         ],
     )
 
@@ -320,11 +349,13 @@ def update_grid_info(click_feature):
         grid_id,
         f"{np.round(properties['wLST'], 2)}°C",
         [impervious, building, low_vegetation, water, trees, road],
-        [impervious, building, low_vegetation, water, trees, road],
         ortho_image, 
         mask_element,
+        [avg_height],
+        initial_pred
     )
 
+################### Coloring Last Clicked Grid Element #####################
 @callback(
     Output('last_clicked_grid', 'data'),
     [Input('grid_id_storage', 'children')])
@@ -335,6 +366,27 @@ def subset_grid(value):
         'features': sub_data}
     return sub_data_json
 
+##################### Model Inference Callback ##############################
+@callback(
+        [
+            Output('temp_delta', 'children'), Output('temp_pred', 'children')
+        ],
+        [[Input('building_slider', 'value'), Input('low_vegetation_slider', 'value'), 
+           Input('water_slider', 'value'), Input('trees_slider', 'value'), Input('road_slider', 'value')], 
+         Input('avg_height_storage', 'children'),
+         Input('initial_pred_storage', 'children')]
+)
+def model_prediction(lulc_storage, avg_height, pred_initial):
+    X = pd.DataFrame([[1] + [elem/100 for elem in lulc_storage] + avg_height], columns=['const','building','low vegetation','water','trees','road','avg_height'])
+    X_poly = create_polynomials(X, features_interact, features_no_interact)
+    pred = model.predict(X_poly).item()
+
+    delta = pred - pred_initial
+    final_pred = pred_initial + delta
+    return (
+        f"{np.round(delta,2)}°C", 
+        f"{np.round(final_pred,2)}°C"
+    )
 
 
 
@@ -344,8 +396,8 @@ def subset_grid(value):
          Output('water_slider', 'value'), Output('trees_slider', 'value'), Output('road_slider', 'value')],
         [Input('lu_storage', 'children')]
 )
-def set_initial_values(lu_storage_initial):
-    return lu_storage_initial
+def set_initial_values(lu_storage):
+    return lu_storage
 
 
 #### LULC Proportions Graphs
@@ -427,4 +479,5 @@ def adjust_values(*args):
     values[changed_index] -= sum(values) - 100
 
     return values
+
 
