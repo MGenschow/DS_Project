@@ -7,12 +7,32 @@ import os
 
 import statsmodels.api as sm
 from sklearn.preprocessing import PolynomialFeatures
+#%% find_best_model
+def find_best_model(performance_results, performance_measure):
+    best_model = None
+    best_score = None
 
-home_directory = os.path.expanduser( '~' )
-os.chdir(home_directory + '/DS_Project/modules')
-config_path = 'config.yml'
-with open(config_path, 'r') as f:
-    config = yaml.load(f, Loader=yaml.FullLoader)
+    for model_name, scores in performance_results.items():
+        score = scores[performance_measure]
+
+        if best_score is None:
+            best_model = model_name
+            best_score = score
+        else:
+            if (
+                (performance_measure == 'Mean Squared Error' or performance_measure == 'Mean Absolute Error')
+                and score < best_score
+            ):
+                best_model = model_name
+                best_score = score
+            elif (
+                (performance_measure == 'R-squared' or performance_measure == 'Explained Variance Score')
+                and score > best_score
+            ):
+                best_model = model_name
+                best_score = score
+
+    return best_model, best_score
 #%% create_polynomials
 def create_polynomials(final, features_interact, features_no_interact):
 
@@ -56,8 +76,8 @@ def compute_marginal_effect_at_avg(model, final, feature, features_interact, fea
     marginal_effect = (y_modified - y_original) / delta
 
     return marginal_effect.item()*step
-#%%
-def predict_LST(example, features_interact, features_no_interact, model):
+#%% predict_LST
+def predict_LST_example(example, features_interact, features_no_interact, model):
     example_poly = create_polynomials(example.reset_index(drop=True), features_interact, features_no_interact)
     pred = model.predict(example_poly)
     return pred.item()
