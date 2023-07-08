@@ -4,9 +4,13 @@ import numpy as np
 import pickle
 import yaml
 import os
-
 import statsmodels.api as sm
+
 from sklearn.preprocessing import PolynomialFeatures
+from scipy.stats import f
+from scipy.spatial.distance import cdist
+import geopandas as gpd
+from pysal.lib import weights
 #%% find_best_model
 def find_best_model(performance_results, performance_measure):
     best_model = None
@@ -62,6 +66,7 @@ def compute_avg_marginal_effect(model, final, feature, features_interact, featur
 #%% compute_marginal_effect_at_avg
 def compute_marginal_effect_at_avg(model, final, feature, features_interact, features_no_interact, delta=0.001, step=0.01):
     
+    final = final[features_interact + features_no_interact]
     feature_avg = pd.DataFrame(final.mean(axis=0)).T
     feature_avg_delta = feature_avg.copy()
 
@@ -81,3 +86,55 @@ def predict_LST_example(example, features_interact, features_no_interact, model)
     example_poly = create_polynomials(example.reset_index(drop=True), features_interact, features_no_interact)
     pred = model.predict(example_poly)
     return pred.item()
+#%% test_joint_significance
+def test_joint_significance(model_unrestricted, final, features_interact, features_no_interact, target, features_exclude=[]):
+
+    # Create polynomials for the restricted model
+    features_interact_restricted = [f for f in features_interact if f not in features_exclude]
+    X_poly_restricted = create_polynomials(final, features_interact_restricted, features_no_interact)
+    
+    # Fit the restricted model
+    model_restricted = sm.OLS(final[target], X_poly_restricted)
+    results_restricted = model_restricted.fit(cov_type='HC3')
+
+    # Perform the F-test
+    rss_full = model_unrestricted.ssr
+    rss_restricted = results_restricted.ssr
+    dof_full = model_unrestricted.df_resid
+    dof_restricted = results_restricted.df_resid
+    f_statistic = ((rss_restricted - rss_full) / (dof_restricted - dof_full)) / (rss_full / dof_full)
+    p_value = 1 - f.cdf(f_statistic, dof_restricted - dof_full, dof_full)
+
+    return f_statistic, p_value
+#%% get_nearest_neighbor_weights
+def get_nearest_neighbor_weights(final, k=4, factor=1.95):
+
+    knn = weights.KNN.from_dataframe(final, k=k, geom_col='geometry')
+
+    points = gpd.GeoDataFrame(final.geometry).geometry.centroid
+    df = pd.DataFrame({'points': points})
+    coordinates = df['points'].apply(lambda point: (point.x, point.y)).tolist()
+
+    dist_matrix = cdist(coordinates, coordinates)
+
+    threshold = dist_matrix[0,1]*factor
+    mask = (dist_matrix < threshold) & (dist_matrix > 0)
+    closest_indices = [np.where(row)[0].tolist() for row in mask.T]
+
+    for i in range(len(closest_indices)):
+        knn.neighbors[i] = closest_indices[i]
+
+    divisor = [len(knn.neighbors[i]) for i in range(len(knn.neighbors))]
+
+    return knn, pd.Series(divisor)
+#%% add_feature_lags
+def add_feature_lags(final, features, k=8):
+    knn = weights.KNN.from_dataframe(final, k=k, geom_col='geometry')
+    lag = final[features].apply(
+    lambda y: weights.spatial_lag.lag_spatial(knn, y) / k
+    ).rename(
+        columns=lambda c: "lag_" + c
+    )
+    out = final.join(lag)
+
+    return out
