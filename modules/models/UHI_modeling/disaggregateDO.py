@@ -20,11 +20,20 @@ from shapely.geometry import Polygon
 from shapely.geometry import box
 from branca.colormap import LinearColormap
 
+import warnings
+warnings.filterwarnings("ignore")
+
 home_directory = os.path.expanduser( '~' )
 os.chdir(home_directory + '/DS_Project/modules')
 
-import warnings
-warnings.filterwarnings("ignore")
+config_path = 'config.yml'
+with open(config_path, 'r') as f:
+    config = yaml.load(f, Loader=yaml.FullLoader)
+path = config['data']['data'] + '/uhi_model/'
+path_raw = path + 'raw/'
+path_visual = path + 'visual/'
+path_grid = path + 'grid/'
+path_model = path + 'model/'
 #%% import other scripts
 from disaggregate import *
 #%% fix hyperparameters

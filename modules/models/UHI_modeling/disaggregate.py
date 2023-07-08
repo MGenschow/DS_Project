@@ -19,18 +19,6 @@ from math import radians, sin, cos, asin, sqrt
 from shapely.geometry import Polygon
 from shapely.geometry import box
 from branca.colormap import LinearColormap
-
-home_directory = os.path.expanduser( '~' )
-os.chdir(home_directory + '/DS_Project/modules')
-config_path = 'config.yml'
-with open(config_path, 'r') as f:
-    config = yaml.load(f, Loader=yaml.FullLoader)
-#%% define paths
-path = config['data']['data'] + '/uhi_model/'
-path_raw = path + 'raw/'
-path_visual = path + 'visual/'
-path_grid = path + 'grid/'
-path_model = path + 'model/'
 #%% haversine
 def haversine(lon1, lat1, lon2, lat2):
     """
