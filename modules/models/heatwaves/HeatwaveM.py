@@ -128,6 +128,50 @@ def heatwave_ky(temp, t_max, t_min):
                 days_min = 0
     return pd.Series(h)
 
+def heatwave_ky_robust(series, t_max=30, t_min=25):
+
+    """
+    Robust heatwave identification based on temperature thresholds (according to Kysely (2010)).
+
+    Args:
+        temp (pandas.Series): Series containing temperature values.
+        t_max (float): Maximum temperature threshold for heatwave.
+        t_min (float): Minimum temperature threshold for heatwave.
+
+    Returns:
+        pandas.Series: Series indicating the presence of heatwaves (1) or not (0).
+
+    """
+
+
+    heatwave = pd.Series(0, index=series.index)
+    consecutive_days_above = 0
+    heatwave_start_index = None
+    
+    for i, temp in enumerate(series):
+        if temp >= t_max:
+            if consecutive_days_above == 0:
+                heatwave_start_index = i
+            consecutive_days_above += 1
+
+        elif (temp >= t_min) &  (consecutive_days_above >= 3):
+            average_temp = series[heatwave_start_index:(i+1)].mean()
+
+            if average_temp >= t_max:
+                heatwave[heatwave_start_index:(i+1)] = 1
+            else:
+                heatwave[heatwave_start_index:i] = 1
+                consecutive_days_above = 0
+
+        elif (temp < t_min) &  (consecutive_days_above >= 3):
+            heatwave[heatwave_start_index:i] = 1
+            consecutive_days_above = 0
+
+        else:
+            consecutive_days_above = 0
+    
+    return heatwave
+
 def indexer(ti):
 
     """
@@ -149,6 +193,33 @@ def indexer(ti):
             start += 1
         f.append(start)
     return f
+
+def divide_dates_into_sublists(dates):
+    """
+    Divide a list of dates into sublists based on consecutive days.
+
+    Args:
+        dates (list): A list of dates in ascending order.
+
+    Returns:
+        list: A list of sublists, where each sublist contains consecutive dates.
+
+    """
+    sublists = []
+    sublist = [dates[0]]
+    
+    for i in range(1, len(dates)):
+        current_date = dates[i]
+        previous_date = dates[i - 1]
+        
+        if (current_date - previous_date) > timedelta(days=1):
+            sublists.append(sublist)
+            sublist = []
+        sublist.append(current_date)
+    
+    sublists.append(sublist)
+    
+    return sublists
 # %%
 class HeatwaveM(pd.DataFrame):
 
@@ -276,7 +347,7 @@ class HeatwaveM(pd.DataFrame):
 
         n = self[(self['STATION_ID'] == station_id) & (self['TIME'].dt.year.isin(year))]
         sub = n.groupby(n['DATE'], as_index=False).max()[['DATE', 'TEMP']]
-        sub['HEATWAVE'] = heatwave_ky(temp=sub['TEMP'], t_max=t_max, t_min=t_min)
+        sub['HEATWAVE'] = heatwave_ky_robust(sub['TEMP'], t_max=t_max, t_min=t_min)
         sub = sub[sub['HEATWAVE'] == 1]
         sub['DELTA'] = (sub['DATE'] - sub['DATE'].shift()).dt.days.fillna(1)
         sub['IND'] = indexer(sub['DELTA'])
