@@ -30,7 +30,7 @@ dash.register_page(__name__,
                    title='DWD',  # title that appears on browser's tab
                    #image='pg1.png',  # image in the assets folder
                    description='DWD data to identify heatwaves',
-                   icon="fa-sharp fa-solid fa-location-dot"
+                   icon="fa-solid fa-temperature-high"
 )
 
 

@@ -30,7 +30,7 @@ dash.register_page(__name__,
                    title='Map',  # title that appears on browser's tab
                    #image='pg1.png',  # image in the assets folder
                    description='Final map of our project',
-                   icon = "fa-sharp fa-solid fa-map-location-dot"
+                   icon = "fa-solid fa-map-location"
 )
 
 # Data Import
@@ -319,9 +319,10 @@ def update_grid_info(click_feature):
     ortho_image = html.Div([
         html.H4('Orthophoto'),
         html.Img(src = f"data:image/png;base64,{encoded_image.decode()}", width = 300),
+        #html.Hr(),
         html.Span(
             children=[
-                "Bayerische Vermessungsverwaltung – ",
+                "© Bayerische Vermessungsverwaltung – ",
                 dcc.Link('www.geodaten.bayern.de',
                         href = 'http://www.geodaten.bayern.de',
                         target = '_blank')
@@ -329,20 +330,38 @@ def update_grid_info(click_feature):
             style = {"position": "absolute", 
                     "bottom": "0", 
                     "right": "0", 
-                    "font-size": "0.7rem"})
+                    "font-size": "0.6rem"})
         ],
     )
 
     # LULC Classification Card Content
+    cmap = {'Versiegelt': "#cccccc", 'Gebäude': '#ff00ff',
+        'Wiese':"#00ff00", 'Wasser':'#0000ff', 'Bäume':"#008200", 'Straße':"#ff0000"} 
+    
     mask_path = f"modules/app/src/assets/predictions/{grid_id}.png"
     mask = Image.open(mask_path)
     buffered = BytesIO()
     mask.save(buffered, format="PNG")
     encoded_mask = base64.b64encode(buffered.getvalue())
     mask_element = html.Div([
-                html.H4('LULC Classification'),
-                html.Img(src = f"data:image/png;base64,{encoded_mask.decode()}", width = 300), html.Br(),
-            ])
+    html.H4('LULC Classification'),
+    html.Img(src=f"data:image/png;base64,{encoded_mask.decode()}", width=300), 
+    html.Br(),
+    html.Br(),
+    html.Div([
+        html.Span([
+            html.Div(children=[
+                html.Span(className='color-dot', style={'backgroundColor': color}),
+                html.Span(children=label)
+            ], style={'display': 'flex', 'align-items': 'center', 'flex-grow': 1, "font-size": "0.8rem"})
+            for label, color in cmap.items()
+        ], style={'display': 'flex', 'justify-content': 'space-between'})
+    ])
+])
+
+
+
+
 
     return (
         f"{grid_id}",

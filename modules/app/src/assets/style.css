@@ -27,15 +27,17 @@
 
 /* fix the width of the icons */
 .sidebar .nav-link i {
-    width: 1rem;
-    color: rgb(15, 63, 63);
+    width: 1rem;  /* Increase the width */
+    color: rgb(0, 0, 0); 
     transition: background-color 0.1s ease-in-out;
     text-align: center;
+    font-size: 1rem;
 }
 
 .sidebar .nav-link:hover {
     background-color: rgb(32, 158, 158);
     /*background-color: rgb(15, 63, 63);*/
+    border-radius: 10px; 
 }
 
 /* hide the navlink labels by default */
@@ -50,6 +52,12 @@
     visibility: visible;
     opacity: 1;
     color: white;
+}
+
+
+.sidebar .nav-link.active {
+    background-color: rgb(32, 158, 158);
+    border-radius: 10px;
 }
 
 /* container for the sidebar header. make sure the contents don't wrap when
@@ -82,4 +90,13 @@
     margin-left: 7rem;
     margin-right: 2rem;
     padding: 2rem 1rem;
+}
+
+.color-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 2px;
+    vertical-align: bottom;
 }

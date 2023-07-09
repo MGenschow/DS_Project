@@ -30,7 +30,7 @@ dash.register_page(__name__,
                    title='LST',  # title that appears on browser's tab
                    #image='pg1.png',  # image in the assets folder
                    description='Visualization of Land Surface Temperature',
-                   icon="fa-sharp fa-solid fa-location-dot"
+                   icon="fa-solid fa-satellite"
 )
 
 
