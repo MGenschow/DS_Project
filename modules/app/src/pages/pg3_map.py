@@ -118,6 +118,15 @@ layout = dbc.Container(
         lu_storage, grid_id_storage, avg_height_storage, initial_pred_storage,
         html.Br(),
         html.Br(),
+        html.Br(),
+        html.Div(
+            [
+                html.H3('Adress Search:'),
+                dcc.Input(id='adress', value='Tal 1, 80331 München', type='text', style={'width': '300px'})
+            ],
+            style={'display': 'flex', 'align-items': 'center'}
+        ),
+        html.Br(),
         dbc.Row(
             [
                 dbc.Col(

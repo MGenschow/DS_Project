@@ -64,6 +64,7 @@ app.layout = html.Div(
                             sm=3,
                             md=1,
                             lg=1,
+                            
                             xl=1,
                             xxl=1,
                             className="sticky-top",
