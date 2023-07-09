@@ -19,6 +19,9 @@ import pandas as pd
 from dash.exceptions import PreventUpdate
 import statsmodels.api as sm
 from sklearn.preprocessing import PolynomialFeatures
+from shapely.geometry import Point, Polygon
+import geopy
+import yaml
 
 from dash_extensions.javascript import arrow_function
 
@@ -97,6 +100,19 @@ map_element = dl.Map(
     zoom=13)
 
 
+def check_coordinates_in_bbox(latitude, longitude, bounding_box):
+    point = Point(longitude, latitude)
+    bbox_polygon = Polygon([(bounding_box[0], bounding_box[1]), (bounding_box[0], bounding_box[3]),
+                            (bounding_box[2], bounding_box[3]), (bounding_box[2], bounding_box[1])])
+    return bbox_polygon.contains(point)
+
+# Load config file
+with open('modules/config.yml', 'r') as file:
+    config = yaml.safe_load(file)
+# Store bounding box
+bbox = config['bboxes']['munich']
+
+
 ########################## Storage Elements ####################
 # Storage for the land cover information to allows multiple usage of callback output
 lu_storage = html.Div(id='lu_storage', style={'display': 'none'})
@@ -122,11 +138,11 @@ layout = dbc.Container(
         html.Div(
             [
                 html.H3('Adress Search:'),
-                dcc.Input(id='adress', value='Tal 1, 80331 München', type='text', style={'width': '300px'})
+                dcc.Input(id='adress', placeholder='Implerstraße 64, 81371 München', type='text', style={'width': '300px'}),
+                html.Div(id='TEST')
             ],
             style={'display': 'flex', 'align-items': 'center'}
         ),
-        html.Br(),
         dbc.Row(
             [
                 dbc.Col(
@@ -509,3 +525,39 @@ def adjust_values(*args):
     return values
 
 
+############ Adress Input #################
+@callback(
+    Output('TEST', 'children'),
+    Input('adress', 'value')
+    )
+def adressToGrid(adress):
+    try:
+        locator = geopy.geocoders.Nominatim(user_agent='myGeocoder')
+        location = locator.geocode(adress)
+    except:
+        return 'Invalid adress!'
+
+    if check_coordinates_in_bbox(location.latitude, location.longitude, bbox):
+        is_inside = False
+        i = 0
+
+        while not is_inside and i < gdf.shape[0]:
+    
+            polygon_coords = Polygon(gdf.geometry[i])
+
+            point_coordinates = (location.longitude, location.latitude)
+            point = Point(point_coordinates)
+    
+            is_inside = polygon_coords.contains(point)
+
+            i+=1
+
+        if is_inside:
+
+            return gdf.id[i-1]
+    
+        else:
+            return 'Adress doesnt fall into defined grid.'
+
+    else:
+        return 'Your adress doesnt fall into the defined area.'
