@@ -107,6 +107,7 @@ def create_mask_tif(prediction, orig_tif_path, nutzungsdaten_df, out_name, repro
     final_mask[prediction == 5] = 5
     final_mask[prediction == 2] = 2
     final_mask[nd_mask == 4] = 4
+    final_mask[nd_mask == 7] = 1
 
 
     # Write final prediction to tif
