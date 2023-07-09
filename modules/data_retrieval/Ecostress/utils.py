@@ -60,6 +60,10 @@ def heatwave_transform(dates):
     # Append the last heatwave
     heatwaves.append({'start': start_date.strftime('%Y-%m-%d 00:00:00'), 'end': end_date.strftime('%Y-%m-%d 00:00:00')})
 
+    # Add heatwaves from 2021
+    heatwaves.append({'start': '2021-06-17 00:00:00', 'end': '2021-06-22 00:00:00'})
+    heatwaves.append({'start': '2021-08-13 00:00:00', 'end': '2021-08-16 00:00:00'})
+
     return heatwaves
 
 
@@ -889,7 +893,7 @@ def arrays_subplot(masked_array_list):
     plt.show()
 
 
-def tiffs_to_foliumMap(tif_path, pixelated):
+def tiffs_to_foliumMap(tif_path, pixelated, minTemp, maxTemp):
     '''
     Create a folium map with an overlay of a GeoTIFF image.
 
@@ -917,7 +921,7 @@ def tiffs_to_foliumMap(tif_path, pixelated):
     # Define the colormap from blue to red
     cmap = plt.colormaps['jet']
     # Normalize the data between 0 and 1
-    norm = colors.Normalize(vmin=data.min(), vmax=data.max())
+    norm = colors.Normalize(vmin=minTemp, vmax=maxTemp)
     # Apply the colormap to the normalized data
     colored_data = cmap(norm(data))
 
@@ -958,8 +962,8 @@ def tiffs_to_foliumMap(tif_path, pixelated):
     # Create the colormap legend with 'jet' colormap colors
     colormap = cm.LinearColormap(
         colors=colors_jet_hex,
-        vmin=data.min(),
-        vmax=data.max(),
+        vmin=minTemp,
+        vmax=maxTemp,
         max_labels=15
         )
 

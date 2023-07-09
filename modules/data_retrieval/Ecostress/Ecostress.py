@@ -1,30 +1,30 @@
-# %% Import packages
+# %% Import packages and load config file
 import requests
 import json
-from io import BytesIO
-import rasterio
-import rioxarray
-import h5py
-import subprocess 
-import numpy as np
-import matplotlib.pyplot as plt
-from pyresample import geometry as geom 
-from pyresample import kd_tree as kdt
-from os.path import join
-import pyproj
-from rasterio.plot import show
-from osgeo import gdal, gdal_array, gdalconst, osr
-from PIL import Image
-import os
+#from io import BytesIO
+#import rasterio
+#import rioxarray
+#import h5py
+#import subprocess 
+#import numpy as np
+#import matplotlib.pyplot as plt
+#from pyresample import geometry as geom 
+#from pyresample import kd_tree as kdt
+#import pyproj
+#from rasterio.plot import show
+#from osgeo import gdal, gdal_array, gdalconst, osr
+#from PIL import Image
+#import os
 import yaml
 from os import listdir
 from os.path import isfile, join
-import pandas as pd
-from shapely.geometry import box
-import folium
-import matplotlib.colors as colors
-from rasterio.enums import Resampling
-import tifffile
+import datetime
+#import pandas as pd
+#from shapely.geometry import box
+#import folium
+#import matplotlib.colors as colors
+#from rasterio.enums import Resampling
+#import tifffile
 
 # Import all functions from utils
 from utils import *
@@ -50,7 +50,6 @@ login_ERS = {
     }
 
 # Request and store token
-# Request token
 response = requests.post(config['api']['path'] + 'login', data=json.dumps(login_ERS))
 
 # Set header
@@ -61,11 +60,7 @@ headers = {'X-Auth-Token': response.json()['data']}
 dates = pd.read_pickle('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/DWD/heatwaves.pkl')
 
 # Transform heatwaves
-
 heatwaves = heatwave_transform(dates)
-# Add heatwaves from 2021
-heatwaves.append({'start': '2021-06-17 00:00:00', 'end': '2021-06-22 00:00:00'})
-heatwaves.append({'start': '2021-08-13 00:00:00', 'end': '2021-08-16 00:00:00'})
 
 # Import tropical timeperiods
 # tropicalDays = pd.read_pickle('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/tropicalPeriods.pkl')
@@ -82,7 +77,7 @@ dwd = pd.read_csv(config['data']['dwd']+'/dwd.csv')
 tempRange = calculateTempRange(dwd)
     
 
-# %% Set spatial filter;
+# %% Set spatial filter for API Call
 spatialFilter =  {
     'filterType' : "mbr",
     'lowerLeft' : {
@@ -112,7 +107,8 @@ else:
     print("Loop execution cancelled.")
 
 
-# %% QC: Count the number of files for a specific period
+# %% QC
+# Count the number of files for a specific period
 month = [{'start': '2022-01-01 00:00:00', 'end': '2023-01-01 00:00:00'}]
 types = ['GEO','CLOUD', 'LSTE']
 # Loop over files
@@ -120,7 +116,7 @@ for t in types:
     files =  [
         f
         for f in listdir(config['data']['ES_raw']) 
-        if t in f and dateInHeatwave(datetime.datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), month)
+        if t in f and dateInHeatwave(datetime.strptime(f.split('_')[5], '%Y%m%dT%H%M%S'), month)
         ]
         
     print(f'There are {len(files)} {t} files')
@@ -137,24 +133,21 @@ else:
     print("Function execution cancelled.")
 
 
-# %% QC: Check if each LSTE.h5 has a respective tif
-raw_files = listdir(config['data']['ES_raw'])
+# %% QC
+# Check if each LSTE.h5 has a respective tif
 
 # Extract keys
-keys = set(
-    [
+keys = set([
     files.split('_')[3] + '_' + files.split('_')[4]
-    for files in raw_files if 'LSTE' in files
-    ]
-)
-
+    for files in listdir(config['data']['ES_raw']) if 'LSTE' in files
+    ])
+# Extract tiff paths
 tiffs = [
     f 
     for f in listdir(config['data']['ES_tiffs'])
-    if isfile(join(config['data']['ES_tiffs'], f)) and
-    f.endswith('.tif')
+    if isfile(join(config['data']['ES_tiffs'], f)) and f.endswith('.tif')
     ]
-
+# Loop over keys
 for k in keys:
     l = len([f for f in tiffs if k in f])
 
@@ -162,13 +155,12 @@ for k in keys:
         print(f'There are no tiff files for the key {k}')
         print([f for f in raw_files if k in f])
 
-
+'''
 # %% Create a loop that creates and stores a mean tif for each first and second half of a month
 
 # Split period
 period = [{'start': '2022-01-01 00:00:00', 'end': '2023-01-01 00:00:00'}]
 periods = split_period(period, split_half=False)
-
 
 # %% Plot all 12 tiff files in one plot
 path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/meanTiff/'
@@ -194,7 +186,7 @@ plt.tight_layout()
 
 # Display the subplot
 plt.show()
-
+'''
 
 # %% Create mean tiffs for inside and outside the heatwaves for 
 # Morning and afternoon 
@@ -202,18 +194,130 @@ meanTiff(heatwaves, insideHeatwave=True, config=config)
 meanTiff(inverted_HW, insideHeatwave=False, config=config)
 
 # %% Plot the respective tiff
-path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/avgMorning_nonHW.tif'
+path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/avgMorning_HW.tif'
 tif = rasterio.open(path)
 
-plt.imshow(tif.read()[0],'jet') # ,vmin=16, vmax=45)
+plt.imshow(tif.read()[0],'jet')
 plt.colorbar(label = "Temperature in Celsius")
+plt.show()
+
+# %% Crop the tif to closer boundig boxes
+from rasterio.mask import mask
+xmin, ymin, xmax, ymax = config['bboxes']['munich_grid']
+bbox = box(xmin, ymin, xmax, ymax)
+
+# Crop the GeoTIFF to the bounding box
+cropped, transform = mask(dataset=tif, shapes=[bbox], crop=True)
+
+plt.imshow(cropped[0],'jet')
+plt.colorbar(label = "Temperature in Celsius")
+plt.show()
+
+# %% Get value for weather station Oberhaching-Laufzorn
+# Open the GeoTIFF file
+with rasterio.open(path) as src:
+    # Transform the coordinate to the pixel location
+    row, col = src.index(11.5524, 48.0130)
+
+    # Read the pixel value at the specified location
+    value = src.read(1, window=((row, row+1), (col, col+1)))
+
+# %% 
+data = tif.read()[0]
+# %%Create a 10x10 array filled with random numbers between 0 and 99
+import random
+data = np.array([[random.random() for _ in range(500)] for _ in range(500)])
+
+
+# %% 
+import numpy as np
+#arr = np.array([[1, 2, 3],
+#                [4, 5, 6],
+#                [7, 8, 9]])
+
+
+# def custom_filter(image):
+#    return np.amax(image) - np.amin(image)
+
+kernel = (3,3)
+nPixel = kernel[0]*kernel[1]
+
+from scipy.ndimage import generic_filter
+result = generic_filter(cropped[0], np.mean, size=kernel, mode='constant', cval=15)
+
+
+result = np.subtract(result,cropped[0]/nPixel)*(nPixel/(nPixel-1))
+
+# 
+difference = np.subtract(cropped[0],result)
+
+# 
+plt.imshow(cropped[0],'jet')
+plt.colorbar(label = "Temperature in Celsius")
+
+# Plot red dots for True values in the boolean array
+y, x = np.where((difference > 1.5)) # &(difference < 4))
+plt.scatter(x, y, color='green', marker='X', s=5)
+
 
 plt.show()
 
-# %% Plot tif over a interactive open street map
 
-map_afternoon = tiffs_to_foliumMap(path, True)
+
+
+# %%
+plt.imshow(tif.read()[0],'jet',vmin=value)
+plt.colorbar(label = "Temperature in Celsius")
+plt.show()
+
+# %%
+#plt.show()
+
+map_afternoon = tiffs_to_foliumMap(
+    path,
+    pixelated=False,
+    minTemp=tif.read()[0].min(),
+    maxTemp=tif.read()[0].max()
+    )
+
 map_afternoon
+
+
+# %% Plot tif over a interactive open street map
+rootpath = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/'
+
+files = {
+    'morning':[
+        'avgMorning_nonHW.tif',
+        'avgMorning_HW.tif'
+        ],
+    'afterNoon':[
+        'avgAfterNoon_nonHW.tif',
+        'avgAfterNoon_HW.tif'
+        ]
+}
+
+for f in files:
+    
+    tMin, tMax = 99, -99
+
+    for t in files[f]:
+        tif = rasterio.open(os.path.join(rootpath, t))
+
+        if tMin > np.quantile(tif.read()[0],0.001):
+            tMin = np.quantile(tif.read()[0],0.001)
+
+        if tMax < np.quantile(tif.read()[0],0.999):
+            tMax = np.quantile(tif.read()[0],0.999)
+    
+    for t in files[f]:
+        map = tiffs_to_foliumMap(os.path.join(rootpath, t), pixelated=False, minTemp=tMin, maxTemp=tMax)
+        map.save(t.replace('.tif','.html'))
+
+
+# %%
+#map_afternoon = tiffs_to_foliumMap(os.path.join(rootpath, files[0]), pixelated=False)
+#map_afternoon
 
 # Save map
 # map_afternoon.save('afterNoon_nonHT.html')
