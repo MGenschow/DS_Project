@@ -37,7 +37,7 @@ path_model = path + 'model/'
 #%% import other scripts
 from disaggregate import *
 #%% fix hyperparameters
-grid_size_meters = 100
+grid_size_meters = 250
 # coordinates = config['bboxes']['munich']
 coordinates = config['bboxes']['munich_grid']
 # coordinates = [11.547582, 48.114226, 11.627263, 48.155554]
@@ -45,7 +45,7 @@ coordinates = config['bboxes']['munich_grid']
 polygon_gdf = create_polygon_from_coord(coordinates=coordinates)
 grid = divide_polygon_into_grid(polygon_gdf.geometry[0], grid_size_meters)
 print("Number of grid elements: " + str(len(grid)))
-with open(path_grid + 'grid_' + str(grid_size_meters) + '_a.pkl', 'wb') as file:
+with open(path_grid + 'grid_' + str(grid_size_meters) + '_e.pkl', 'wb') as file:
     pickle.dump(grid, file)
 #%% get raw input data
 with open(path_raw + 'input.pkl', 'rb') as file:
@@ -77,5 +77,5 @@ final = gpd.GeoDataFrame(pd.merge(grid, features, on='id', how='inner'))
 print("Number of rows in final dataframe: " + str(len(final)))
 print(final.head(10))
 #%% save data
-with open(path + 'final_' + str(grid_size_meters) + '_a.pkl', 'wb') as file:
+with open(path + 'final_' + str(grid_size_meters) + '_e.pkl', 'wb') as file:
     pickle.dump(final, file)
