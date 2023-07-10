@@ -76,7 +76,7 @@ map_element = dl.Map(
     [
     dl.LayersControl(
         [dl.BaseLayer(dl.TileLayer(url = url, attribution = attribution + esri_attribution),checked=True, name = 'ESRI Satellite')] + 
-        [dl.BaseLayer(dl.TileLayer(), name = 'OpenStreetMap', )] + 
+        [dl.BaseLayer(dl.TileLayer(attribution = attribution), name = 'OpenStreetMap', )] + 
         [dl.Overlay(
             dl.LayerGroup(
                 dl.GeoJSON(data=gdf_json, 

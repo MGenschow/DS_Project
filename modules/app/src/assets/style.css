@@ -100,3 +100,12 @@
     margin-right: 2px;
     vertical-align: bottom;
 }
+
+
+.DateInput_input {
+    height: 36px;
+}
+
+.modebar{
+    display: none !important;
+}
