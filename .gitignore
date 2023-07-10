@@ -144,6 +144,7 @@ dmypy.json
 *.out
 *settings.json
 *gemeinden_simplify200.geojson
+*.txt
 Pipfile
 Pipfile.lock
 

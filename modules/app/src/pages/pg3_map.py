@@ -99,7 +99,7 @@ map_element = dl.Map(
     style={'width': '100%', 'height': '45vh', 'margin': "auto", "display": "block"},
     zoom=13)
 
-
+###### Function and data for the adress feature
 def check_coordinates_in_bbox(latitude, longitude, bounding_box):
     point = Point(longitude, latitude)
     bbox_polygon = Polygon([(bounding_box[0], bounding_box[1]), (bounding_box[0], bounding_box[3]),
@@ -111,6 +111,13 @@ with open('modules/config.yml', 'r') as file:
     config = yaml.safe_load(file)
 # Store bounding box
 bbox = config['bboxes']['munich']
+
+df = pd.read_csv('modules/app/src/assets/adressen_aktuell.txt', sep=',')
+# %% Concat STRANAM and HSZ and store it is a list
+df['Adress'] = df['STRANAM'] + ' ' + df['HSZ'] + ', München'
+
+# Store the Adress column in a list
+adressList = df['Adress'].tolist()
 
 
 ########################## Storage Elements ####################
@@ -139,6 +146,7 @@ layout = dbc.Container(
             [
                 html.H3('Adress Search:'),
                 dcc.Input(id='adress', placeholder='Implerstraße 64, 81371 München', type='text', style={'width': '300px'}),
+                # dcc.Dropdown(adressList, adressList[0], id='adress', style={'width': '300px'}),
                 html.Div(id='TEST')
             ],
             style={'display': 'flex', 'align-items': 'center'}
