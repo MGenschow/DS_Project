@@ -48,7 +48,7 @@ with open(root_path + '/assets/final_250_e.pkl', 'rb') as f:
 gdf['pred'] = gdf.wLST
 gdf['avg_height'] = 10
 gdf_json = json.loads(gdf[['geometry', 'id', 'wLST', 'impervious',
-       'building', 'low vegetation', 'water', 'trees', 'road', 'ignore', 'pred', 'avg_height']].to_json())
+       'building', 'low vegetation', 'water', 'trees', 'road', 'pred', 'avg_height']].to_json())
 
 # Model Import
 with open(root_path + '/assets/Causal_Model_250_a.pkl', 'rb') as f:
