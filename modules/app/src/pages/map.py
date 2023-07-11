@@ -86,7 +86,7 @@ map_element = dl.Map(
             dl.LayerGroup(
                 dl.GeoJSON(data=gdf_json, 
                             id="grid", 
-                            options={"style":{"color":"blue", 'weight':2, 'opacity':1, 'fillOpacity': 0}},
+                            options={"style":{"color":"#209e9e", 'weight':2, 'opacity':1, 'fillOpacity': 0}},
                             hoverStyle=arrow_function(dict(weight=3, color='#d62f2f', dashArray='')),
                             #zoomToBounds=True
                             )
