@@ -42,7 +42,7 @@ dash.register_page(__name__,
 )
 
 # Data Import
-with open(root_path + '/assets/final_200_a.pkl', 'rb') as f:
+with open(root_path + '/assets/final_250_e.pkl', 'rb') as f:
     gdf = pd.read_pickle(f)
 
 gdf['pred'] = gdf.wLST

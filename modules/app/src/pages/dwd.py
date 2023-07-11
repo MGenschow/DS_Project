@@ -52,7 +52,7 @@ dash.register_page(__name__,
                    order=3
 )
 
-# Plottingn utilities
+# Plotting utilities
 def divide_dates_into_sublists(dates):
     """
     Divide a list of dates into sublists based on consecutive days.
@@ -306,23 +306,26 @@ def update_plot(selected_date, station1, station2):
     filtered_df = hourly[hourly['TIME'].dt.date == selected_date.date()]
     
     traces = []
-    for i, station_id in enumerate([station1, station2]):
+    for i, station_id in enumerate([station2, station1]):
         station_data = filtered_df[filtered_df['STATION_ID'] == station_id]
         trace = go.Scatter(
             x=station_data['TIME'],
             y=station_data['TEMP'],
             mode='lines',
-            line=dict(color=colors[i]),
-            name=station_id,
+            line=dict(color=colors[::-1][i]),
             hovertemplate=
-            '<br><b>Time</b>: %{x}' +
-            '<br><b>Temperature</b>: %{y:.2f}°C<extra></extra>',
+            '<br><b>Zeit</b>: %{x}' +
+            '<br><b>Temperatur</b>: %{y:.2f}°C<extra></extra>',
         )
         traces.append(trace)
     
     layout = go.Layout(
-        xaxis={'title': 'Time', 'gridcolor': '#F2F2F2'},
-        yaxis={'title': 'Temperature (°C)', 'range': [-10, 40], 'gridcolor': '#F2F2F2', 'zeroline': False},
+        xaxis={
+            'title': 'Uhrzeit', 'gridcolor': '#F2F2F2',
+            'tickvals': [selected_date + pd.Timedelta(hours=i) for i in range(0, 25, 2)],
+            'ticktext': ['<br>'+str(i) for i in range(0, 25, 2)]
+        },
+        yaxis={'title': 'Temperatur (°C)', 'range': [-10, 40], 'gridcolor': '#F2F2F2', 'zeroline': False},
         hovermode='closest',
         showlegend=False,
         paper_bgcolor='rgba(0,0,0,0)',
@@ -346,7 +349,7 @@ def update_plot(month_range, year, station1, station2):
     filtered_df = daily[(daily['DATE'].dt.year == year) & (daily['DATE'].dt.month >= month_range[0])  & (daily['DATE'].dt.month <= month_range[1])]
 
     # Initialize figure with 2 subplots
-    fig = make_subplots(rows=2, cols=1, subplot_titles=(station1, station2))
+    fig = make_subplots(rows=2, cols=1, shared_yaxes='rows', y_title='Tägliche Höchsttemperatur (°C)', x_title='Datum')
 
     for i, station_id in enumerate([station1, station2]):
         station_data = filtered_df[filtered_df['STATION_ID'] == station_id]
@@ -354,8 +357,8 @@ def update_plot(month_range, year, station1, station2):
             x=station_data['DATE'],
             y=station_data['MAX_TEMP'],
             mode='lines',
-            name=station_id,
             line=dict(color=colors[i]),
+            hoverinfo=None
         )
 
         # Heatwave identification
@@ -363,13 +366,14 @@ def update_plot(month_range, year, station1, station2):
 
         if len(heatwave_dates) > 0:
             heatwave_list = divide_dates_into_sublists(heatwave_dates)
-            for heatwave_dates in heatwave_list:
+            for h in heatwave_list:
                 heatwave_trace = go.Scatter(
-                    x=heatwave_dates,
-                    y=[100] * len(heatwave_dates),
+                    x=h,
+                    y=[filtered_df.MAX_TEMP.max().item()] * len(h),
                     mode='lines',
                     fill='tozeroy',
                     fillcolor='orange',
+                    line=dict(color='orange'),
                     opacity=0.5,
                     hoverinfo='skip',
                     showlegend=False
@@ -379,18 +383,40 @@ def update_plot(month_range, year, station1, station2):
         # Add trace to subplot
         fig.add_trace(trace, row=i+1, col=1)
 
+        trace_hover = go.Scatter(
+            x=station_data['DATE'],
+            y=station_data['MAX_TEMP'],
+            mode='lines',
+            line=dict(width=0),  # Make line invisible
+            marker=dict(color='rgba(0,0,0,0)'),  # Make markers invisible
+            hovertemplate='Time: %{x}<br>Temperature: %{y} °C',  # Set hover text
+            hoverlabel=dict(bgcolor='grey'),  # Set hover label color
+            showlegend=False
+        )
+        # Add invisible trace to both subplots
+        fig.add_trace(trace_hover, row=1, col=1)
+        fig.add_trace(trace_hover, row=2, col=1)
+
 
     # Update yaxis properties
-    fig.update_yaxes(title_text="Temperature (°C)", range=[-10, 40],col=1)
+    #fig.update_yaxes(title_text="Temperatur (°C)", range=[-10, 40],col=1)
     #fig.update_yaxes(title_text="Temperature (°C)", range=[-10, 40], row=2, col=1)
+    fig.update_xaxes(tickformat="%d.%m", row=1, col=1)
+    fig.update_xaxes(tickformat="%d.%m", row=2, col=1)
+    fig.update_yaxes(range=[-10, 40], tickvals=[0, 15, 30])
 
     # Update title and color layout
     fig.update_layout(
+        #tickformat="%d.%m",
         hovermode='closest',
         showlegend=False,
         paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)'
+    )
+
+    fig.layout.annotations[0]["font"] = dict(
+        family='"Open Sans", verdana, arial, sans-serif',
+        size=14,
     )
 
     return fig
-

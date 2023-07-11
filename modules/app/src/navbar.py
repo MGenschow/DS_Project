@@ -6,17 +6,13 @@ import os
 import dash
 from PIL import Image
 from io import BytesIO
+from root_path import *
 
 
 LOGO = "https://images.plot.ly/logo/new-branding/plotly-logomark.png"
 
 
-current_path = os.getcwd()
-print(current_path)
-
-
-
-logo_path = current_path + "/assets/city.png"
+logo_path = root_path + "/assets/city.png"
 logo = Image.open(logo_path)
 buffered = BytesIO()
 logo.save(buffered, format="PNG")
