@@ -9,6 +9,9 @@
     background-color: #cbd3dd;
     z-index: 1050;
     transition: width rgb(32, 158, 158);
+    overflow-x: hidden;
+    overflow-y: auto;
+    /* Scrollable contents if viewport is shorter than content. */
     text-align: left;
 }
 
@@ -23,12 +26,14 @@
     overflow: hidden;
     white-space: nowrap;
     background-color: #cbd3dd;
+    border-radius: 10px;
 }
 
 /* fix the width of the icons */
 .sidebar .nav-link i {
-    width: 1rem;  /* Increase the width */
-    color: rgb(0, 0, 0); 
+    width: 1rem;
+    /* Increase the width */
+    color: rgb(0, 0, 0);
     transition: background-color 0.1s ease-in-out;
     text-align: center;
     font-size: 1rem;
@@ -37,7 +42,7 @@
 .sidebar .nav-link:hover {
     background-color: rgb(32, 158, 158);
     /*background-color: rgb(15, 63, 63);*/
-    border-radius: 10px; 
+    border-radius: 10px;
 }
 
 /* hide the navlink labels by default */
@@ -51,7 +56,7 @@
 .sidebar:hover .nav-link span {
     visibility: visible;
     opacity: 1;
-    color: white;
+    color: rgb(0, 0, 0);
 }
 
 
@@ -106,6 +111,6 @@
     height: 36px;
 }
 
-.modebar{
+.modebar {
     display: none !important;
 }

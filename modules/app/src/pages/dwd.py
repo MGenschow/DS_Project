@@ -369,7 +369,7 @@ def update_plot(month_range, year, station1, station2):
             for h in heatwave_list:
                 heatwave_trace = go.Scatter(
                     x=h,
-                    y=[filtered_df.MAX_TEMP.max().item()] * len(h),
+                    y=[filtered_df.MAX_TEMP.max()] * len(h),
                     mode='lines',
                     fill='tozeroy',
                     fillcolor='orange',

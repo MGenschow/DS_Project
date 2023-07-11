@@ -61,7 +61,7 @@ footer = html.Div(
                                                                     [
                                                                         dmc.Anchor(
                                                                             DashIconify(
-                                                                                icon="bi:file-person",
+                                                                                icon="bi:linkedin",
                                                                                 width=40,
                                                                             ),
                                                                             href="https://www.linkedin.com/in/malte-genschow/",
@@ -98,7 +98,7 @@ footer = html.Div(
                                                                     [
                                                                         dmc.Anchor(
                                                                             DashIconify(
-                                                                                icon="bi:file-person",
+                                                                                icon="bi:linkedin",
                                                                                 width=40,
                                                                             ),
                                                                             href="https://www.linkedin.com/in/lay-aaron/",
@@ -135,7 +135,7 @@ footer = html.Div(
                                                                     [
                                                                         dmc.Anchor(
                                                                             DashIconify(
-                                                                                icon="bi:file-person",
+                                                                                icon="bi:linkedin",
                                                                                 width=40,
                                                                             ),
                                                                             href="https://www.linkedin.com/in/stefan-glaisner-0a3894152/",
@@ -165,7 +165,7 @@ footer = html.Div(
                                                 dmc.HoverCard(
                                                     shadow="md",
                                                     children=[
-                                                        dmc.HoverCardTarget("Source Code"),
+                                                        dmc.HoverCardTarget("Github"),
                                                         dmc.HoverCardDropdown(
                                                             [
                                                                 dmc.Group(
