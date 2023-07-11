@@ -11,37 +11,11 @@ from root_path import *
 
 LOGO = "https://images.plot.ly/logo/new-branding/plotly-logomark.png"
 
-
-logo_path = root_path + "/assets/city.png"
+logo_path = root_path + "/assets/logo_1_a.png"
 logo = Image.open(logo_path)
 buffered = BytesIO()
 logo.save(buffered, format="PNG")
 encoded_logo = base64.b64encode(buffered.getvalue())
-
-
-
-# navbar = dbc.Navbar(
-#     dbc.Container(
-#         dbc.Row(
-#             [   
-#                 dbc.Col(html.P('         ')),
-#                 dbc.Col(
-#                     html.Img(src=LOGO, height="25px")
-#                 ),
-#                 dbc.Col(
-#                     dbc.NavbarBrand(
-#                         html.Span([
-#                             "Heatmapper - ",
-#                             html.I("Unveiling Munich's Hidden Heat Islands", style={'font-size': '14px', 'text-transform': 'none'})
-#                         ]), className="ms-2")
-#                 ),
-#             ]
-#         )
-#     ),
-#     color="primary",
-#     dark=True
-# )
-
 
 navbar = html.Div(
     [
@@ -49,19 +23,17 @@ navbar = html.Div(
             [
                 dbc.Row(
                     [
-                        # dbc.Col(
-                        #     [
-                        #         html.P(' ')
-                        #     ],
-                        #     width={"size": "auto", 'offset':'0'}
-                        # ),
                         dbc.Col(
                             [
-                                #html.Img(src=encoded_image, height="40px")
-                                #html.Img(src=dash.get_asset_url('city.png'), height="40px")
-                                html.Img(src = f"data:image/png;base64,{encoded_logo.decode()}", height="40px")
+                                html.Img(src=f"data:image/png;base64,{encoded_logo.decode()}", 
+                                         style={'height': '40px', 
+                                                'position': 'absolute',
+                                                'top': '50%',
+                                                'transform': 'translateY(-50%)',
+                                                'padding-right': '20px'})  # Added padding-right
                             ],
                             width={"size": "auto", 'offset':'0'},
+                            style={'height': '100%', 'position': 'relative'}  # Ensure that the column has a defined height
                         ),
                         dbc.Col(
                             html.Div(
@@ -69,26 +41,25 @@ navbar = html.Div(
                                     html.Span(
                                         [
                                             html.Strong("Heatmapper - ", style={'font-size': '20px'}),
-                                            html.I("Unveiling Munich's Hidden Heat Islands", style={'font-size': '18px', 'text-transform': 'none'})
+                                            html.I("Unveiling Munich's Hidden Heat Islands", 
+                                                    style={'font-size': '18px', 'text-transform': 'none'})
                                         ],
                                         className="align-self-center", 
                                     )
                                 ],
-                                className="d-flex align-items-center"
+                                className="d-flex align-items-center justify-content-center"   # Center-aligned text
                             ),
                             width={"size": "auto", 'offset':'0'}
                         )
                     ],
                     className="h-100",
-
                 )                
             ],
-            className="fixed-top", style={"background-color": "#1a1a1a",  
-                                             "color": "#ffffff", 
-                                             'padding':'0.5rem',
-                                             "width":"100vw",
-                                             "height": "8vh"},
-                                             
+            className="fixed-top", style={"background-color": "#1a1a1a", 
+                                           "color": "#ffffff", 
+                                           'padding':'0.5rem',
+                                           "width":"100vw",
+                                           "height": "8vh"},
             fluid=True
         )
     ]
