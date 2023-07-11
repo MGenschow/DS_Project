@@ -25,6 +25,10 @@ import yaml
 
 from dash_extensions.javascript import arrow_function
 
+import os
+
+current_path = os.getcwd()
+print(current_path)
 
 
 dash.register_page(__name__,
@@ -37,7 +41,7 @@ dash.register_page(__name__,
 )
 
 # Data Import
-with open('modules/app/src/assets/final_200_a.pkl', 'rb') as f:
+with open(current_path + '/modules/app/src/assets/final_200_a.pkl', 'rb') as f:
     gdf = pd.read_pickle(f)
 
 gdf['pred'] = gdf.wLST
@@ -46,7 +50,7 @@ gdf_json = json.loads(gdf[['geometry', 'id', 'wLST', 'impervious',
        'building', 'low vegetation', 'water', 'trees', 'road', 'ignore', 'pred', 'avg_height']].to_json())
 
 # Model Import
-with open('modules/app/src/assets/Causal_Model_250_a.pkl', 'rb') as f:
+with open(current_path + '/modules/app/src/assets/Causal_Model_250_a.pkl', 'rb') as f:
     model = pd.read_pickle(f)
 
 # Utility function for model prediction
@@ -107,12 +111,12 @@ def check_coordinates_in_bbox(latitude, longitude, bounding_box):
     return bbox_polygon.contains(point)
 
 # Load config file
-with open('modules/config.yml', 'r') as file:
+with open(current_path + '/modules/config.yml', 'r') as file:
     config = yaml.safe_load(file)
 # Store bounding box
 bbox = config['bboxes']['munich']
 
-df = pd.read_csv('modules/app/src/assets/adressen_aktuell.txt', sep=',')
+df = pd.read_csv(current_path + '/modules/app/src/assets/adressen_aktuell.txt', sep=',')
 # %% Concat STRANAM and HSZ and store it is a list
 df['Adress'] = df['STRANAM'] + ' ' + df['HSZ'] + ', München'
 
@@ -344,7 +348,7 @@ def update_grid_info(click_feature):
     initial_pred = properties['pred']
 
     # Orthophoto Card Content
-    image_path = f"modules/app/src/assets/orthophotos/{grid_id}.png"
+    image_path = current_path + f"modules/app/src/assets/orthophotos/{grid_id}.png"
     image = Image.open(image_path)
     buffered = BytesIO()
     image.save(buffered, format="PNG")
@@ -371,7 +375,7 @@ def update_grid_info(click_feature):
     cmap = {'Versiegelt': "#cccccc", 'Gebäude': '#ff00ff',
         'Wiese':"#00ff00", 'Wasser':'#0000ff', 'Bäume':"#008200", 'Straße':"#ff0000"} 
     
-    mask_path = f"modules/app/src/assets/predictions/{grid_id}.png"
+    mask_path = current_path + f"modules/app/src/assets/predictions/{grid_id}.png"
     mask = Image.open(mask_path)
     buffered = BytesIO()
     mask.save(buffered, format="PNG")
