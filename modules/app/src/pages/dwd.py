@@ -1,32 +1,28 @@
 import dash
 import dash_leaflet as dl
-from dash_iconify import DashIconify
-import dash_mantine_components as dmc
-from dash import dcc, html, dash_table, dcc, Input, Output, State, callback, callback_context
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 import plotly.graph_objects as go
 import plotly.express as px
 import dash_extensions as de
-from dash_bootstrap_components import Container
-import base64
-from PIL import Image
-from io import BytesIO
-import json
-from pathlib import Path
-import pickle
 import numpy as np
 import pandas as pd
-from dash.exceptions import PreventUpdate
 import statsmodels.api as sm
-from sklearn.preprocessing import PolynomialFeatures
 import datetime
+
+from dash_iconify import DashIconify
+from dash import dcc, html, dash_table, dcc, Input, Output, State, callback, callback_context
+from dash_bootstrap_components import Container
+from pathlib import Path
+from dash.exceptions import PreventUpdate
 from datetime import  timedelta
 from plotly.subplots import make_subplots
-from dash_extensions.javascript import arrow_function
 
 from root_path import *
 
-###### Data Import
+
+####################### Data import #######################
+
 with open(root_path + '/assets/station_meta.pkl', 'rb') as f:
     meta = pd.read_pickle(f)
 with open(root_path + '/assets/hourly.pkl', 'rb') as f:
@@ -35,7 +31,7 @@ with open(root_path + '/assets/daily.pkl', 'rb') as f:
     daily = pd.read_pickle(f)
 daily['DATE'] = pd.to_datetime(daily['DATE'], format='%Y-%m-%d %H')
 
-# Dropdown Options
+# define dropdown options
 station_options = []
 for i, row in meta[['STATIONSNAME', 'STATIONS_ID']].iterrows():
     station_options.extend([{'label': row['STATIONSNAME'], 'value': row['STATIONS_ID']}])
@@ -52,21 +48,12 @@ dash.register_page(__name__,
                    order=3
 )
 
-# Plotting utilities
+
+####################### Utility functions #######################
+
 def divide_dates_into_sublists(dates):
-    """
-    Divide a list of dates into sublists based on consecutive days.
-
-    Args:
-        dates (list): A list of dates in ascending order.
-
-    Returns:
-        list: A list of sublists, where each sublist contains consecutive dates.
-
-    """
     sublists = []
     sublist = [dates[0]]
-    
     for i in range(1, len(dates)):
         current_date = dates[i]
         previous_date = dates[i - 1]
@@ -75,62 +62,89 @@ def divide_dates_into_sublists(dates):
             sublists.append(sublist)
             sublist = []
         sublist.append(current_date)
-    
     sublists.append(sublist)
-    
     return sublists
+
+def convert_date_format(date_str):
+    date_object = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+    new_date_str = date_object.strftime("%d/%m/%Y")
+    return new_date_str
+
+
+####################### Text Elemente #######################
+
+markdown_referenzen = '''
+## Referenzen
+Gasparrini, A. and Armstrong, B. (2011). The impact of heat waves on mortality. *Epidemiology*, 22(1):68.  
+Huth, R., Kyselyy, J., and Pokorna, L. (2000). A GCM simulation of heat waves, dry spells, and their relationships to circulation. *Climatic Change*, 46(1-2):29–60.  
+Kysely, J. (2004). Mortality and displaced mortality during heat waves in the Czech Republic. *International Journal of Biometeorology*, 49:91–97.  
+Kysely, J. (2010). Recent severe heat waves in central Europe: How to view them in a long-term prospect? *International Journal of Climatology: A Journal of the Royal Meteorological Society*, 30(1):89–109.  
+Meehl, G. A. and Tebaldi, C. (2004). More intense, more frequent, and longer lasting heat waves in the 21st century. *Science*, 305(5686):994–997.
+'''
+
+markdown_heatwaves = '''
+# DWD Temperatur Daten
+Der urbane Hitzeinseleffekt ist besonders problematisch, wenn extreme Temperaturen an aufeinanderfolgenden Tagen auftreten (Gasparrini und Armstrong, 2011).
+Solche Perioden werden üblicherweise auch als Hitzewellen bezeichnet. Daher basiert unsere Analyse urbarner Hitzeintensität auf Temperaturdaten, die während der Zeit einer Hitzewelle aufgezeichnet wurden.
+Wir basieren unsere Analyse hierbei auf die Definition von Huth et al. (2000), die in der metereologischen Literatur häufig verwendet wurde (Meehl und Tebaldi, 2004; Kysely, 2004, 2010).
+Sie lautet wie folgt: Eine Hitzewelle wird erkannt, sobald an mindestens drei aufeinanderfolgenden Tagen eine Temperatur von 30°C überschritten wird und dauert so lange, wie die durchschnittliche Höchsttemperatur über 30°C bleibt und an keinem Tag unter eine Höchsttemperatur von 25°C fällt.
+Auf der rechten Seite sehen Sie die drei offiziellen DWD-Wetterstationen, die sich in unserem Interessengebiet in und um die Stadt München befinden. Eine befindet sich im Stadtzentrum von München, eine am Flughafen und eine in Oberhaching.
+'''
+
+markdown_plots = '''
+Die unten stehenden Grafiken geben einen Überblick über die Temperaturen in München Stadt und Umland.
+Es können hierbei immer zwei der drei Stationen ausgewählt werden. Dies ist besonders interessant, um den Temperatur-Unterschied zwischen Stadt und Land darzustellen bzw. den Einfluss von Oberflächenbeschaffenheiten auf das Klima.  
+Die linke Darstellung zeigt für einen ausgewählten Tag die stündlichen Temperaturdaten (in °C) an.
+Die rechte Grafik zeigt eine Zeitreihe von Höchsttemperaturen an. Eine Hitzewelle (nach oben genannter Definition) wird durch einen orange gefärbten Hintergrund angezeigt.
+Bei entsprechender Stationsauswahl wird sehr gut deutlich, dass in Perioden in denen eine Hitzewelle in der Stadt auftritt, nicht zwangsläufig auch eine im ländlichen Umfeld präsent sein muss.
+'''
 
 
 ####################### Map Element ##########################
-# ESRI Tile Layer
-attribution = ('Map: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>') # OSM Attribution
+
+osm_attribution = ('Map: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>')
 
 url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
 esri_attribution = (' | Tiles: &copy; <a href="http://www.esri.com/">Esri</a>' '<a href="https://www.esri.com/en-us/legal/copyright-trademarks">')
 dwd_attibution = (' | Stations: &copy; <a href="https://opendata.dwd.de/">DWD Open Data</a>')
-# Central Map Element
+
 map_element = dl.Map(
     [
     dl.LayersControl( 
-        [dl.BaseLayer(dl.TileLayer(attribution = attribution + dwd_attibution), name = 'OpenStreetMap', checked=True)] +
-        [dl.BaseLayer(dl.TileLayer(url = url, attribution = attribution + esri_attribution + dwd_attibution), name = 'ESRI Satellite')] 
+        [dl.BaseLayer(dl.TileLayer(attribution = osm_attribution + dwd_attibution), name = 'OpenStreetMap', checked=True)] +
+        [dl.BaseLayer(dl.TileLayer(url = url, attribution = osm_attribution + esri_attribution + dwd_attibution), name = 'ESRI Satellite')] 
     )],
     center=[48.137154, 11.576124],
     style={'width': '100%', 'height': '40vh', 'margin': "auto", "display": "block"},
     zoom=9)
 
 for index, row in meta.iterrows():
-    # Get the latitude and longitude values
+
     latitude = row['GEOBREITE']
     longitude = row['GEOLAENGE']
     
-    # Create a marker for each location
     marker = dl.Marker(position=[latitude, longitude], children=[
         dl.Tooltip(html.Div([
-            html.B('Stationsname:'), ' ' + str(row['STATIONSNAME']),
+            str(row['STATIONSNAME']),
             html.Br(),
-            html.B('Aktiv seit '), ' ' + str(row['VON_DATUM']),
+            html.B('Aktiv seit '), convert_date_format(str(row['VON_DATUM'])),
             html.Br(),
-            html.B('Höhe:'), ' ' + str(row['STATIONSHOEHE']),
+            html.B('Höhe: '), ' ' + str(row['STATIONSHOEHE']), html.B('m')
         ]))
     ])
     
-    # Add the marker to the map
     map_element.children.append(marker)
 
 
+####################### Layout #######################
 
-############################## Layout #############################
 layout = dbc.Container(
     [   
         dbc.Row(
             [
                 dbc.Col(
                     [
-                        html.H1("DWD Temperatur Daten"),
-                        html.P("The urban heat island effect is particularly problematic if temperatures are high on consecutive days (Gasparrini and Armstrong, 2011). Such periods are also conventionally referred to as heat waves. Therefore, our analysis of urban heat intensity is based on temperature data that was recorded during the time of a heat wave. We follow the definition by Huth et al. (2000) which has been frequently applied in metereological literature (Meehl and Tebaldi, 2004; Kysely, 2004, 2010). It goes as follows: A heat wave is detected as soon as a temperature of 30°C is exceeded for at least three consecutive days and lasts as long as the average maximum temperature remains above 30°C and does not fall below a maximum temperature of 25°C on any day. On the right you can see the three official DWD weather stations that reside in our area of interest within and around the city of Munich.",
-                               style={"text-align": "justify"}),
-
+                        dcc.Markdown(markdown_heatwaves, style={"text-align": "justify"})
                     ],
                     className="mt-4",                
                     )
@@ -141,8 +155,7 @@ layout = dbc.Container(
             [
                 dbc.Col(
                     [
-                        html.P("The urban heat island effect is particularly problematic if temperatures are high on consecutive days (Gasparrini and Armstrong, 2011). Such periods are also conventionally referred to as heat waves. Therefore, our analysis of urban heat intensity is based on temperature data that was recorded during the time of a heat wave. We follow the definition by Huth et al. (2000) which has been frequently applied in metereological literature (Meehl and Tebaldi, 2004; Kysely, 2004, 2010). It goes as follows: A heat wave is detected as soon as a temperature of 30°C is exceeded for at least three consecutive days and lasts as long as the average maximum temperature remains above 30°C and does not fall below a maximum temperature of 25°C on any day. On the right you can see the three official DWD weather stations that reside in our area of interest within and around the city of Munich.",
-                               style={"text-align": "justify"}),
+                        dcc.Markdown(markdown_plots, style={"text-align": "justify"})
                     ],
                     #className="mt-4",  
                     width = 6
@@ -268,7 +281,19 @@ layout = dbc.Container(
             className="mb-4"
         ),
         html.Br(),
-        html.Hr(),
+        dbc.Row(
+            [
+                dbc.Col(
+                    [
+                        dcc.Markdown(markdown_referenzen),
+
+                    ],
+                    className="mt-4",                
+                    )
+            ],
+            #className="mb-4"
+        ),
+        html.Br(),
         html.Br(),
     ],
     style={"height": "100vh"},
@@ -399,15 +424,12 @@ def update_plot(month_range, year, station1, station2):
 
 
     # Update yaxis properties
-    #fig.update_yaxes(title_text="Temperatur (°C)", range=[-10, 40],col=1)
-    #fig.update_yaxes(title_text="Temperature (°C)", range=[-10, 40], row=2, col=1)
     fig.update_xaxes(tickformat="%d.%m", row=1, col=1)
     fig.update_xaxes(tickformat="%d.%m", row=2, col=1)
     fig.update_yaxes(range=[-10, 40], tickvals=[0, 15, 30])
 
     # Update title and color layout
     fig.update_layout(
-        #tickformat="%d.%m",
         hovermode='closest',
         showlegend=False,
         paper_bgcolor='rgba(0,0,0,0)',
