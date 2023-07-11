@@ -22,16 +22,16 @@ from sklearn.preprocessing import PolynomialFeatures
 import datetime
 from datetime import  timedelta
 from plotly.subplots import make_subplots
-
-
 from dash_extensions.javascript import arrow_function
 
+from root_path import *
+
 ###### Data Import
-with open('modules/app/src/assets/station_meta.pkl', 'rb') as f:
+with open(root_path + '/assets/station_meta.pkl', 'rb') as f:
     meta = pd.read_pickle(f)
-with open('modules/app/src/assets/hourly.pkl', 'rb') as f:
+with open(root_path + '/assets/hourly.pkl', 'rb') as f:
     hourly = pd.read_pickle(f)
-with open('modules/app/src/assets/daily.pkl', 'rb') as f:
+with open(root_path + '/assets/daily.pkl', 'rb') as f:
     daily = pd.read_pickle(f)
 daily['DATE'] = pd.to_datetime(daily['DATE'], format='%Y-%m-%d %H')
 
@@ -48,7 +48,8 @@ dash.register_page(__name__,
                    title='DWD',  # title that appears on browser's tab
                    #image='pg1.png',  # image in the assets folder
                    description='DWD data to identify heatwaves',
-                   icon="fa-solid fa-temperature-high"
+                   icon="fa-solid fa-temperature-high", 
+                   order=3
 )
 
 # Plottingn utilities

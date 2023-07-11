@@ -22,6 +22,7 @@ from sklearn.preprocessing import PolynomialFeatures
 
 from dash_extensions.javascript import arrow_function
 
+from root_path import *
 
 
 dash.register_page(__name__,
@@ -30,7 +31,8 @@ dash.register_page(__name__,
                    title='LST',  # title that appears on browser's tab
                    #image='pg1.png',  # image in the assets folder
                    description='Visualization of Land Surface Temperature',
-                   icon="fa-solid fa-satellite"
+                   icon="fa-solid fa-satellite", 
+                   order = 4
 )
 
 
@@ -88,7 +90,7 @@ layout = dbc.Container(
                     ],
                     width=12
                 ),
-                 dbc.Col(html.Iframe(src='/assets/avgAfterNoon_HW.html', width='100%', height='500px')),
+                 dbc.Col(html.Iframe(src=root_path + '/assets/avgAfterNoon_HW.html', width='100%', height='500px')),
             ],
             className="mb-4",
         ),
@@ -104,8 +106,8 @@ layout = dbc.Container(
 )
 def update_maps(selected_time):
     if selected_time == 'morning':
-        return ('/assets/avgMorning_nonHW.html', '/assets/avgMorning_HW.html')
+        return (root_path + '/assets/avgMorning_nonHW.html', root_path + '/assets/avgMorning_HW.html')
     elif selected_time == 'afternoon':
-        return ('/assets/avgAfterNoon_nonHW.html', '/assets/avgAfterNoon_HW.html')
+        return (root_path +'/assets/avgAfterNoon_nonHW.html', root_path + '/assets/avgAfterNoon_HW.html')
     else:
-        return ('/assets/avgMorning_nonHW.html', '/assets/avgMorning_HW.html') # default
+        return (root_path +'/assets/avgMorning_nonHW.html', root_path + '/assets/avgMorning_HW.html') # default

@@ -5,7 +5,7 @@ import os
 
 from footer import footer
 from navbar import navbar
-
+from root_path import *
 
 app = dash.Dash(
     __name__,

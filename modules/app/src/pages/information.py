@@ -9,6 +9,8 @@ import plotly.express as px
 import dash_extensions as de
 from dash_bootstrap_components import Container
 
+from root_path import *
+
 # To create meta tag for each page, define the title, image, and description.
 dash.register_page(__name__,
                    path='/',  # '/' is home page and it represents the url
