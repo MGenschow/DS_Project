@@ -1,4 +1,5 @@
 from sys import platform
+import os 
 global root_path
 if platform == "linux":
     root_path =  os.getcwd()

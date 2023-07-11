@@ -10,7 +10,13 @@ from io import BytesIO
 
 LOGO = "https://images.plot.ly/logo/new-branding/plotly-logomark.png"
 
-logo_path = f"modules/app/src/assets/city.png"
+
+current_path = os.getcwd()
+print(current_path)
+
+
+
+logo_path = current_path + "/assets/city.png"
 logo = Image.open(logo_path)
 buffered = BytesIO()
 logo.save(buffered, format="PNG")
