@@ -376,10 +376,10 @@ def update_grid_info(click_feature):
     cmap = {'Versiegelt': "#cccccc", 'Gebäude': '#ff00ff',
         'Wiese':"#00ff00", 'Wasser':'#0000ff', 'Bäume':"#008200", 'Straße':"#ff0000"} 
     
-    mask_path = root_path + f"/assets/predictions/{grid_id}.png"
+    mask_path = root_path + f"/assets/predictions/{grid_id}.jpg"
     mask = Image.open(mask_path)
     buffered = BytesIO()
-    mask.save(buffered, format="PNG")
+    mask.save(buffered, format="JPEG")
     encoded_mask = base64.b64encode(buffered.getvalue())
     mask_element = html.Div([
     html.H4('LULC Classification'),
