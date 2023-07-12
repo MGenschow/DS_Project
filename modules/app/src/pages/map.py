@@ -345,10 +345,10 @@ def update_grid_info(click_feature):
     initial_pred = properties['pred']
 
     # Orthophoto Card Content
-    image_path = root_path + f"/assets/orthophotos/{grid_id}.png"
+    image_path = root_path + f"/assets/orthophotos/{grid_id}.jpg"
     image = Image.open(image_path)
     buffered = BytesIO()
-    image.save(buffered, format="PNG")
+    image.save(buffered, format="JPEG")
     encoded_image = base64.b64encode(buffered.getvalue())
     ortho_image = html.Div([
         html.H4('Orthophoto'),
