@@ -20,6 +20,7 @@ from plotly.subplots import make_subplots
 
 from root_path import *
 
+dis2 = str(10)
 
 ####################### Data import #######################
 
@@ -84,18 +85,32 @@ Meehl, G. A. and Tebaldi, C. (2004). More intense, more frequent, and longer las
 
 markdown_heatwaves = '''
 # DWD Temperatur Daten
-Der urbane Hitzeinseleffekt ist besonders problematisch, wenn extreme Temperaturen an aufeinanderfolgenden Tagen auftreten (Gasparrini und Armstrong, 2011).
-Solche Perioden werden üblicherweise auch als Hitzewellen bezeichnet. Daher basiert unsere Analyse urbarner Hitzeintensität auf Temperaturdaten, die während der Zeit einer Hitzewelle aufgezeichnet wurden.
-Wir basieren unsere Analyse hierbei auf die Definition von Huth et al. (2000), die in der metereologischen Literatur häufig verwendet wurde (Meehl und Tebaldi, 2004; Kysely, 2004, 2010).
-Sie lautet wie folgt: Eine Hitzewelle wird erkannt, sobald an mindestens drei aufeinanderfolgenden Tagen eine Temperatur von 30°C überschritten wird und dauert so lange, wie die durchschnittliche Höchsttemperatur über 30°C bleibt und an keinem Tag unter eine Höchsttemperatur von 25°C fällt.
-Auf der rechten Seite sehen Sie die drei offiziellen DWD-Wetterstationen, die sich in unserem Interessengebiet in und um die Stadt München befinden. Eine befindet sich im Stadtzentrum von München, eine am Flughafen und eine in Oberhaching.
+
+Der urbane Hitzeinseleffekt, auf Seite [1](/) ausführlich beschrieben, ist insbesondere dann problematisch, wenn extreme Temperaturen an aufeinanderfolgenden Tagen auftreten (Gasparrini und Armstrong, 2011).
+Solche Hitzeperioden werden üblicherweise auch als Hitzewellen bezeichnet.
+Unsere gesamte basiert deshalb auf Temperaturdaten, die während der Zeit einer Hitzewelle aufgezeichnet wurden.
+Ganz konkret wurden für die Berechnung der Landoberflächentemperatur ein Mittelwert über Tage innerhalb einer Hitzewelle gebildet (weitere Informationen auch auf Seite [4](/LST)).
+Zur Identifikation von Hitzewellen sind wir der herkömmlichen Definition von Huth et al. (2000) gefolgt,
+die als absoluter Standard in der metereologischen Literatur (insbesondere für Mitteleuropa) gilt (Meehl und Tebaldi, 2004; Kysely, 2004, 2010).
+Sie lautet:
+'''
+
+citation = '''
+<blockquote style='background-color:#f9f9f9; padding:10px; margin:1em;'>
+Eine Hitzewelle wird dann festgestellt, sobald an mindestens drei aufeinanderfolgenden Tagen eine Temperatur von 30°C überschritten wird.
+Die Hitzewelle dauert so lange an, wie die durchschnittliche Höchsttemperatur über den gesamte Zeitraum bei über 30°C bleibt und
+an keinem einzelnen Tag unter eine Höchsttemperatur von 25°C fällt.
+</blockquote>
 '''
 
 markdown_plots = '''
 Die unten stehenden Grafiken geben einen Überblick über die Temperaturen in München Stadt und Umland.
-Es können hierbei immer zwei der drei Stationen ausgewählt werden. Dies ist besonders interessant, um den Temperatur-Unterschied zwischen Stadt und Land darzustellen bzw. den Einfluss von Oberflächenbeschaffenheiten auf das Klima.  
-Die linke Darstellung zeigt für einen ausgewählten Tag die stündlichen Temperaturdaten (in °C) an.
-Die rechte Grafik zeigt eine Zeitreihe von Höchsttemperaturen an. Eine Hitzewelle (nach oben genannter Definition) wird durch einen orange gefärbten Hintergrund angezeigt.
+Es können hierbei immer zwei der drei Stationen ausgewählt werden.
+Die Stationsauswahl bezieht sich auf beide Grafiken.  
+Die Auswahl ermöglicht es sich die Temperatur-Unterschiede zwischen Stadt und Land zu vergegenwärtigen.
+Die linke Darstellung zeigt für einen ausgewählten Tag zwischen 01/01/2014 und 31/12/2022 die stündlichen Temperaturdaten (in °C) an.
+Die rechte Grafik visualisiert eine Zeitreihe von Höchsttemperaturen.
+Eine Hitzewelle (nach oben genannter Definition) wird durch einen orange gefärbten Hintergrund angezeigt.
 Bei entsprechender Stationsauswahl wird sehr gut deutlich, dass in Perioden in denen eine Hitzewelle in der Stadt auftritt, nicht zwangsläufig auch eine im ländlichen Umfeld präsent sein muss.
 '''
 
@@ -140,12 +155,13 @@ for index, row in meta.iterrows():
 
 layout = dbc.Container(
     [
-        html.Div(style={'height': '10vh'}),
+        html.Div(style={'height': dis2 + 'vh'}),
         dbc.Row(
             [
                 dbc.Col(
                     [
-                        dcc.Markdown(markdown_heatwaves, style={"text-align": "justify"})
+                        dcc.Markdown(markdown_heatwaves, style={"text-align": "justify"}, dangerously_allow_html=True),
+                        dcc.Markdown(citation, style={"text-align": "justify"}, dangerously_allow_html=True)
                     ],
                     className="mt-4",                
                     )
@@ -294,7 +310,7 @@ layout = dbc.Container(
             ],
             #className="mb-4"
         ),
-        html.Div(style={'height': '10vh'}),
+        html.Div(style={'height': dis2 + 'vh'}),
     ],
     style={'height': '100vh', 'overflowY': 'scroll'},
     fluid=True,
@@ -303,6 +319,7 @@ layout = dbc.Container(
 
 
 ####################### Callbacks #######################
+
 
 @callback(
     Output('hourly_picker', 'min_date_allowed'),
@@ -441,7 +458,7 @@ def update_plot(month_range, year, station1, station2):
 
     fig.layout.annotations[0]["font"] = dict(
         family='"Open Sans", verdana, arial, sans-serif',
-        size=14,
+        size=12,
     )
 
     return fig
