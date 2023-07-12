@@ -46,17 +46,42 @@ def create_polynomials(final, features_interact, features_no_interact):
     X_poly = pd.concat([X_poly, final[features_no_interact]], axis=1)
 
     return X_poly
+#%% create_log_interactions
+def create_log_interactions(df, features_interact, features_no_interact, all=True):
+    df_log_interact = df.copy()
+
+    # Apply logarithm transformation to interacted features
+    for feature in features_interact:
+        df_log_interact[feature] = np.log(df_log_interact[feature] * 100 + 1)
+
+    # Create logarithm interactions
+    poly_features = PolynomialFeatures(degree=2, include_bias=False, interaction_only=True)
+    X_interact = poly_features.fit_transform(df_log_interact[features_interact])
+    X_interact = pd.DataFrame(X_interact, columns=poly_features.get_feature_names_out(features_interact))
+
+    # Apply logarithm transformation to non-interacted features if all=True
+    if all:
+        for feature in features_no_interact:
+            if feature != 'const':
+                df_log_interact[feature] = np.log(df_log_interact[feature] * 100 + 1)
+
+    # Concatenate logarithm-interacted features with transformed non-interacted features
+    return pd.concat([X_interact, df_log_interact[features_no_interact]], axis=1)
 #%% compute_avg_marginal_effect
-def compute_avg_marginal_effect(model, final, feature, features_interact, features_no_interact, delta=0.001, step=0.01):
+def compute_avg_marginal_effect(model, final, feature, features_interact, features_no_interact, mode="poly", all=False, delta=0.001, step=0.01):
     
     final_delta = final.copy()
     final_delta[feature] = final_delta[feature] + delta
 
-    X_poly = create_polynomials(final, features_interact, features_no_interact)
-    X_delta_poly = create_polynomials(final_delta, features_interact, features_no_interact)
+    if mode == "poly":
+        X = create_polynomials(final, features_interact, features_no_interact)
+        X_delta = create_polynomials(final_delta, features_interact, features_no_interact)
+    elif mode == "log":
+        X = create_log_interactions(final, features_interact, features_no_interact, all=all)
+        X_delta = create_log_interactions(final_delta, features_interact, features_no_interact, all=all)
 
-    y_original = model.predict(X_poly)
-    y_modified = model.predict(X_delta_poly)
+    y_original = model.predict(X)
+    y_modified = model.predict(X_delta)
 
     marginal_effects = (y_modified - y_original) / delta
 
@@ -64,7 +89,7 @@ def compute_avg_marginal_effect(model, final, feature, features_interact, featur
 
     return avg_marginal_effect
 #%% compute_marginal_effect_at_avg
-def compute_marginal_effect_at_avg(model, final, feature, features_interact, features_no_interact, delta=0.001, step=0.01):
+def compute_marginal_effect_at_avg(model, final, feature, features_interact, features_no_interact, mode="poly", all=False, delta=0.001, step=0.01):
     
     final = final[features_interact + features_no_interact]
     feature_avg = pd.DataFrame(final.mean(axis=0)).T
@@ -72,29 +97,40 @@ def compute_marginal_effect_at_avg(model, final, feature, features_interact, fea
 
     feature_avg_delta[feature] += delta
 
-    X_poly = create_polynomials(feature_avg, features_interact, features_no_interact)
-    X_delta_poly = create_polynomials(feature_avg_delta, features_interact, features_no_interact)
+    if mode == "poly":
+        X = create_polynomials(feature_avg, features_interact, features_no_interact)
+        X_delta = create_polynomials(feature_avg_delta, features_interact, features_no_interact)
+    elif mode == "log":
+        X = create_log_interactions(feature_avg, features_interact, features_no_interact, all=all)
+        X_delta = create_log_interactions(feature_avg_delta, features_interact, features_no_interact, all=all)
 
-    y_original = model.predict(X_poly)
-    y_modified = model.predict(X_delta_poly)
+    y_original = model.predict(X)
+    y_modified = model.predict(X_delta)
 
     marginal_effect = (y_modified - y_original) / delta
 
     return marginal_effect.item()*step
 #%% predict_LST
-def predict_LST_example(example, features_interact, features_no_interact, model):
-    example_poly = create_polynomials(example.reset_index(drop=True), features_interact, features_no_interact)
-    pred = model.predict(example_poly)
+def predict_LST_example(example, features_interact, features_no_interact, model, mode="poly", all=all):
+    if mode == "poly":
+        example_trans = create_polynomials(example.reset_index(drop=True), features_interact, features_no_interact)
+    elif mode == "log":
+        example_trans = create_log_interactions(example.reset_index(drop=True), features_interact, features_no_interact, all=all)
+    pred = model.predict(example_trans)
     return pred.item()
 #%% test_joint_significance
-def test_joint_significance(model_unrestricted, final, features_interact, features_no_interact, target, features_exclude=[]):
+def test_joint_significance(model_unrestricted, final, features_interact, features_no_interact, target, features_exclude=[], mode="poly", all=all):
 
     # Create polynomials for the restricted model
     features_interact_restricted = [f for f in features_interact if f not in features_exclude]
-    X_poly_restricted = create_polynomials(final, features_interact_restricted, features_no_interact)
+
+    if mode == "poly":
+        X_restricted = create_polynomials(final, features_interact_restricted, features_no_interact)
+    elif mode == "log":
+        X_restricted = create_log_interactions(final, features_interact_restricted, features_no_interact, all=all)
     
     # Fit the restricted model
-    model_restricted = sm.OLS(final[target], X_poly_restricted)
+    model_restricted = sm.OLS(target, X_restricted)
     results_restricted = model_restricted.fit(cov_type='HC3')
 
     # Perform the F-test
