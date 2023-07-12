@@ -22,6 +22,9 @@ from sklearn.preprocessing import PolynomialFeatures
 from shapely.geometry import Point, Polygon
 import geopy
 import yaml
+import time
+from shapely.geometry import Point
+
 
 from dash_extensions.javascript import arrow_function
 
@@ -67,6 +70,27 @@ features = ['const','building','low vegetation','water','trees','road','avg_heig
 features_interact = ['building','low vegetation','water','trees','road']
 features_no_interact = ['const','avg_height']
 
+###### Function and data for the adress feature
+def check_coordinates_in_bbox(latitude, longitude, bounding_box):
+    point = Point(longitude, latitude)
+    bbox_polygon = Polygon([(bounding_box[0], bounding_box[1]), (bounding_box[0], bounding_box[3]),
+                            (bounding_box[2], bounding_box[3]), (bounding_box[2], bounding_box[1])])
+    return bbox_polygon.contains(point)
+
+# Load config file
+with open(root_path + '/../../config.yml', 'r') as file:
+    config = yaml.safe_load(file)
+# Store bounding box
+bbox = config['bboxes']['munich']
+
+df = pd.read_csv(root_path + '/assets/adressen_aktuell.txt', sep=',')
+# Concat STRANAM and HSZ and store it is a list
+df['Adress'] = df['STRANAM'] + ' ' + df['HSZ'] + ', München'
+
+# Store the Adress column in a list
+adressList = df['Adress'].tolist()
+adress_options = [{'label':elem, 'value':elem} for elem in adressList]
+
 
 
 ####################### Map Element ##########################
@@ -104,25 +128,7 @@ map_element = dl.Map(
     style={'width': '100%', 'height': '45vh', 'margin': "auto", "display": "block"},
     zoom=13)
 
-###### Function and data for the adress feature
-def check_coordinates_in_bbox(latitude, longitude, bounding_box):
-    point = Point(longitude, latitude)
-    bbox_polygon = Polygon([(bounding_box[0], bounding_box[1]), (bounding_box[0], bounding_box[3]),
-                            (bounding_box[2], bounding_box[3]), (bounding_box[2], bounding_box[1])])
-    return bbox_polygon.contains(point)
 
-# Load config file
-with open(root_path + '/../../config.yml', 'r') as file:
-    config = yaml.safe_load(file)
-# Store bounding box
-bbox = config['bboxes']['munich']
-
-df = pd.read_csv(root_path + '/assets/adressen_aktuell.txt', sep=',')
-# %% Concat STRANAM and HSZ and store it is a list
-df['Adress'] = df['STRANAM'] + ' ' + df['HSZ'] + ', München'
-
-# Store the Adress column in a list
-adressList = df['Adress'].tolist()
 
 
 ########################## Storage Elements ####################
@@ -148,8 +154,8 @@ layout = dbc.Container(
         html.Div(
             [
                 html.H3('Adress Search:'),
-                dcc.Input(id='adress', placeholder='Implerstraße 64, 81371 München', type='text', style={'width': '300px'}),
-                # dcc.Dropdown(adressList, adressList[0], id='adress', style={'width': '300px'}),
+                #dcc.Input(id='adress', placeholder='Implerstraße 64, 81371 München', type='text', style={'width': '300px'}),
+                dcc.Dropdown(id="adress_dropdown", style={'width': '300px'}),
                 html.Div(id='TEST')
             ],
             style={'display': 'flex', 'align-items': 'center'}
@@ -537,36 +543,39 @@ def adjust_values(*args):
 ############ Adress Input #################
 @callback(
     Output('TEST', 'children'),
-    Input('adress', 'value')
+    Input('adress_dropdown', 'value'),
+    prevent_initial_call=True
     )
 def adressToGrid(adress):
+    start_time = time.time()
     try:
         locator = geopy.geocoders.Nominatim(user_agent='myGeocoder')
         location = locator.geocode(adress)
+        print(f"Geocoding time: {(time.time() - start_time) * 1000} ms")
     except:
         return 'Invalid adress!'
 
-    if check_coordinates_in_bbox(location.latitude, location.longitude, bbox):
-        is_inside = False
-        i = 0
+    start_time = time.time()
+    point = Point(*[location.longitude, location.latitude])
+    print(f"Point Creation: {(time.time() - start_time) * 1000} ms")  
+    start_time = time.time()
+    grid_id = gdf[gdf.geometry.intersects(point)].id.item()
+    print(f"Subset Time: {(time.time() - start_time) * 1000} ms")    
 
-        while not is_inside and i < gdf.shape[0]:
-    
-            polygon_coords = Polygon(gdf.geometry[i])
+    return grid_id
 
-            point_coordinates = (location.longitude, location.latitude)
-            point = Point(point_coordinates)
-    
-            is_inside = polygon_coords.contains(point)
-
-            i+=1
-
-        if is_inside:
-
-            return gdf.id[i-1]
-    
-        else:
-            return 'Adress doesnt fall into defined grid.'
-
+@callback(
+    Output("adress_dropdown", "options"),
+    Input("adress_dropdown", "search_value")
+)
+def update_options(search_value):
+    if not search_value:
+        raise PreventUpdate
+    elif len(search_value) < 4:
+        options = []
     else:
-        return 'Your adress doesnt fall into the defined area.'
+        options = [o for o in adress_options if str.lower(str(o["label"])).startswith(str.lower(search_value))]
+    return options
+
+
+
