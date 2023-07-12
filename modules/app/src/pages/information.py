@@ -11,6 +11,8 @@ from dash_bootstrap_components import Container
 
 from root_path import *
 
+dis = str(10)
+
 # To create meta tag for each page, define the title, image, and description.
 dash.register_page(__name__,
                    path='/',  # '/' is home page and it represents the url
@@ -31,69 +33,55 @@ options_gif = dict(
     rendererSettings=dict(preserveAspectRatio="xMidYMid slice"),
 )
 
-markdown_text = '''
-## Background
+markdown_background = '''
+## Projekthintergrund & Zielgruppe
 
-Increasing urbanisation and climate change have led to the evolving and intensification of urban 
-heat islands which can be defined as local areas where the temperature is considerably higher than 
-in their vicinity. High temperatures in general are inevitably associated with partly drastical 
-consequences for human health. However, heat reduction measures are available that can deal with the
-urban heat island effect: Increasing vegetation, cutting the amount of impervious surfaces, etc.. 
-The goal of this project is to identify heat islands by analysing applicable data for the city of 
-Munich and to model the impact of additional heat reduction measures on potential temperature occurences.
+Klimawandel und zunehmende Urbanisierung sorgen für ein extremes Aufheizen innerstädtischer Gebiete im Vergleich zu ländlicheren und 'grüneren' Flächen.
+Insbesondere im Sommer stellt dies nicht nur eine Einschränkung des täglichen Lebens sondern auch eine elementare Bedrohung der eigenen Gesundheit dar (Anderson und Bell, 2009; Basu und Samet, 2002; Basu, 2009).  
+Dieses Projekt soll zum öffentlichen und wissenschaftlichen Diskurs beitragen, indem es einen direkten Zusammenhang zwischen Temperatur und Oberflächenbeschaffenheiten (hauptsächlich abgeleitet aus Landbedeckungs- und Landnutzungsmerkmale) modelliert und visualisiert.
+Dabei wird der Fokus auf die Stadt München gelegt, da diese bereits über eine Vielzahl an Daten verfügt, die für die Modellierung verwendet werden können.
+Insbesondere wollen wir mit einfachen Anpassungsfeatures (z.B. Erhöhung der Vegetation) die Auswirkungen auf die Temperatur für ein ausgewähltes Gebiet darstellen.
+Die App soll besonders Münchner*innen helfen ein Verständnis für die zugrundeliegenden Effekte und die direkten Auswirkungen von zunehmender Oberflächenversiegelung zu entwickeln. Hinsichtlich der spärlichen wissenschaftlichen Literatur in diesem Gebiet kann das Projekte auch als Grundlage für weitere Forschung dienen.
+'''
 
-## Approach
+markdown_approach = '''
+## Herangehensweise
 
-This project uses land surface temperature data from Ecostress and official property data as well as orthophotos
-from the Bavarian State Office for Digitisation, Broadband and Surveying. The former data source denotes the
-dependent variable in our analysis. The latter two data sources were used to extract land cover / land usage (LCLU)
-characteristics forming the basis of our feature set. We used pre-trained and fine-tuned neural networks to reach a
-granular segregation of land cover to also detect patterns that are not stored in official data.
-Increasing urbanisation and climate change have led to the evolving and intensification of urban 
-heat islands which can be defined as local areas where the temperature is considerably higher than 
-in their vicinity. High temperatures in general are inevitably associated with partly drastical 
-consequences for human health. However, heat reduction measures are available that can deal with the
-urban heat island effect: Increasing vegetation, cutting the amount of impervious surfaces, etc.. 
-The goal of this project is to identify heat islands by analysing applicable data for the city of 
-Munich and to model the impact of additional heat reduction measures on potential temperature occurences.
+Wir haben für dieses Projekt Daten zur Landoberflächentemperatur (land surface temperature) von Ecostress und amtliche Liegenschaftsdaten sowie Orthofotos des Bayerischen Landesamtes für Digitalisierung, Breitband und Vermessung verwendet.
+Die erstgenannte Datenquelle stellt die abhängige Variable in unserer Analyse dar.
+Die beiden letztgenannten Datenquellen wurden zur Extraktion von Merkmalen der Landbedeckung/Landnutzung (LCLU) verwendet, um unsere Einflussfaktoren zu extrahieren, die einen Effekt auf die Temperatur haben sollten.
+Wir nutzen neuronale Netze, um auch Muster zu erkennen, die in offiziellen Daten nicht enthalten sind (z.B. einen Baum).
+'''
+
+markdown_referenzen = '''
+## Referenzen
+Anderson, B. G. and Bell, M. L. (2009). Weather-related mortality: How heat, cold, and heat waves affect mortality in the United States. *Epidemiology*, 20(2):205.  
+Basu, R. (2009). High ambient temperature and mortality: A review of epidemiologic studies from 2001 to 2008. *Environmental health*, 8:1–13.  
+Basu, R. and Samet, J. M. (2002). Relation between elevated ambient temperature and mortality: A review of the epidemiologic evidence. *Epidemiologic reviews*, 24(2):190–202.
 '''
 
 
 layout = dbc.Container(
     [
-        html.Div(style={'height': '10vh'}),
+        html.Div(style={'height': dis + 'vh'}),
         dbc.Row(
             [
                 dbc.Col(
                     [
-                        dcc.Markdown(markdown_text, style={"text-align": "justify"})
+                        html.Div(
+                            de.Lottie(options=options_gif, width="10%", height="10%", url=city_gif)
+                        ),
+                        dcc.Markdown(markdown_background, style={"text-align": "justify"}),
+                        dcc.Markdown(markdown_approach, style={"text-align": "justify"}),
+                        dcc.Markdown(markdown_referenzen, style={"text-align": "justify"})
                     ],
                     className="mt-4",                
                     )
             ],
         ),
-        html.Div(style={'height': '10vh'}),
+        html.Div(style={'height': dis + 'vh'}),
     ],
     style={'height': '100vh', 'overflowY': 'scroll'},
     fluid=True,
     className="m-1"
 )
-
-# # Defining the layout for the information tab
-# layout = html.Div(
-#     style={"overflow": "auto"},
-#         children=[
-#             html.H3(
-#                 "Introduction",
-#                 style={"text-align": "center"},
-#                     ),
-#                     html.Div(
-#                         de.Lottie(
-#                             options=options_gif, width="30%", height="30%", url=city_gif
-#                         )
-#                     ),
-#                     html.P("The following tabs show a map of Munich."),
-#                     html.Br(),
-#                     dcc.Markdown(children=markdown_text)
-#                 ],
-#             )
