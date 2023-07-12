@@ -19,7 +19,7 @@ import pandas as pd
 from dash.exceptions import PreventUpdate
 import statsmodels.api as sm
 from sklearn.preprocessing import PolynomialFeatures
-
+from sys import platform
 from dash_extensions.javascript import arrow_function
 
 from root_path import *
@@ -91,7 +91,7 @@ layout = dbc.Container(
                     ],
                     width=12
                 ),
-                 dbc.Col(html.Iframe(src=root_path + '/assets/avgAfterNoon_HW.html', width='100%', height='500px')),
+                 dbc.Col(html.Iframe(src='assets/avgAfterNoon_HW.html', width='100%', height='500px')),
             ],
             #className="mb-4",
         ),
@@ -110,8 +110,12 @@ layout = dbc.Container(
 )
 def update_maps(selected_time):
     if selected_time == 'morning':
-        return (root_path + '/assets/avgMorning_nonHW.html', root_path + '/assets/avgMorning_HW.html')
+        if platform == "linux":
+            return ('assets/avgMorning_nonHW.html', 'assets/avgMorning_HW.html')
+        elif platform == "win32" or platform == 'darwin':
+            return ('assets/avgMorning_nonHW.html', 'assets/avgMorning_HW.html')
     elif selected_time == 'afternoon':
-        return (root_path +'/assets/avgAfterNoon_nonHW.html', root_path + '/assets/avgAfterNoon_HW.html')
-    else:
-        return (root_path +'/assets/avgMorning_nonHW.html', root_path + '/assets/avgMorning_HW.html') # default
+        if platform == "linux":
+            return ('assets/avgAfterNoon_nonHW.html', 'assets/avgAfterNoon_HW.html')
+        elif platform == "win32" or platform == 'darwin':
+            return ('assets/avgAfterNoon_nonHW.html', 'assets/avgAfterNoon_HW.html')

@@ -151,14 +151,24 @@ layout = dbc.Container(
         # Placehoder for storage objetcs
         lu_storage, grid_id_storage, avg_height_storage, initial_pred_storage,
         html.Div(style={'height': '10vh'}),
-        html.Div(
+        dbc.Row(
             [
-                html.H3('Adress Search:'),
-                #dcc.Input(id='adress', placeholder='Implerstraße 64, 81371 München', type='text', style={'width': '300px'}),
-                dcc.Dropdown(id="adress_dropdown", style={'width': '300px'}),
-                html.Div(id='TEST')
+                dbc.Col(
+                    [
+                        html.H5('Adress Search:'),
+                    ],
+                    width={'size':2, 'offset':0},
+                    className='d-flex align-items-center'  # Align items in the center
+                ),
+                dbc.Col(
+                    [
+                        dcc.Dropdown(id="adress_dropdown", placeholder='Start typing...'),
+
+                    ],
+                    width={'size':3, 'offset':0},
+                )
             ],
-            style={'display': 'flex', 'align-items': 'center'}
+            class_name='mb-2'
         ),
         dbc.Row(
             [
@@ -320,20 +330,30 @@ layout = dbc.Container(
 
 
 ################################ Callbacks ################################
+@callback(
+        Output('grid_id_storage', 'children', allow_duplicate=True),
+        Input('grid', 'click_feature'),
+        prevent_initial_call='initial_duplicate'
+)
+def update_grid_id(click_feature):
+    if click_feature is not None:
+        return click_feature['properties']['id']
+    else:
+        return 1000001
+
+
 
 ########## Grid Information ##########
 @callback(
-    [Output("grid_id", "children"), Output('grid_id_storage', 'children'), Output("temp_mean", "children"), 
+    [Output("grid_id", "children"), Output("temp_mean", "children"), 
      Output("lu_storage", "children"), Output("image-container", "children"), 
      Output("mask-container", "children"), Output('avg_height_storage', 'children'), Output('initial_pred_storage', 'children')],
-    [Input("grid", "click_feature")],
+    [Input("grid_id_storage", "children")],
 )
-def update_grid_info(click_feature):
-    # Check if something is clicked
-    if click_feature is not None:
-        properties = click_feature["properties"]
-    
-    # If nothing is clicked, return default
+def update_grid_info(grid_id):
+    if grid_id is not None:
+        filtered_data = {'type': 'FeatureCollection', 'features': [feature for feature in gdf_json['features'] if feature['properties']['id'] == grid_id]}
+        properties = filtered_data['features'][0]['properties']
     else:
         properties = gdf_json['features'][0]['properties']
 
@@ -400,12 +420,8 @@ def update_grid_info(click_feature):
 ])
 
 
-
-
-
     return (
         f"{grid_id}",
-        grid_id,
         f"{np.round(properties['wLST'], 2)}°C",
         [impervious, building, low_vegetation, water, trees, road],
         ortho_image, 
@@ -542,26 +558,18 @@ def adjust_values(*args):
 
 ############ Adress Input #################
 @callback(
-    Output('TEST', 'children'),
+    Output('grid_id_storage', 'children'),
     Input('adress_dropdown', 'value'),
     prevent_initial_call=True
     )
 def adressToGrid(adress):
-    start_time = time.time()
-    try:
-        locator = geopy.geocoders.Nominatim(user_agent='myGeocoder')
-        location = locator.geocode(adress)
-        print(f"Geocoding time: {(time.time() - start_time) * 1000} ms")
-    except:
-        return 'Invalid adress!'
+    if adress is None:
+        raise PreventUpdate
+    locator = geopy.geocoders.Nominatim(user_agent='myGeocoder')
+    location = locator.geocode(adress)
 
-    start_time = time.time()
     point = Point(*[location.longitude, location.latitude])
-    print(f"Point Creation: {(time.time() - start_time) * 1000} ms")  
-    start_time = time.time()
     grid_id = gdf[gdf.geometry.intersects(point)].id.item()
-    print(f"Subset Time: {(time.time() - start_time) * 1000} ms")    
-
     return grid_id
 
 @callback(
@@ -571,7 +579,7 @@ def adressToGrid(adress):
 def update_options(search_value):
     if not search_value:
         raise PreventUpdate
-    elif len(search_value) < 4:
+    elif len(search_value) < 3:
         options = []
     else:
         options = [o for o in adress_options if str.lower(str(o["label"])).startswith(str.lower(search_value))]
