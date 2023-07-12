@@ -106,11 +106,14 @@
     vertical-align: bottom;
 }
 
-
 .DateInput_input {
     height: 36px;
 }
 
 .modebar {
     display: none !important;
+}
+
+html {
+    overflow-y: hidden;
 }

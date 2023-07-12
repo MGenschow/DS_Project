@@ -139,7 +139,8 @@ for index, row in meta.iterrows():
 ####################### Layout #######################
 
 layout = dbc.Container(
-    [   
+    [
+        html.Div(style={'height': '10vh'}),
         dbc.Row(
             [
                 dbc.Col(
@@ -293,17 +294,16 @@ layout = dbc.Container(
             ],
             #className="mb-4"
         ),
-        html.Br(),
-        html.Br(),
+        html.Div(style={'height': '10vh'}),
     ],
-    style={"height": "100vh"},
+    style={'height': '100vh', 'overflowY': 'scroll'},
     fluid=True,
-    className="mt-5"
+    className="m-1"
 )
 
 
-############################## Callbacks #############################
-# Update hourly plot date picker
+####################### Callbacks #######################
+
 @callback(
     Output('hourly_picker', 'min_date_allowed'),
     Output('hourly_picker', 'max_date_allowed'),
@@ -318,7 +318,8 @@ def update_date_picker(year):
     date = datetime.datetime(year, 7, 15)
     return min_date, max_date, initial_month, date
 
-################# Hourly Plot #################
+
+####################### Hourly Plot #######################
 colors = ['red', 'blue']
 @callback(
     Output('hourly_plot', 'figure'),
@@ -362,7 +363,9 @@ def update_plot(selected_date, station1, station2):
     fig = go.Figure(data=traces, layout=layout)
     return fig
 
-################# Daily Plot #################
+
+####################### Daily Plot #######################
+
 @callback(
     Output('daily_plot', 'figure'),
     [Input('month_slider', 'value'),

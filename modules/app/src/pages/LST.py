@@ -39,6 +39,7 @@ dash.register_page(__name__,
 ############################## Layout #############################
 layout = dbc.Container(
     [
+        html.Div(style={'height': '10vh'}),
         dbc.Row(
             [
                 dbc.Col(
@@ -57,10 +58,10 @@ layout = dbc.Container(
                         )
                     ],
                     width=12,
-                    className="mt-4"
+                    #className="mt-4"
                 ),
             ],
-            className="mb-4"
+            #className="mb-4"
         ),
         dbc.Row(
             [
@@ -79,7 +80,7 @@ layout = dbc.Container(
                     width=6,
                 ),
             ],
-            className="mb-4",
+            #className="mb-4",
         ),
         dbc.Row(
             [
@@ -92,11 +93,14 @@ layout = dbc.Container(
                 ),
                  dbc.Col(html.Iframe(src=root_path + '/assets/avgAfterNoon_HW.html', width='100%', height='500px')),
             ],
-            className="mb-4",
+            #className="mb-4",
         ),
+         html.Div(style={'height': '10vh'}),
 
     ],
-    className="mt-5"
+    style={'height': '100vh', 'overflowY': 'scroll'},
+    fluid=True,
+    className="m-1"
 )
 
 

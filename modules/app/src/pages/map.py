@@ -144,9 +144,7 @@ layout = dbc.Container(
     [
         # Placehoder for storage objetcs
         lu_storage, grid_id_storage, avg_height_storage, initial_pred_storage,
-        html.Br(),
-        html.Br(),
-        html.Br(),
+        html.Div(style={'height': '10vh'}),
         html.Div(
             [
                 html.H3('Adress Search:'),
@@ -307,9 +305,7 @@ layout = dbc.Container(
                 )
             ]
         ),
-        html.Hr(),
-        html.Br(),
-        html.Br(),
+        html.Div(style={'height': '10vh'}),
     ],
     style={"height": "100vh"},
     fluid=True
