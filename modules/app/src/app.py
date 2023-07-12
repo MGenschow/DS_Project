@@ -51,7 +51,13 @@ sidebar = html.Div(
 app.layout = html.Div(
     style={"overflow": "auto"},
     children=[
-        navbar,
+        dbc.Container(
+            dbc.Col([
+                dbc.Row([
+                    dbc.Col(html.Div(navbar), className = 'bg-secondary border border-3 h-20'),
+                ]),
+            ],xs = 1, sm=1, md=1, lg=1)),
+        #navbar,
         dbc.Container(
             [   
                 #dbc.Row(navbar),
