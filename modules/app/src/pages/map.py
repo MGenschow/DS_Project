@@ -308,7 +308,6 @@ layout = dbc.Container(
                                             [   
                                                 html.H4('LULC Proportions:'),
                                                 html.Div(id = 'lu_progress'),
-                                                html.Div(id = 'lu_progress2')
                                             ]
                                         )
                                     ],
@@ -475,33 +474,32 @@ def set_initial_values(lu_storage):
     return lu_storage
 
 
-#### LULC Proportions Graphs
+#### LULC Proportions Graph
 @callback(Output('lu_progress', 'children',  allow_duplicate=True), 
           [Input('impervious_slider', 'value'), Input('building_slider', 'value'), Input('low_vegetation_slider', 'value'), 
-           Input('water_slider', 'value'), Input('trees_slider', 'value'), Input('road_slider', 'value')],  prevent_initial_call=True)
-def update_progress_graph(impervious_slider, building_slider, low_vegetation_slider, water_slider, trees_slider, road_slider):
-    categories = ['Impervious', 'Building', 'Low Vegetation', 'Water', 'Trees', 'Road']
+           Input('water_slider', 'value'), Input('trees_slider', 'value'), Input('road_slider', 'value')],  
+           prevent_initial_call=True)
+def pie_chart(impervious_slider, building_slider, low_vegetation_slider, water_slider, trees_slider, road_slider):
+    categories = ['Versiegelt', 'Gebäude', 'Wiese', 'Wasser', 'Bäume', 'Straße']
     colors = ['#cccccc', '#ff00ff', '#00ff00', '#0000ff', '#008200', '#ff0000']  # specify your colors here
     values = [impervious_slider, building_slider, low_vegetation_slider, water_slider, trees_slider, road_slider]
-    values = [np.round(values[i], 2) for i in range(6)]
-    fig = dmc.Progress(
-    size=20, radius=0, 
-    sections=[{'value':values[i], 'color':colors[i], 'label':categories[i], 'tooltip':f"{categories[i]}: {values[i]}%"} for i in range(6)])
-    return fig
+    values = [round(value, 2) for value in values]
 
-@callback(Output('lu_progress2', 'children',  allow_duplicate=True), 
-          [Input('impervious_slider', 'value'), Input('building_slider', 'value'), Input('low_vegetation_slider', 'value'), 
-           Input('water_slider', 'value'), Input('trees_slider', 'value'), Input('road_slider', 'value')],  prevent_initial_call=True)
-def update_progress_graph(impervious_slider, building_slider, low_vegetation_slider, water_slider, trees_slider, road_slider):
-    categories = ['Impervious', 'Building', 'Low Vegetation', 'Water', 'Trees', 'Road']
-    colors = ['#cccccc', '#ff00ff', '#00ff00', '#0000ff', '#008200', '#ff0000']  # specify your colors here
-    values = [impervious_slider, building_slider, low_vegetation_slider, water_slider, trees_slider, road_slider]
-    values = [np.round(values[i], 2) for i in range(6)]
-    fig = dmc.Progress(
-    size=20, radius=0, 
-    sections=[{'value':values[i], 'color':colors[i], 'label':values[i], 'tooltip':f"{categories[i]}: {values[i]}%"} for i in range(6)])
-    return fig
+    fig = go.Figure(data=[go.Pie(labels=categories, 
+                                 values=values, 
+                                 marker=dict(colors=colors),
+                                 textinfo='label+percent',
+                                 hole=.3,
+                                 hoverinfo='label+percent')])
+    fig.update_layout(showlegend=False) 
+    fig.update_layout(
+        autosize=True,  # Automatically adjust the size
+        height=300,     # Set an initial height (you can adjust it as needed)
+        margin=dict(l=0, r=0, t=0, b=0)  # Set margin to 0 to remove spacing around the chart
+    )
 
+    pie_chart = dcc.Graph(figure=fig)
+    return pie_chart
 
 ################## SLIDER UPDATE TO 100 #######################
 @callback(
