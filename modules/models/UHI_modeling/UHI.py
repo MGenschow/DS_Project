@@ -62,7 +62,7 @@ def create_log_interactions(df, features_interact, features_no_interact, all=Tru
     # Apply logarithm transformation to non-interacted features if all=True
     if all:
         for feature in features_no_interact:
-            if feature != 'const':
+            if feature not in ['const','avg_height']:
                 df_log_interact[feature] = np.log(df_log_interact[feature] * 100 + 1)
 
     # Concatenate logarithm-interacted features with transformed non-interacted features
@@ -85,7 +85,7 @@ def compute_avg_marginal_effect(model, final, feature, features_interact, featur
 
     marginal_effects = (y_modified - y_original) / delta
 
-    avg_marginal_effect = np.mean(marginal_effects)*step
+    avg_marginal_effect = np.mean(marginal_effects) * step
 
     return avg_marginal_effect
 #%% compute_marginal_effect_at_avg
@@ -110,8 +110,33 @@ def compute_marginal_effect_at_avg(model, final, feature, features_interact, fea
     marginal_effect = (y_modified - y_original) / delta
 
     return marginal_effect.item()*step
+#%% compute_avg_marginal_effect_adv
+def compute_avg_marginal_effect_adv(model, final, feature, features_interact, features_no_interact, mode="poly", all=False, delta=0.001, step=0.01):
+    
+    final_delta = final.copy()
+    final_delta[feature] = final_delta[feature] + delta
+
+    for i in features_interact:
+        if i != feature:
+            final_delta[i] = (final_delta[i] - (delta / len(features_interact))).clip(lower=0)
+
+    if mode == "poly":
+        X = create_polynomials(final, features_interact, features_no_interact)
+        X_delta = create_polynomials(final_delta, features_interact, features_no_interact)
+    elif mode == "log":
+        X = create_log_interactions(final, features_interact, features_no_interact, all=all)
+        X_delta = create_log_interactions(final_delta, features_interact, features_no_interact, all=all)
+
+    y_original = model.predict(X)
+    y_modified = model.predict(X_delta)
+
+    marginal_effects = (y_modified - y_original) / delta
+
+    avg_marginal_effect = np.mean(marginal_effects) * step
+
+    return avg_marginal_effect
 #%% predict_LST
-def predict_LST_example(example, features_interact, features_no_interact, model, mode="poly", all=all):
+def predict_LST_example(example, features_interact, features_no_interact, model, mode="poly", all=False):
     if mode == "poly":
         example_trans = create_polynomials(example.reset_index(drop=True), features_interact, features_no_interact)
     elif mode == "log":
@@ -119,7 +144,7 @@ def predict_LST_example(example, features_interact, features_no_interact, model,
     pred = model.predict(example_trans)
     return pred.item()
 #%% test_joint_significance
-def test_joint_significance(model_unrestricted, final, features_interact, features_no_interact, target, features_exclude=[], mode="poly", all=all):
+def test_joint_significance(model_unrestricted, final, features_interact, features_no_interact, target, features_exclude=[], mode="poly", all=False):
 
     # Create polynomials for the restricted model
     features_interact_restricted = [f for f in features_interact if f not in features_exclude]
