@@ -292,6 +292,12 @@ layout = dbc.Container(
                                                             ]
                                                         )
                                                     ]
+                                                ),
+                                                dbc.Row(
+                                                    [
+                                                        dbc.Button("zurücksetzen", color="light", id = 'slider_reset', className="me-1"),
+
+                                                    ]
                                                 )
                                             ]
                                         )
@@ -307,7 +313,7 @@ layout = dbc.Container(
                                         dbc.CardBody(
                                             [   
                                                 html.H4('LULC Proportions:'),
-                                                html.Div(id = 'lu_progress'),
+                                                html.Div(id = 'pie_chart'),
                                             ]
                                         )
                                     ],
@@ -473,9 +479,25 @@ def model_prediction(lulc_storage, avg_height, pred_initial):
 def set_initial_values(lu_storage):
     return lu_storage
 
+# Reset Slider Values
+@callback(
+        [Output('impervious_slider', 'value', allow_duplicate=True),
+        Output('building_slider', 'value', allow_duplicate=True),
+        Output('low_vegetation_slider', 'value', allow_duplicate=True),
+        Output('water_slider', 'value', allow_duplicate=True),
+        Output('trees_slider', 'value', allow_duplicate=True),
+        Output('road_slider', 'value', allow_duplicate=True)],
+        [Input('slider_reset', 'n_clicks'), Input('lu_storage', 'children')],
+        prevent_initial_call=True
+)
+def set_initial_values(click, lu_storage):
+    if click is None:
+        raise PreventUpdate
+    else:
+        return lu_storage
 
 #### LULC Proportions Graph
-@callback(Output('lu_progress', 'children',  allow_duplicate=True), 
+@callback(Output('pie_chart', 'children',  allow_duplicate=True), 
           [Input('impervious_slider', 'value'), Input('building_slider', 'value'), Input('low_vegetation_slider', 'value'), 
            Input('water_slider', 'value'), Input('trees_slider', 'value'), Input('road_slider', 'value')],  
            prevent_initial_call=True)
