@@ -92,6 +92,24 @@ hausumringe_df
 
 # %%
 def create_target_mask(orig_tif_path, mask_path,  nutzungsdaten_df, hausumringe_df, reproject=False):
+    """
+    Creates a target mask by rasterizing and combining multiple data layers, and saves the result to a GeoTIFF file.
+
+    This function creates a mask from original TIFF data, Nutzungsdaten data, Hausumringe data, and manual labeling annotations.
+    Each dataset is rasterized and combined to create the final mask, which is then saved to a GeoTIFF file. 
+    If reproject is True, the mask is reprojected to the EPSG:4326 CRS.
+
+    Parameters:
+        orig_tif_path (str): The path to the original TIFF data.
+        mask_path (str): The path where the mask should be saved.
+        nutzungsdaten_df (geopandas.GeoDataFrame): A GeoDataFrame containing the Nutzungsdaten data.
+        hausumringe_df (geopandas.GeoDataFrame): A GeoDataFrame containing the Hausumringe data.
+        reproject (bool, optional): If True, the mask is reprojected to the EPSG:4326 CRS. Default is False.
+
+    Raises:
+        FileNotFoundError: If the original TIFF data, Nutzungsdaten data, or Hausumringe data cannot be found.
+    """
+
 
     ############## Build new transform based on the size of the predictions and the geographic extend of the original image ###########
     # Read in original tif

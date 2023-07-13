@@ -192,6 +192,20 @@ test_transform = A.Compose(
 
 # %%
 def get_munich_tuning_loaders(batch_size=2):
+    """
+    Generates and returns data loaders for training and testing data from Munich.
+
+    This function loads file paths for the data, splits the data into training and test sets, applies transformations, 
+    and generates PyTorch DataLoader objects for each set.
+
+    Parameters:
+        batch_size (int, optional): Size of the batches for data loading. Default is 2.
+
+    Returns:
+        train_loader (torch.utils.data.DataLoader): A DataLoader object containing the training data.
+        test_loader (torch.utils.data.DataLoader): A DataLoader object containing the test data.
+    """
+
     file_paths = get_file_paths()
     train_dict, test_dict = train_test_split(file_paths, test_size=0.2)
     train_loader = DataLoader(MunichTuningDataset(train_dict, transform=train_transform), 

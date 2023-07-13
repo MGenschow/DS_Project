@@ -36,6 +36,32 @@ nutzungsdaten_dir = config['data']['nutzungsdaten']
 # %%
 # %%
 def create_mask_tif(prediction, orig_tif_path, nutzungsdaten_df, out_name, reproject=False):
+    """
+    Create a mask GeoTIFF from a given prediction, based on the geographical extent of an original GeoTIFF.
+
+    The function creates a new GeoTIFF with the same spatial extent as the original, but with dimensions matching the prediction. 
+    The raster values in the new GeoTIFF are derived from a combination of the prediction and a geospatial dataframe of features, 
+    such as roads and bodies of water. 
+
+    The new GeoTIFF is then saved to the provided output path.
+
+    Parameters:
+        prediction (numpy.ndarray): The 2D array (shape of [height, width]) representing prediction image.
+        orig_tif_path (str): The path to the original GeoTIFF file.
+        nutzungsdaten_df (geopandas.GeoDataFrame): A GeoDataFrame containing the polygons and corresponding labels to be rasterized onto the mask.
+        out_name (str): The name of the output file.
+        reproject (bool, optional): If True, reprojects the resulting mask to the coordinate system EPSG:4326. Defaults to False.
+
+    Returns:
+        None. The function writes the rasterized mask to a GeoTIFF file.
+
+    Notes:
+        The function creates a temporary 'temp.tif' file during processing, which is deleted at the end of the function.
+
+    Raises:
+        FileNotFoundError: If the original GeoTIFF file cannot be found at the given path.
+        ValueError: If the input prediction is not a 2D numpy array or the GeoDataFrame is empty.
+    """
 
     ############## Build new transform based on the size of the predictions and the geographic extend of the original image ###########
     # Read in original tif
@@ -122,6 +148,27 @@ def create_mask_tif(prediction, orig_tif_path, nutzungsdaten_df, out_name, repro
 
 # %%
 def process_all_patches():
+    """
+    Iteratively process all patches in a test loader and generate mask GeoTIFFs.
+
+    This function sets up the computing device (GPU/CPU), loads the pre-trained model, and processes all the patches from the test loader.
+    The function uses the 'create_mask_tif' function to create a mask for each prediction and saves it as a GeoTIFF file.
+
+    Parameters:
+        None.
+
+    Returns:
+        None. The function writes the mask for each image patch to a GeoTIFF file.
+
+    Notes:
+        The function assumes that 'config', 'nutzungsdaten_dir', and 'predictions_dir' are set globally before calling the function.
+        The pre-trained model is expected to be located at the path specified in 'config['data']['model_weights']'.
+        The function uses the 'get_munich_test_loader' function to create the test loader.
+
+    Raises:
+        FileNotFoundError: If the model weights or nutzungsdaten pickle file cannot be found at the specified paths.
+    """
+
     # Device setup
     if torch.cuda.is_available():
         DEVICE = 'cuda'
@@ -168,6 +215,23 @@ process_all_patches()
 
 # %%
 def get_class_polygons(mask_path):
+    """
+    Converts a rasterized mask into polygons per class and returns a GeoDataFrame.
+
+    This function takes a path to a raster mask file, reads the mask, and iteratively generates polygons for each unique class in the mask.
+    A dictionary is used to map class indices to human-readable labels. Polygons are then created using rasterio's 'features.shapes' function.
+
+    Parameters:
+        mask_path (str): Path to the raster mask file.
+
+    Returns:
+        gdf (geopandas.GeoDataFrame): A GeoDataFrame containing one row for each unique class in the mask.
+            Each row contains a label (str) indicating the class, and a geometry (shapely.geometry.MultiPolygon) containing all polygons of that class.
+
+    Raises:
+        FileNotFoundError: If the mask file cannot be found at the specified path.
+    """
+
     # Define how classes will be named
     class_labels = {0:'ignore', 1:'impervious', 2:'building', 3:'low vegetation', 4:'water', 5:'trees', 6:'road', 7:'train', 255:'ignore'}
 
