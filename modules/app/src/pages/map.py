@@ -25,7 +25,7 @@ import geopy
 import yaml
 import time
 from shapely.geometry import Point
-
+import rasterio
 
 from dash_extensions.javascript import arrow_function
 
@@ -95,6 +95,17 @@ df['Adress'] = df['STRANAM'] + ' ' + df['HSZ'] + ', München'
 adressList = df['Adress'].tolist()
 adress_options = [{'label':elem, 'value':elem} for elem in adressList]
 
+###### Import geotiff and extract bounds
+path = root_path + '/assets/avgMorning_HW.tif'
+tif = rasterio.open(path)
+bounds = tif.bounds
+
+import base64
+# Read local image file and convert to Data URL
+# Read local image file and convert to Data URL
+with open(root_path + '/assets/testBild.png', 'rb') as file:
+    image_data = file.read()
+    data_url = 'data:image/tiff;base64,' + base64.b64encode(image_data).decode()
 
 
 ####################### Map Element ##########################
@@ -120,7 +131,22 @@ map_element = dl.Map(
                             )
                         ), 
             name="Raster", 
-            checked=True)]
+            checked=True)] +
+        
+        [dl.Overlay(
+            dl.LayerGroup(
+                [
+                    dl.ImageOverlay(
+                        url=data_url,  # Path to the georeferenced TIF file
+                        bounds=[[bounds.bottom, bounds.left], [bounds.top, bounds.right]],  # Specify the bounds of the TIF overlay
+                        opacity=0.5,  # Set the opacity of the overlay (adjust as needed)
+                        id="tif_overlay"
+                    )
+                ]
+            ),
+            name="LST",
+            checked=False
+        )]
     ),
     dl.GeoJSON(
                         id="last_clicked_grid", 

@@ -49,7 +49,7 @@ weitreichend und umfassen verschiedene Aspekte sowohl natürlicher als auch mens
 
 markdown_desciption = '''
 Die im folgenden verwendeten Daten beziehen sich auf den Sommer 2022 (1. Juni 2022 bis 31. August 2023). Unterschieden 
-wird weiter zwischen Messungen, die in Hitzeperioden fallen (Link zu DWD einfügen) und Daten, die im Sommer liegen aber 
+wird weiter zwischen Messungen, die in [Hitzewellen](/DWD) fallen (Link zu DWD einfügen) und Daten, die im Sommer liegen aber 
 nicht in Hitzeperioden fallen (invertierte Hitzewellen). Diese Unterscheidung verdeutlicht den einschneidenden Effekt von 
 Hitzewellen. Zusätzlich wird zwischen Messungen in den Morgenstunden und nachmittags unterschieden. 
 '''
