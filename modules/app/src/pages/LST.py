@@ -36,6 +36,24 @@ dash.register_page(__name__,
 )
 
 
+markdown_explanation = '''
+# Landoberflächentemperatur
+Die Landoberflächentemperatur (Land Surface Temperature, kurz: LST) ist die i.d.R. von Sateltiten gemessene 
+Temperatur der Erdoberfläche. Sie spielt eine entscheidende Rolle für das Verständnis und die Überwachung des 
+Klimasystems der Erde, da sie wertvolle Erkenntnisse über den  Zustand der Umwelt und ihre Veränderungen im 
+Laufe der Zeit liefert. Die uns von uns verwendeten Variablen beziehen wir vom ECOSTRESS (Ecosystem Spaceborne Thermal 
+Radiometer Experiment on Space Station) Projekt der NASA. Die Daten werden im Rohformat bezogen und müssen zur adäquaten 
+Verwendung transformiert und geographisch projiziert werden. Die Auswirkungen der Landoberflächentemperatur sind 
+weitreichend und umfassen verschiedene Aspekte sowohl natürlicher als auch menschlicher Systeme.
+'''
+
+markdown_desciption = '''
+Die im folgenden verwendeten Daten beziehen sich auf den Sommer 2022 (1. Juni 2022 bis 31. August 2023). Unterschieden 
+wird weiter zwischen Messungen, die in Hitzeperioden fallen (Link zu DWD einfügen) und Daten, die im Sommer liegen aber 
+nicht in Hitzeperioden fallen (invertierte Hitzewellen). Diese Unterscheidung verdeutlicht den einschneidenden Effekt von 
+Hitzewellen. Zusätzlich wird zwischen Messungen in den Morgenstunden und nachmittags unterschieden. 
+'''
+
 ############################## Layout #############################
 layout = dbc.Container(
     [
@@ -44,13 +62,15 @@ layout = dbc.Container(
             [
                 dbc.Col(
                     [
-                        html.H1("Land Surface Temperature"),
-                        html.P("Land Surface Temperature (LST) refers to the temperature of the Earth's surface as measured from space or from the ground. It plays a crucial role in understanding and monitoring the Earth's climate system, as it provides valuable insights into the state of the environment and its changes over time. The effect of Land Surface Temperature is far-reaching and encompasses various aspects of both natural and human systems."),
+                        #html.H1("Land Surface Temperature"),
+                        #html.P("Land Surface Temperature (LST) refers to the temperature of the Earth's surface as measured from space or from the ground. It plays a crucial role in understanding and monitoring the Earth's climate system, as it provides valuable insights into the state of the environment and its changes over time. The effect of Land Surface Temperature is far-reaching and encompasses various aspects of both natural and human systems."),
+                        dcc.Markdown(markdown_explanation, style={"text-align": "justify"}, dangerously_allow_html=True),
+                        dcc.Markdown(markdown_desciption, style={"text-align": "justify"}, dangerously_allow_html=True),
                         dcc.Dropdown(
                             id='time-dropdown',
                             options=[
-                                {'label': 'Morning', 'value': 'morning'},
-                                {'label': 'Afternoon', 'value': 'afternoon'}
+                                {'label': 'Morgens', 'value': 'morning'},
+                                {'label': 'Nachmittags', 'value': 'afternoon'}
                             ],
                             value='morning',
                             clearable=False,
@@ -67,14 +87,14 @@ layout = dbc.Container(
             [
                 dbc.Col(
                     [
-                        html.H2("Outside Heatwaves"),
+                        html.H2("Außerhalb von Hitzewillen"),
                         html.Iframe(id='map1', width='100%', height='500px'),
                     ],
                     width=6,
                 ),
                 dbc.Col(
                     [
-                        html.H2("Inside Heatwaves"),
+                        html.H2("Innerhalb von Hitzwellen"),
                         html.Iframe(id='map2', width='100%', height='500px'),
                     ],
                     width=6,
@@ -86,7 +106,7 @@ layout = dbc.Container(
             [
                 dbc.Col(
                     [
-                        html.H1("Temperature Hotspots in Munich"),
+                        html.H1("Temperature Hotspots in München"),
                         html.P("As the scorching summer sun reaches its zenith, urban areas become veritable hotspots of heat. The combination of dense concrete structures, asphalt roads, and limited green spaces creates unique microclimates that significantly impact the temperature within cities. In this article, we delve into the phenomenon of temperature hotspots in urban areas during the summer season, examining their causes and implications."),
                     ],
                     width=12
