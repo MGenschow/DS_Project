@@ -50,7 +50,7 @@ features_interact = ['building','low vegetation','water','trees','road']
 features_no_interact = ['const','avg_height','lag_building','lag_low vegetation','lag_water','lag_trees','lag_road']
 features = features_interact + features_no_interact
 
-with open('C:/Users/stefan/Documents/10_DS_Project/DS_Project/modules/app/src/assets/gpd_250_e.pkl', 'rb') as f:
+with open(root_path + '/assets/gpd_250_e.pkl', 'rb') as f:
     d = pickle.load(f)
 gdf = gpd.GeoDataFrame(d, geometry='geometry')
 
