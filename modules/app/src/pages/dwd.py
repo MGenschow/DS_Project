@@ -130,7 +130,7 @@ map_element = dl.Map(
         [dl.BaseLayer(dl.TileLayer(url = url, attribution = osm_attribution + esri_attribution + dwd_attibution), name = 'ESRI Satellite')] 
     )],
     center=[48.137154, 11.576124],
-    style={'width': '100%', 'height': '40vh', 'margin': "auto", "display": "block"},
+    style={'width': '100%', 'height':'100%', 'margin': "auto", "display": "block"},
     zoom=9)
 
 for index, row in meta.iterrows():
