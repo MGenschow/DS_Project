@@ -14,6 +14,8 @@ app = dash.Dash(
     meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}],
 )
 
+app._favicon = "favicon.ico"
+
 # Assuming you have defined the `dash` and `page_registry` variables
 
 sidebar = html.Div(

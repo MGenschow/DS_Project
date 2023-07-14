@@ -124,12 +124,16 @@ html {
     align-items: center;
     overflow: hidden;
     white-space: nowrap;
-  }
+}
   
-  .sidebar-header h2 {
+.sidebar-header h2 {
     opacity: 1;
     margin: 0;  /* Remove margin-left and margin-bottom */
     transition: opacity 0.1s ease-in-out;
     color: black;
-  }
+}
+
+.link-hover:hover {
+    color: white;
+}
   

@@ -148,6 +148,7 @@ dmypy.json
 *.txt
 Pipfile
 Pipfile.lock
+*.ico
 
 modules/models/segmentation/wandb/
 wandb/
