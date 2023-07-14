@@ -40,11 +40,10 @@ for i, row in meta[['STATIONSNAME', 'STATIONS_ID']].iterrows():
 year_options = list(range(pd.to_datetime(daily.DATE).dt.year.min(), pd.to_datetime(daily.DATE).dt.year.max()+1))
 
 dash.register_page(__name__,
-                   path='/DWD',  # '/' is home page and it represents the url
-                   name='DWD',  # name of page, commonly used as name of link
-                   title='DWD',  # title that appears on browser's tab
-                   #image='pg1.png',  # image in the assets folder
-                   description='DWD data to identify heatwaves',
+                   path='/Hitzewellen',
+                   name='Hitzewellen',  # name of page, commonly used as name of link
+                   title='Hitzewellen',  # title that appears on browser's tab
+                   description='Übersicht über DWD-Daten zur Identifikation von Hitzewellen',
                    icon="fa-solid fa-temperature-high", 
                    order=3
 )
@@ -84,14 +83,16 @@ Meehl, G. A. and Tebaldi, C. (2004). More intense, more frequent, and longer las
 '''
 
 markdown_heatwaves = '''
-# DWD Temperatur Daten
+# Hitzewellen
 
-Der urbane Hitzeinseleffekt, auf Seite [1](/) ausführlich beschrieben, ist insbesondere dann problematisch, wenn extreme Temperaturen an aufeinanderfolgenden Tagen auftreten (Gasparrini und Armstrong, 2011).
+Der urbane Hitzeinseleffekt - auf der [Einführungsseite](/) ausführlich beschrieben - ist insbesondere dann problematisch, wenn extreme Temperaturen an aufeinanderfolgenden Tagen auftreten (Gasparrini und Armstrong, 2011).
 Solche Hitzeperioden werden üblicherweise auch als Hitzewellen bezeichnet.
-Unsere gesamte basiert deshalb auf Temperaturdaten, die während der Zeit einer Hitzewelle aufgezeichnet wurden.
-Ganz konkret wurden für die Berechnung der Landoberflächentemperatur ein Mittelwert über Tage innerhalb einer Hitzewelle gebildet (weitere Informationen auch auf Seite [4](/LST)).
-Zur Identifikation von Hitzewellen sind wir der herkömmlichen Definition von Huth et al. (2000) gefolgt,
-die als absoluter Standard in der metereologischen Literatur (insbesondere für Mitteleuropa) gilt (Meehl und Tebaldi, 2004; Kysely, 2004, 2010).
+Wir haben daher unsere gesamte Analyse auf Temperaturdaten ausgerichtet, die zur Zeit einer Hitzewelle aufgezeichnet wurden.
+Ganz konkret wurde für die Berechnung der mittäglichen Oberflächentemperatur ein Mittelwert über Tage berechnet, welche Teil einer Hitzewelle waren.
+Weitere Informationen hierzu finden Sie auch auf [Seite 4](/LST).  
+Fragt sich bloß noch wie genau eine Hitzeweelle definiert ist.
+Wir sind hierbei der herkömmlichen Definition von Huth et al. (2000) gefolgt,
+welche in der metereologischen Literatur für Mitteleuropa meistens verwendet wird (Meehl und Tebaldi, 2004; Kysely, 2004, 2010).
 Sie lautet:
 '''
 
@@ -103,12 +104,20 @@ an keinem einzelnen Tag unter eine Höchsttemperatur von 25°C fällt.
 </blockquote>
 '''
 
+markdown_header = '''
+## Hitzewellen in München auf Basis von Daten des Deutschen Wetterdienstes
+'''
+
 markdown_plots = '''
-Die unten stehenden Grafiken geben einen Überblick über die Temperaturen in München Stadt und Umland.
+Für die Identifikation von Hitzewellen haben wir Daten des Deutschen Wetterdienstes (kurz: DWD) verwendet.
+Die nebenstehende Karte lokalisiert die drei Wetterstationen des DWDs, die innerhalb unseres Untersuchungsgebiets liegen.
+Hiervon liegt eine im Stadtzentrum Münches, eine in Oberhaching und eine in unmittelbarer Nähe des Flughafens.
+
+Die darunterliegenden Grafiken sollen einen vertieften Einblick in die Temperaturen in München Stadt und Umland gewähren.
 Es können hierbei immer zwei der drei Stationen ausgewählt werden.
-Die Stationsauswahl bezieht sich auf beide Grafiken.  
-Die Auswahl ermöglicht es sich die Temperatur-Unterschiede zwischen Stadt und Land zu vergegenwärtigen.
-Die linke Darstellung zeigt für einen ausgewählten Tag zwischen 01/01/2014 und 31/12/2022 die stündlichen Temperaturdaten (in °C) an.
+Die Stationsauswahl bezieht sich dann auf beide Grafiken.  
+Unter anderem soll hiermit auf die nicht unbeträchtlichen Temperatur-Unterschiede zwischen Stadt und Land aufmerksam gemacht werden.
+Die linke Darstellung zeigt für einen ausgewählten Tag zwischen dem 01.01.2014 und dem 31.12.2022 die stündlichen Temperaturdaten (in °C) an.
 Die rechte Grafik visualisiert eine Zeitreihe von Höchsttemperaturen.
 Eine Hitzewelle (nach oben genannter Definition) wird durch einen orange gefärbten Hintergrund angezeigt.
 Bei entsprechender Stationsauswahl wird sehr gut deutlich, dass in Perioden in denen eine Hitzewelle in der Stadt auftritt, nicht zwangsläufig auch eine im ländlichen Umfeld präsent sein muss.
@@ -129,7 +138,7 @@ map_element = dl.Map(
         [dl.BaseLayer(dl.TileLayer(attribution = osm_attribution + dwd_attibution), name = 'OpenStreetMap', checked=True)] +
         [dl.BaseLayer(dl.TileLayer(url = url, attribution = osm_attribution + esri_attribution + dwd_attibution), name = 'ESRI Satellite')] 
     )],
-    center=[48.137154, 11.576124],
+    center=[48.1632, 11.5429],
     style={'width': '100%', 'height':'100%', 'margin': "auto", "display": "block"},
     zoom=9)
 
@@ -161,15 +170,17 @@ layout = dbc.Container(
                 dbc.Col(
                     [
                         dcc.Markdown(markdown_heatwaves, style={"text-align": "justify"}, dangerously_allow_html=True),
-                        dcc.Markdown(citation, style={"text-align": "justify"}, dangerously_allow_html=True)
+                        dcc.Markdown(citation, style={"text-align": "justify"}, dangerously_allow_html=True),
+                        html.Br()
                     ],
-                    className="mt-4",                
+                    className="mt-4",
                     )
             ],
             #className="mb-4"
         ),
         dbc.Row(
             [
+                dcc.Markdown(markdown_header, dangerously_allow_html=True),
                 dbc.Col(
                     [
                         dcc.Markdown(markdown_plots, style={"text-align": "justify"})
@@ -251,6 +262,7 @@ layout = dbc.Container(
                                             max_date_allowed=datetime.datetime(year_options[0], 12, 31),
                                             initial_visible_month=datetime.datetime(year_options[0], 1, 1),
                                             date=datetime.datetime(year_options[0], 1, 1),
+                                            display_format='DD.MM.YYYY',
                                         ),
                                     ], width=3),
                                 ], align='center'),

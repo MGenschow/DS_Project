@@ -11,7 +11,7 @@ footer = html.Div(
             [
                 dbc.Row(
                     [   
-                        dbc.Col(html.P('Authors:'), width={"size": "auto"}),
+                        dbc.Col(html.P('Autoren:'), width={"size": "auto"}),
                         dbc.Col(
                                     [
                                         dmc.HoverCard(
@@ -194,7 +194,7 @@ footer = html.Div(
                                         dmc.Text(
                                             [
                                                 "Die ist ein Projekt des Masterstudiengangs ",
-                                                html.Br(),
+                                                #html.Br(),
                                                 dmc.Anchor(
                                                     "Data Science in Business and Economics",
                                                     href="https://uni-tuebingen.de/fakultaeten/wirtschafts-und-sozialwissenschaftliche-fakultaet/faecher/fachbereich-wirtschaftswissenschaft/wirtschaftswissenschaft/studium/studiengaenge/master/msc-data-science-in-business-and-economics/",
