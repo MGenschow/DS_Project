@@ -119,7 +119,7 @@ map_element = dl.Map(
                             #zoomToBounds=True
                             )
                         ), 
-            name="Grid", 
+            name="Raster", 
             checked=True)]
     ),
     dl.GeoJSON(
@@ -160,14 +160,14 @@ layout = dbc.Container(
             [
                 dbc.Col(
                     [
-                        html.H5('Adress Search:'),
+                        html.H5('Adress-Suche:'),
                     ],
                     width={'size':2, 'offset':0},
                     className='d-flex align-items-center'  # Align items in the center
                 ),
                 dbc.Col(
                     [
-                        dcc.Dropdown(id="adress_dropdown", placeholder='Start typing...'),
+                        dcc.Dropdown(id="adress_dropdown", placeholder='Tippen starten...'),
 
                     ],
                     width={'size':3, 'offset':0},
@@ -193,21 +193,33 @@ layout = dbc.Container(
                                 [
                                     #dbc.CardHeader(),
                                     dbc.CardBody([
-                                        html.H4('Land Surface Temperature:'),
+                                        html.H4('Oberflächentemperatur'),
                                         html.Br(),
                                         html.Div([
-                                            html.Span("Grid ID: ", style={"font-size": "1rem"}),
+                                            html.Span("Raster ID: ", style={"font-size": "1rem"}),
                                             html.Span(id='grid_id', style={"font-weight": "bold", "font-size": "1rem"}), html.Br(),
-                                            html.Span("Ø Temperature: ", style={"font-size": "1rem"}),
+                                            html.Span("Ø Temperatur: ", style={"font-size": "1rem"}),
                                             html.Span(id='temp_mean', style={"font-weight": "bold", "font-size": "1.4rem"}), html.Br(),                                            
                                         ]),
                                         html.Hr(),
-                                        html.H4('Temperature Model:'),
+                                        html.Div(
+                                            [
+                                                html.H4('Temperatur Modell:', style={'display': 'inline-block', 'marginRight': '10px'}),
+                                                html.I(className="fa-regular fa-circle-question", id='model_tooltip', style={'display': 'inline-block', 'alignSelf': 'center'}),
+                                                dbc.Tooltip(
+                                                    "Das Temperaturmodell zeigt eine hypothetische Temperatur an, welche sich ergeben würde wenn im aktuell gewählten Quadrant die Landbedeckung verändert werden würde. Diese Änderungen können mit den Schiebereglern unten vorgenommen werden.",
+                                                    target="model_tooltip",
+                                                ),
+
+                                            ],
+                                            style={'alignItems': 'center'}
+
+                                        ),
                                         #html.Br(),
                                         html.Div([
-                                            html.Span("Δ Temperature: ", style={"font-size": "1rem"}),
+                                            html.Span("Δ Temperatur: ", style={"font-size": "1rem"}),
                                             html.Span(id='temp_delta', style={"font-weight": "bold", "font-size": "1.4rem"}), html.Br(),
-                                            html.Span("Predicted Temperature: ", style={"font-size": "1rem"}),
+                                            html.Span("Vorhergesagte Temperatur: ", style={"font-size": "1rem"}),
                                             html.Span(id='temp_pred', style={"font-weight": "bold", "font-size": "1.4rem"})
                                         ])
                                     ])
@@ -258,7 +270,19 @@ layout = dbc.Container(
                                         dbc.CardBody(
                                             [   
                                                 dbc.Row(
-                                                    html.H4('What-If Analysis Controls')
+                                                        html.Div(
+                                                            [
+                                                                html.H4('Was-Wäre-Wenn-Analyse', style={'display': 'inline-block', 'marginRight': '10px'}),
+                                                                html.I(className="fa-regular fa-circle-question", id='what_if_tooltip', style={'display': 'inline-block', 'alignSelf': 'center'}),
+                                                                dbc.Tooltip(
+                                                                    "Da die Landbedekcung als relative Werte angegeben ist, muss sich bei einer Erhöhung einer Kategorie eine Verringerung aller anderen Kategorien um 1/5 der Erhöhung ergeben. Sind einzelne Kategorien schon bei 0%, springt der gewählte Regler um die Differenz zurück, die nicht auf andere Kategorien verteilt werden kann",
+                                                                    target="what_if_tooltip",
+                                                                ),
+
+                                                            ],
+                                                            style={'alignItems': 'center'}
+
+                                                        ),
                                                 ),
                                                 dbc.Row(
                                                     [
@@ -266,13 +290,13 @@ layout = dbc.Container(
                                                             [
                                                                 html.Div(
                                                                     [
-                                                                        html.Span("Impervious Surfaces", style={"font-size": "1rem"}),
+                                                                        html.Span("Versiegelte Fläche", style={"font-size": "1rem"}),
                                                                         dcc.Slider(id="impervious_slider", min=0, max=100, value=0),
                                                                         html.Hr(),
-                                                                        html.Span("Building", style={"font-size": "1rem"}),
+                                                                        html.Span("Gebäude", style={"font-size": "1rem"}),
                                                                         dcc.Slider(id="building_slider", min=0, max=100, value=0),
                                                                         html.Hr(),
-                                                                        html.Span("Low Vegetation", style={"font-size": "1rem"}),
+                                                                        html.Span("Wiese", style={"font-size": "1rem"}),
                                                                         dcc.Slider(id="low_vegetation_slider", min=0, max=100, value=0),
                                                                         html.Hr(),
                                                                     ]
@@ -283,13 +307,13 @@ layout = dbc.Container(
                                                             [
                                                                 html.Div(
                                                                     [
-                                                                        html.Span("Water", style={"font-size": "1rem"}),
+                                                                        html.Span("Wasser", style={"font-size": "1rem"}),
                                                                         dcc.Slider(id="water_slider", min=0, max=100, value=0),
                                                                         html.Hr(),
-                                                                        html.Span("Trees", style={"font-size": "1rem"}),
+                                                                        html.Span("Bäume", style={"font-size": "1rem"}),
                                                                         dcc.Slider(id="trees_slider", min=0, max=100, value=0),
                                                                         html.Hr(),
-                                                                        html.Span("Road", style={"font-size": "1rem"}),
+                                                                        html.Span("Straße", style={"font-size": "1rem"}),
                                                                         dcc.Slider(id="road_slider", min=0, max=100, value=0),
                                                                         html.Hr(),
                                                                     ]
@@ -300,7 +324,7 @@ layout = dbc.Container(
                                                 ),
                                                 dbc.Row(
                                                     [
-                                                        dbc.Button("zurücksetzen", color="light", id = 'slider_reset', className="me-1"),
+                                                        dbc.Button("Zurücksetzen", color="light", id = 'slider_reset', className="me-1"),
 
                                                     ]
                                                 )
@@ -317,7 +341,7 @@ layout = dbc.Container(
                                     [
                                         dbc.CardBody(
                                             [   
-                                                html.H4('LULC Proportions:'),
+                                                html.H4('Oberflächeneigenschaften'),
                                                 html.Div(id = 'pie_chart'),
                                             ]
                                         )
@@ -420,7 +444,7 @@ def update_grid_info(grid_id):
     mask.save(buffered, format="JPEG")
     encoded_mask = base64.b64encode(buffered.getvalue())
     mask_element = html.Div([
-    html.H4('LULC Classification'),
+    html.H4('Klassifikation'),
     html.Img(src=f"data:image/png;base64,{encoded_mask.decode()}", width=300), 
     html.Br(),
     html.Br(),
