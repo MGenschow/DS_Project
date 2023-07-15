@@ -16,12 +16,12 @@ dis = str(10)
 # To create meta tag for each page, define the title, image, and description.
 dash.register_page(__name__,
                    path='/',  # '/' is home page and it represents the url
-                   name='General Information',  # name of page, commonly used as name of link
-                   title='Beat the heat',  # title that appears on browser's tab
+                   name='Home',  # name of page, commonly used as name of link
+                   title='HeatMapper',  # title that appears on browser's tab
                    #image='pg1.png',  # image in the assets folder
-                   description='Histograms are the new bar charts.',
+                   description='Home page of HeatMapper',  # description of the page
                    #icon="bi:house-door-fill"
-                   icon="fa-solid fa-info", 
+                   icon="fa-solid fa-house", 
                    order= 1
 )
 

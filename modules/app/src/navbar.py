@@ -99,8 +99,8 @@ navbar = html.Div(
                                 [
                                     html.Span(
                                         [
-                                            html.Strong("Heatmapper - ", style={'font-size': '20px'}),
-                                            html.I("Unveiling Munich's Hidden Heat Islands",
+                                            html.Strong("HeatMapper - ", style={'font-size': '20px', 'font-weight': 'bold'}),
+                                            html.Strong("Entdecke Münchens Hitzequellen!",
                                                    style={'font-size': '18px', 'text-transform': 'none'})
                                         ],
                                         className="align-self-center navbar-text"

@@ -26,18 +26,18 @@ from root_path import *
 
 
 dash.register_page(__name__,
-                   path='/LST',  # '/' is home page and it represents the url
-                   name='LST',  # name of page, commonly used as name of link
-                   title='LST',  # title that appears on browser's tab
+                   path='/Hitzeinseln',  # '/' is home page and it represents the url
+                   name='Hitzeinseln',  # name of page, commonly used as name of link
+                   title='Hitzeinseln',  # title that appears on browser's tab
                    #image='pg1.png',  # image in the assets folder
                    description='Visualization of Land Surface Temperature',
-                   icon="fa-solid fa-satellite", 
+                   icon="fa-solid fa-flag", 
                    order = 4
 )
 
 
 markdown_explanation = '''
-# Landoberflächentemperatur
+# Oberflächentemperatur
 Die Landoberflächentemperatur (Land Surface Temperature, kurz: LST) ist die i.d.R. von Sateltiten gemessene 
 Temperatur der Erdoberfläche. Sie spielt eine entscheidende Rolle für das Verständnis und die Überwachung des 
 Klimasystems der Erde, da sie wertvolle Erkenntnisse über den  Zustand der Umwelt und ihre Veränderungen im 
@@ -83,11 +83,12 @@ layout = dbc.Container(
             ],
             #className="mb-4"
         ),
+        html.Br(),
         dbc.Row(
             [
                 dbc.Col(
                     [
-                        html.H2("Außerhalb von Hitzewillen"),
+                        html.H2("Außerhalb von Hitzewellen"),
                         html.Iframe(id='map1', width='100%', height='500px'),
                     ],
                     width=6,
@@ -102,6 +103,7 @@ layout = dbc.Container(
             ],
             #className="mb-4",
         ),
+        html.Br(),
         dbc.Row(
             [
                 dbc.Col(

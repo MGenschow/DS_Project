@@ -36,9 +36,9 @@ from root_path import *
 
 
 dash.register_page(__name__,
-                   path='/Map',  # '/' is home page and it represents the url
-                   name='Map',  # name of page, commonly used as name of link
-                   title='Map',  # title that appears on browser's tab
+                   path='/HeatMapper',  # '/' is home page and it represents the url
+                   name='HeatMapper',  # name of page, commonly used as name of link
+                   title='HeatMapper',  # title that appears on browser's tab
                    #image='pg1.png',  # image in the assets folder
                    description='Final map of our project',
                    icon = "fa-solid fa-map-location", 
@@ -125,8 +125,8 @@ map_element = dl.Map(
             dl.LayerGroup(
                 dl.GeoJSON(data=gdf_json, 
                             id="grid", 
-                            options={"style":{"color":"#209e9e", 'weight':2, 'opacity':1, 'fillOpacity': 0}},
-                            hoverStyle=arrow_function(dict(weight=3, color='#d62f2f', dashArray='')),
+                            options={"style":{"color":"#008080", 'weight':2, 'opacity':1, 'fillOpacity': 0}},
+                            hoverStyle=arrow_function(dict(weight=3, color='purple', dashArray='')),
                             #zoomToBounds=True
                             )
                         ), 
@@ -145,12 +145,12 @@ map_element = dl.Map(
                 ]
             ),
             name="LST",
-            checked=False
+            checked=True
         )]
     ),
     dl.GeoJSON(
                         id="last_clicked_grid", 
-                        options={"style":{"color":"red", 'weight':3, 'opacity':1, 'fillOpacity': 0.4}},
+                        options={"style":{"color":"purple", 'weight':3, 'opacity':1, 'fillOpacity': 0.6}},
                         #zoomToBounds=True
                     )
     ],
@@ -233,7 +233,7 @@ layout = dbc.Container(
                                                 html.H4('Temperatur Modell:', style={'display': 'inline-block', 'marginRight': '10px'}),
                                                 html.I(className="fa-regular fa-circle-question", id='model_tooltip', style={'display': 'inline-block', 'alignSelf': 'center'}),
                                                 dbc.Tooltip(
-                                                    "Das Temperaturmodell zeigt eine hypothetische Temperatur an, welche sich ergeben würde wenn im aktuell gewählten Quadrant die Landbedeckung verändert werden würde. Diese Änderungen können mit den Schiebereglern unten vorgenommen werden.",
+                                                    "Das Temperaturmodell zeigt eine hypothetische Temperatur an, welche sich ergibt wenn im aktuell gewählten Quadrant die Landbedeckung verändert wird. Diese Änderungen können mit den Schiebereglern unten vorgenommen werden.",
                                                     target="model_tooltip",
                                                 ),
 
@@ -241,7 +241,7 @@ layout = dbc.Container(
                                             style={'alignItems': 'center'}
 
                                         ),
-                                        #html.Br(),
+                                        html.Br(),
                                         html.Div([
                                             html.Span("Δ Temperatur: ", style={"font-size": "1rem"}),
                                             html.Span(id='temp_delta', style={"font-weight": "bold", "font-size": "1.4rem"}), html.Br(),
@@ -298,10 +298,10 @@ layout = dbc.Container(
                                                 dbc.Row(
                                                         html.Div(
                                                             [
-                                                                html.H4('Was-Wäre-Wenn-Analyse', style={'display': 'inline-block', 'marginRight': '10px'}),
+                                                                html.H4('Was-Wäre-Wenn?', style={'display': 'inline-block', 'marginRight': '10px'}),
                                                                 html.I(className="fa-regular fa-circle-question", id='what_if_tooltip', style={'display': 'inline-block', 'alignSelf': 'center'}),
                                                                 dbc.Tooltip(
-                                                                    "Da die Landbedekcung als relative Werte angegeben ist, muss sich bei einer Erhöhung einer Kategorie eine Verringerung aller anderen Kategorien um 1/5 der Erhöhung ergeben. Sind einzelne Kategorien schon bei 0%, springt der gewählte Regler um die Differenz zurück, die nicht auf andere Kategorien verteilt werden kann",
+                                                                    "Da die Landbedeckungen als relative Werte angegeben sind, muss sich bei der Erhöhung einer Kategorie eine Verringerung aller anderen Kategorien um 1/5 der Erhöhung ergeben. Sind einzelne Kategorien schon bei 0%, springt der gewählte Regler um die Differenz zurück, die nicht auf andere Kategorien verteilt werden kann.",
                                                                     target="what_if_tooltip",
                                                                 ),
 

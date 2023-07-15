@@ -21,12 +21,12 @@ from plotly.subplots import make_subplots
 from root_path import *
 
 dash.register_page(__name__,
-                   path='/Blog',  # '/' is home page and it represents the url
-                   name='Blog',  # name of page, commonly used as name of link
-                   title='Blog',  # title that appears on browser's tab
+                   path='/Hintergrund',  # '/' is home page and it represents the url
+                   name='Hintergrund',  # name of page, commonly used as name of link
+                   title='Hintergrund',  # title that appears on browser's tab
                    #image='pg1.png',  # image in the assets folder
                    description='Blog about Project',
-                   icon="fa-solid fa-temperature-high", 
+                   icon="fa-solid fa-circle-info", 
                    order=5
 )
 
