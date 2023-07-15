@@ -25,7 +25,7 @@ import datetime
 #import matplotlib.colors as colors
 #from rasterio.enums import Resampling
 #import tifffile
-
+import imageio
 # Import all functions from utils
 from utils import *
 
@@ -58,6 +58,7 @@ headers = {'X-Auth-Token': response.json()['data']}
 
 # %% Import heatwaves
 dates = pd.read_pickle('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/DWD/heatwaves.pkl')
+
 
 # Transform heatwaves
 heatwaves = heatwave_transform(dates)
@@ -194,12 +195,34 @@ meanTiff(heatwaves, insideHeatwave=True, config=config)
 meanTiff(inverted_HW, insideHeatwave=False, config=config)
 
 # %% Plot the respective tiff
-path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/avgMorning_HW.tif'
+tiff_path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/avgAfterNoon_HW.tif'
+png_path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/avgAfterNoon_HW.png'
 tif = rasterio.open(path)
 
 plt.imshow(tif.read()[0],'jet')
-plt.colorbar(label = "Temperature in Celsius")
+#plt.colorbar(label = "Temperature in Celsius")
 plt.show()
+# %%
+import imageio
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+# Read the TIFF file using rasterio
+with rasterio.open(tiff_path) as tif:
+    # Read the data from the TIFF file
+    tiff_data = tif.read(1)  # Read the first band (assuming it's a single-band TIFF)
+
+# Normalize the data to [0, 1] range
+data_min = np.min(tiff_data)
+data_max = np.max(tiff_data)
+normalized_data = (tiff_data - data_min) / (data_max - data_min)
+
+# Apply the 'jet' colormap
+cmap = cm.get_cmap('jet')
+colored_data = cmap(normalized_data)
+
+# Save the colored data as a PNG file using imageio
+imageio.imwrite(png_path, (colored_data * 255).astype(np.uint8))
 
 # %% Crop the tif to closer boundig boxes
 from rasterio.mask import mask
