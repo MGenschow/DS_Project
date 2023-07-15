@@ -103,7 +103,7 @@ bounds = tif.bounds
 import base64
 # Read local image file and convert to Data URL
 # Read local image file and convert to Data URL
-with open(root_path + '/assets/testBild.png', 'rb') as file:
+with open(root_path + '/assets/avgAfterNoon_HW.png', 'rb') as file:
     image_data = file.read()
     data_url = 'data:image/tiff;base64,' + base64.b64encode(image_data).decode()
 
