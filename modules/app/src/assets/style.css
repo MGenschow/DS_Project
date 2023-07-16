@@ -120,15 +120,17 @@ html {
 
 .sidebar-header {
     display: flex;
-    justify-content: center;  /* Center-align the header */
+    justify-content: center;
+    /* Center-align the header */
     align-items: center;
     overflow: hidden;
     white-space: nowrap;
 }
-  
+
 .sidebar-header h2 {
     opacity: 1;
-    margin: 0;  /* Remove margin-left and margin-bottom */
+    margin: 0;
+    /* Remove margin-left and margin-bottom */
     transition: opacity 0.1s ease-in-out;
     color: black;
 }
@@ -136,8 +138,3 @@ html {
 .link-hover:hover {
     color: white;
 }
-
-.DayPickerKeyboardShortcuts_buttonReset {
-    display: none;
-}
-  
