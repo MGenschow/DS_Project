@@ -138,3 +138,7 @@ html {
 .link-hover:hover {
     color: white;
 }
+
+.DayPickerKeyboardShortcuts_buttonReset {
+    display: none;
+}
