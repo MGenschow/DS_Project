@@ -26,6 +26,10 @@ import yaml
 import time
 from shapely.geometry import Point
 import rasterio
+import rioxarray
+import imageio
+import matplotlib.cm as cm
+import base64
 
 from dash_extensions.javascript import arrow_function
 
@@ -96,16 +100,64 @@ adressList = df['Adress'].tolist()
 adress_options = [{'label':elem, 'value':elem} for elem in adressList]
 
 ###### Import geotiff and extract bounds
-path = root_path + '/assets/avgMorning_HW.tif'
-tif = rasterio.open(path)
-bounds = tif.bounds
+tif_path = root_path + '/assets/avgMorning_HW.tif'
+tif = rioxarray.open_rasterio(tif_path, masked = True)
 
-import base64
+# tif = rasterio.open(path)
+# tif_bounds = tif.bounds
+
+# Ge the overall bound of the gdf
+grid_bounds = gdf['geometry'].total_bounds
+# Store the bounds as a bounding box
+grid_bounds = rasterio.coords.BoundingBox(grid_bounds[0], grid_bounds[1], grid_bounds[2], grid_bounds[3])
+
+# Define geometries
+geometries = [
+    {
+        'type': 'Polygon',
+        'coordinates': [[
+            [grid_bounds.left, grid_bounds.bottom],
+            [grid_bounds.left, grid_bounds.top],
+            [grid_bounds.right, grid_bounds.top],
+            [grid_bounds.right, grid_bounds.bottom],
+            [grid_bounds.left, grid_bounds.bottom]
+        ]]
+    }
+]
+
+# Crop tif
+clipped_tif = tif.rio.clip(geometries) # all_touched = True)
+# Store new cropped tif
+clipped_tif.rio.to_raster(root_path +'/assets/avgMorning_HW_cropped.tif')
+
+# Open cropped tif
+cropped_tif = rasterio.open(root_path + '/assets/avgMorning_HW_cropped.tif')
+cropped_bounds = cropped_tif.bounds
+
+# Transfer tif to png
+# Read the TIFF file using rasterio
+with rasterio.open(root_path + '/assets/avgMorning_HW_cropped.tif') as tif:
+    # Read the data from the TIFF file
+    tiff_data = tif.read(1)  # Read the first band (assuming it's a single-band TIFF)
+
+# Normalize the data to [0, 1] range
+data_min = np.min(tiff_data)
+data_max = np.max(tiff_data)
+normalized_data = (tiff_data - data_min) / (data_max - data_min)
+
+# Apply the 'jet' colormap
+cmap = cm.get_cmap('jet')
+colored_data = cmap(normalized_data)
+
+# Save the colored data as a PNG file using imageio
+imageio.imwrite(root_path + '/assets/avgMorning_HW_cropped.png', (colored_data * 255).astype(np.uint8))
+
+
 # Read local image file and convert to Data URL
-# Read local image file and convert to Data URL
-with open(root_path + '/assets/avgAfterNoon_HW.png', 'rb') as file:
+with open(root_path + '/assets/avgMorning_HW_cropped.png', 'rb') as file:
     image_data = file.read()
     data_url = 'data:image/tiff;base64,' + base64.b64encode(image_data).decode()
+
 
 
 ####################### Map Element ##########################
@@ -138,7 +190,7 @@ map_element = dl.Map(
                 [
                     dl.ImageOverlay(
                         url=data_url,  # Path to the georeferenced TIF file
-                        bounds=[[bounds.bottom, bounds.left], [bounds.top, bounds.right]],  # Specify the bounds of the TIF overlay
+                        bounds=[[cropped_bounds.bottom, cropped_bounds.left], [cropped_bounds.top, cropped_bounds.right]],  # Specify the bounds of the TIF overlay
                         opacity=0.5,  # Set the opacity of the overlay (adjust as needed)
                         id="tif_overlay"
                     )
