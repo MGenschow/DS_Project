@@ -8,6 +8,8 @@ import plotly.graph_objects as go
 import plotly.express as px
 import dash_extensions as de
 from dash_bootstrap_components import Container
+import dash_player as player
+
 
 from root_path import *
 
@@ -18,9 +20,7 @@ dash.register_page(__name__,
                    path='/',  # '/' is home page and it represents the url
                    name='Home',  # name of page, commonly used as name of link
                    title='HeatMapper',  # title that appears on browser's tab
-                   #image='pg1.png',  # image in the assets folder
                    description='Home page of HeatMapper',  # description of the page
-                   #icon="bi:house-door-fill"
                    icon="fa-solid fa-house", 
                    order= 1
 )
@@ -32,6 +32,11 @@ options_gif = dict(
     autoplay=True,
     rendererSettings=dict(preserveAspectRatio="xMidYMid slice"),
 )
+
+#To integrate a YouTube video into a Python Dash app, you can use the html.Iframe component to embed the video player. Here's an example of how you can achieve this
+
+# YouTube video URL
+video_url = "https://www.youtube.com/watch?v=0Fksc1kzWz8"
 
 markdown_background = '''
 ## Projekthintergrund & Zielgruppe
@@ -71,6 +76,17 @@ layout = dbc.Container(
                         html.Div(
                             de.Lottie(options=options_gif, width="10%", height="10%", url=city_gif)
                         ),
+                        html.Div([
+                        html.H1("My Dash App with YouTube Video"),
+                         player.DashPlayer(
+                        id='youtube-player',
+                        url=video_url,
+                        controls=True,
+                        width='100%',
+                        height='600px'
+                        )
+                        ]),
+                        html.Br(),
                         dcc.Markdown(markdown_background, style={"text-align": "justify"}),
                         dcc.Markdown(markdown_approach, style={"text-align": "justify"}),
                         dcc.Markdown(markdown_referenzen, style={"text-align": "justify"})
