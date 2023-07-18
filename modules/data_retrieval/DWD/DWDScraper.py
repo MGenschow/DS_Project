@@ -28,7 +28,8 @@ class DWDScraper():
     Attributes:
         data_dir (str): The directory path where the data will be stored.
         bounding_boxes (list): The bounding box coordinates for filtering stations.
-        url (str): The base URL for accessing the DWD weather data.
+        url_hist (str): The base URL for accessing hisotrical DWD weather data.
+        url_recent (str): The base URL for accessing recent DWD weather data.
 
     Methods:
         get_all_stations(min_datum, max_datum):
@@ -45,7 +46,8 @@ class DWDScraper():
         """Initializes the DWDScraper object with default values."""
         self.data_dir = config['data']['dwd']
         self.bounding_boxes = config['bboxes']['munich']
-        self.url = 'https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/hourly/air_temperature/historical/'
+        self.url_hist = 'https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/hourly/air_temperature/historical/'
+        self.url_recent = 'https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/hourly/air_temperature/recent/'
 
     def get_all_stations(self, name, min_datum, max_datum):
         """Retrieves information about all weather stations.
@@ -61,7 +63,7 @@ class DWDScraper():
 
         os.chdir(self.data_dir + '/meta')
 
-        r = requests.get(self.url + 'TU_Stundenwerte_Beschreibung_Stationen.txt')
+        r = requests.get(self.url_hist + 'TU_Stundenwerte_Beschreibung_Stationen.txt')
         with open('TU_Stundenwerte_Beschreibung_Stationen.txt', 'wb') as f:
             f.write(r.content)
         stations = pd.read_fwf('TU_Stundenwerte_Beschreibung_Stationen.txt',
@@ -93,8 +95,8 @@ class DWDScraper():
                        (stations['GEOLAENGE'] < self.bounding_boxes[2])]
         return foc.STATIONS_ID.tolist()
 
-    def scrape(self, name, start_date, end_date, stations_id):
-        """Scrapes weather data for the specified date range and station IDs.
+    def scrape_hist(self, name, start_date, end_date, stations_id):
+        """Scrapes historic weather data for the specified date range and station IDs.
 
         Args:
             name (str): Desired name of the written csv file.
@@ -116,7 +118,7 @@ class DWDScraper():
         station_temp = pd.DataFrame()
         cols = ['TT_TU', 'RF_TU']
 
-        r = requests.get(self.url)
+        r = requests.get(self.url_hist)
         soup = BeautifulSoup(r.content, 'html.parser')
         hrefs = [a['href'] for a in soup.find_all('a', href=True)]
 
@@ -127,7 +129,61 @@ class DWDScraper():
 
         for i in range(len(hrefs_final)):
             filename = hrefs_final[i]
-            r = requests.get(self.url + filename, stream=True)
+            r = requests.get(self.url_hist + filename, stream=True)
+            with open(filename, 'wb') as f:
+                f.write(r.content)
+            with zipfile.ZipFile(filename, 'r') as zip_ref:
+                zip_ref.extractall(filename.replace('.zip',''))
+            file = glob.glob(filename.replace('.zip','') + '/produkt_tu_stunde*')
+            station_data = pd.read_csv(file[0], sep = ';')[["STATIONS_ID","MESS_DATUM","TT_TU","RF_TU"]]
+            station_data['MESS_DATUM'] = pd.to_datetime(station_data['MESS_DATUM'], format='%Y%m%d%H')
+            station_data = station_data.merge(station_filter, how="right", on='MESS_DATUM')
+            station_temp = pd.concat([station_temp, station_data])
+            shutil.rmtree(filename.replace('.zip',''))
+            os.remove(filename)
+            sleep(randint(1,5))
+
+        station_temp[station_temp['RF_TU'] < 0]['RF_TU'] = np.nan
+        station_temp[station_temp['TT_TU'] < -50]['TT_TU'] = np.nan
+
+        station_temp.to_csv(self.data_dir + '/' + name, index=False)
+
+    def scrape_recent(self, name, end_date, stations_id):
+        """Scrapes recent weather data for the current year until the specified date and for specified station IDs.
+
+        Args:
+            name (str): Desired name of the written csv file.
+            end_date (str): The end date of the data collection (format: 'MM-DD').
+            stations_id (list): A list of station IDs to scrape data from.
+
+        Returns:
+            None
+        """
+
+        os.chdir(self.data_dir + '/meta')
+
+        current_year = datetime.now().year
+
+        start_date = datetime.strptime(str(current_year) + '-01-01',"%Y-%m-%d")
+        end_date = datetime.strptime(str(current_year) + '-' + end_date,"%Y-%m-%d")
+        dates = pd.date_range(start_date, end_date, freq='H')
+        
+        station_filter = pd.DataFrame({'MESS_DATUM': dates})
+        station_temp = pd.DataFrame()
+        cols = ['TT_TU', 'RF_TU']
+
+        r = requests.get(self.url_recent)
+        soup = BeautifulSoup(r.content, 'html.parser')
+        hrefs = [a['href'] for a in soup.find_all('a', href=True)]
+
+        stations_id = [str(s).rjust(5,'0') for s in stations_id]
+        j_stations_id = '|'.join(stations_id)
+        reg = 'stundenwerte_TU_' + j_stations_id + '_akt.zip'
+        hrefs_final = list(filter(lambda x: re.findall(reg, x), hrefs))
+
+        for i in range(len(hrefs_final)):
+            filename = hrefs_final[i]
+            r = requests.get(self.url_recent + filename, stream=True)
             with open(filename, 'wb') as f:
                 f.write(r.content)
             with zipfile.ZipFile(filename, 'r') as zip_ref:
