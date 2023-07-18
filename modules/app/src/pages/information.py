@@ -44,6 +44,7 @@ Der HeatMapper ist ein Tool, das den Zusammenhang zwischen Temperatur und Oberfl
 Hier können Nutzer wahlweise ein 250mx250m Raster auf einer Karte markieren oder eine konkrete Adresse im dafür vorgesehenen Suchfeld eingeben. 
 Es kann dabei zwischen einer Satelliten- und einer klassischen Kartenansicht gewählt werden. Die Oberflächentemperatur für das gesamte Stadtgebiet von München wird bereits beim Start angezeigt.
 Ist eine Adresse oder ein Raster markiert, wird das zugeordnete Raster erfasst und die gemittelte Temperatur für das ausgewählte Gebiet berechnet.
+
 Neben dem Satellitenbild des ausgewählten Rasters liefert der HeatMapper auch eine Darstellung der klassifizierten Oberflächenelemente, deren Verteilung im Detail in einem zusätzlichen Diagramm dargestellt wird.
 Mittels verschiedener Regler wird dem Nutzer ermöglicht, die Verteilung der einzelnen Elemente zu modifizieren, wobei Temperaturänderungen, von unserem Modell berechnet, sofort sichtbar werden.
 
@@ -51,17 +52,20 @@ Mittels verschiedener Regler wird dem Nutzer ermöglicht, die Verteilung der ein
 
 
 hitzewellen = '''
-## Hitzewellen und -inseln?
+## Hitzewellen und -inseln
 
+Hitzeinseln und Hitzewellen sind zwei Phänomene, die mit steigenden Temperaturen in Zusammenhang stehen.
 
+Eine Hitzewelle bezieht sich auf eine anhaltende Periode extrem hoher Temperaturen, die im Sommer auftreten kann.
+ Diese extremen Wetterbedingungen können städtische und ländliche Gebiete beeinflussen und haben Auswirkungen auf die menschliche Gesundheit, Landwirtschaft und Tierwelt.
 
+Anders als Hitzewellen bezieht sich der Begriff "Hitzeinsel" auf einen städtischen oder bebauten Bereich, der deutlich wärmer ist als seine Umgebung. 
+Dieses Phänomen wird durch eine Vielzahl von Faktoren verursacht, einschließlich der Absorption von Sonnenlicht durch Gebäude und Straßen, geringem Pflanzenwuchs und der Verdichtung
+ von Gebäuden und Menschen in städtischen Gebieten.
+ Hitzeinseln haben insbesondere einenn negativen Einfluss auf die menschliche Gesundheit, da sie die städtischen Bereiche nachts nicht abkühlen lassen, was zu Hitzestress und damit 
+ verbundenen Gesundheitsproblemen führt.
 
-
-Der HeatMapper ist ein Tool, das den Zusammenhang zwischen Temperatur und Oberflächeneigenschaften analysiert. Hier können Nutzer wahlweise ein 250mx250m Raster auf einer Karte markieren oder eine konkrete Adresse im Suchfeld auswählen. 
-Ist eine Adresse ausgewählt, wird das zugeordnete Raster erfasst und die gemittelte Temperatur für das ausgewählte Gebiet berechnet. Zusätzlich stellt der HeatMapper ein Satellitenbild des gewählten Rasters und ein Bild der 
-einzelnen klasssifizierten Elemente dar, deren Verteilung in einem weiteren Diagramm präzise dargestellt wird. 
-Mittels verschiedener Regler wird dem Nutzer ermöglicht, die Verteilung der Oberflächenelemente zu modifizieren, wobei Temperaturänderungen, von unserem Modell berechnet, sofort sichtbar werden.
-
+Unsere App ermöglicht es dem Nutzer, die Auswirkungen von Hitzeinseln und Hitzewellen auf die Temperatur in München zu untersuchen und zu verstehen.
 '''
 
 markdown_background = '''
