@@ -151,3 +151,14 @@ html {
     background-color: #005757 !important;  /*darkened shade of teal color when hovered*/
 }
 
+.carousel-image {
+    width: 100%;
+    height: auto;
+    max-height: 1000px; /* adjust as needed */
+}
+
+.carousel-item {
+    transition: none !important;
+}
+
+

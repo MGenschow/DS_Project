@@ -17,6 +17,8 @@ from pathlib import Path
 from dash.exceptions import PreventUpdate
 from datetime import  timedelta
 from plotly.subplots import make_subplots
+import base64
+
 
 from root_path import *
 
@@ -29,6 +31,15 @@ dash.register_page(__name__,
                    icon="fa-solid fa-circle-info", 
                    order=5
 )
+
+with open(root_path + '/assets/cadastral_data.png', 'rb') as file:
+    image_data = file.read()
+    img_comparison1 = 'data:image/png;base64,' + base64.b64encode(image_data).decode()
+
+with open(root_path + '/assets/comparison_cadastral.png', 'rb') as file:
+    image_data = file.read()
+    img_comparison2 = 'data:image/png;base64,' + base64.b64encode(image_data).decode()
+
 
 md_disclaimer = """
 <small><em>
@@ -118,6 +129,49 @@ Lastly, we include average height within a grid as a proxy for the urban canyon 
 Interestingly, the coefficient for this variable is both economically and statistically insignificant.
 """
 
+md_segmentation_into = """
+Drawing on existing literature pertaining to the drivers and mitigating elements of urban heat, we utilize land cover and land use (LCLU) attributes to pinpoint key 
+variables contributing to the Urban Heat Island (UHI) phenomenon. To translate this problem into the realm of data science, we design data pipelines that leverage
+ official data in combination with state-of-the-art deep learning algorithms. Our main objective is to address the critical question: what proportion of the surface 
+ area in a given neighborhood is occupied by diverse entities such as trees, bodies of water, buildings, low vegetation, or impervious surfaces?
+Each of these elements has a distinct role in influencing the urban heat, and understanding their individual and collective impact is integral to our analysis. 
+This allows us to not just understand, but also visualize the intricate influence of these features on urban temperature patterns.
+"""
+
+md_segmentation_data_sources = """
+#### Data Sources
+In order to classify Munich's entire surface area into distinct land cover categories, we begin by using official data from the cadastral office. This data offers 
+precise geospatial information about actual land usage as recorded by the cadastral office. The high geospatial resolution and readily available shape-files 
+make this data an ideal starting point for our project. However, it is only comprehensive enough for some of the land cover categories we are interested in. 
+In our final classifications, we leverage the official data to pinpoint bodies of water and official roads. The limitation of the official data lies in its lack 
+of detailed segregation of other land cover characteristics in residential and other urban areas. While our interest lies in identifying each individual tree in 
+every backyard, the official data only classifies the entire block as a residential area. (See comparison on the right) To obtain such detailed segregation of buildings, 
+trees, and low vegetation, we turn to creating our own segmentation model using high-resolution orthophotos. Orthophotos are aerial images that are subsequently 
+geospatially corrected and georeferenced. With their remarkable resolution of 40cm/pixel, these orthophotos enable us to locate every single tree and grassy area. 
+This helps us create an extremely precise image of land cover characteristics for the whole of Munich.
+"""
+
+md_segmentation_model = """
+#### Segmentation Model
+In order to achieve the high precision evident in our classification model, primarily featured in this application, we employ cutting-edge deep learning techniques 
+from the realm of computer vision. These deep neural networks necessitate extensive data for training, and since no labeled data for Munich was accessible to us, 
+we opted for a method known as transfer learning. This technique involves utilizing a model designed for one task and repurposing it for another task. By employing 
+this method, we can train a larger model with the available data and then fine-tune it to cater to a specific task for which minimal data is available. In our context, 
+we developed a training pipeline that incorporates a two-stage transfer learning approach.
+After evaluating various model architectures, we decided on a DeepLabV3 segmentation model with a ResNet101 backbone. The ResNet101 backbone is initialized with 
+weights that have been trained on COCO.
+In the first stage, we fine-tuned our model utilizing the Land-cOVEr Domain Adaptive semantic segmentation (LoveDA) dataset, comprising 5987 high spatial resolution 
+(0.3 m) remote sensing images taken from Chinese cities and rural areas, along with their corresponding pixel-wise annotations. The primary goal of this stage was 
+to equip our model with the ability to learn the general feature extraction layers for a semantic segmentation task from satellite imagery. Hence, both the backbone 
+and the classification head were trained.
+In the second stage, this pre-trained model was adapted to the actual imagery of Munich. Naturally, in order to train the model and test its accuracy on our 
+dataset, we had to procure annotations for a portion of our dataset. For this, we utilized the labeling tool cvat.ai, which facilitates efficient labeling of 
+image data using segmentation algorithms like Segment Anything. In total, we acquired segmentation masks for approximately 10 square kilometers of Munich which we 
+used to fine-tune our model and assess its performance. In this stage, we intended to depend on the feature extraction layers learned in the first stage and only 
+adjust the classification head to accurately classify pixels in our images. The fine-tuning of the model on our own dataset resulted in an increase in accuracy ranging 
+between 10-40 percentage points depending on the category and an increase in average pixel-wise accuracy of 12 percentage points.
+"""
+
 layout = dbc.Container(
     [
         html.Div(style={'height': '5vh'}),
@@ -148,8 +202,60 @@ layout = dbc.Container(
                 html.H2('Extracting land surface temperature data from ECOSTRESS', id='section-1'),
                 html.H3('Heatwave detection', id='subsection-1-1'),
                 dcc.Markdown(md_hw, style={"text-align": "justify"}),
-                dcc.Markdown(md_hw_cit, style={"text-align": "justify"}, dangerously_allow_html=True),
+                dcc.Markdown(md_hw_cit, style={"text-align": "justify"}, dangerously_allow_html=True), 
+            ]
+        ),
+        dbc.Row(
+            [
                 html.H2('Extracting land cover and land use data from orthophotos', id='section-2'),
+                dcc.Markdown(md_segmentation_into, style={"text-align": "justify"})
+            ]
+        ),
+        dbc.Row(
+            [
+                dbc.Col(
+                    [   
+                        dcc.Markdown(md_segmentation_data_sources, style={"text-align": "justify"})
+                    ],
+                    width = 8
+                ),
+                dbc.Col(
+                    [
+                        dbc.Carousel(
+                            items=[
+                                {
+                                    "key": "1",
+                                    "src": img_comparison2,
+                                    "header": "",
+                                    "caption": "Our Segmentation",
+                                    "imgClassName": "carousel-image"
+                                },
+                                {
+                                    "key": "2",
+                                    "src": img_comparison1,
+                                    "header": "",
+                                    "caption": "Official Cadastral Data",
+                                    "imgClassName": "carousel-image"
+                                },
+                            ],
+                            style={"max-height": "500px", "overflow": "hidden", 'width': '100%'}
+                        )
+                    ],
+                    width = {'size':4, 'offset': 0, 'md':'auto'},
+                    style = {'display': 'flex', 'align-items': 'center'}  # Center items vertically
+                ),
+            ]
+        ),
+
+
+
+        dbc.Row(
+            [
+                dcc.Markdown(md_segmentation_model, style={"text-align": "justify"})
+            ]
+        ),
+        dbc.Row(
+            [
                 html.H2('Econometrics: Modeling LST using a SLX model', id='section-3'),
                 dcc.Markdown(md_slx_1, style={"text-align": "justify"}),
                 html.Div(
