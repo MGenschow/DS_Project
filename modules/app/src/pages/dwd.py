@@ -359,6 +359,29 @@ colors = ['red', 'blue']
 def update_plot(selected_date, station1, station2):
     selected_date = pd.to_datetime(selected_date)
     filtered_df = hourly[hourly['TIME'].dt.date == selected_date.date()]
+
+    if filtered_df.shape[0] <= 3:
+        return {
+            'layout': {
+                'xaxis': {
+                    'visible': False
+                },
+                'yaxis': {
+                    'visible': False
+                },
+                'annotations': [
+                    {
+                        'text': 'Für dieses Datum sind noch keine Daten in die App integriert worden.',
+                        'xref': 'paper',
+                        'yref': 'paper',
+                        'showarrow': False,
+                        'font': {
+                            'size': 20
+                        }
+                    }
+                ]
+            }
+        }
     
     traces = []
     station_data = {}
@@ -413,6 +436,30 @@ def update_plot(selected_date, station1, station2):
 )
 def update_plot(month_range, year, station1, station2):
     filtered_df = daily[(daily['DATE'].dt.year == year) & (daily['DATE'].dt.month >= month_range[0])  & (daily['DATE'].dt.month <= month_range[1])]
+        
+    if filtered_df.empty:
+        return {
+            'layout': {
+                'xaxis': {
+                    'visible': False
+                },
+                'yaxis': {
+                    'visible': False
+                },
+                'annotations': [
+                    {
+                        'text': 'Für den ausgewählten Zeitraum sind noch keine Daten in die App integriert worden.',
+                        'xref': 'paper',
+                        'yref': 'paper',
+                        'showarrow': False,
+                        'font': {
+                            'size': 20
+                        }
+                    }
+                ]
+            }
+        }
+    
     station_data = {}
     station_names = {station1: meta[meta['STATIONS_ID'] == station1]['STATIONSNAME'].values[0],
                      station2: meta[meta['STATIONS_ID'] == station2]['STATIONSNAME'].values[0]}
