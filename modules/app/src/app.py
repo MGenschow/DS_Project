@@ -2,7 +2,6 @@ import dash
 from dash import html, dcc, callback, Input, Output, State
 import dash_bootstrap_components as dbc
 import os
-import dash_player as player
 
 from footer import footer
 from navbar import navbar

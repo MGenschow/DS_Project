@@ -8,7 +8,7 @@
     padding: 2rem 1rem;
     background-color: #cbd3dd;
     z-index: 1050;
-    transition: width rgb(32, 158, 158);
+    transition: width #008080;
     overflow-x: hidden;
     overflow-y: auto;
     /* Scrollable contents if viewport is shorter than content. */
@@ -40,7 +40,7 @@
 }
 
 .sidebar .nav-link:hover {
-    background-color: rgb(32, 158, 158);
+    background-color: #008080;
     /*background-color: rgb(15, 63, 63);*/
     border-radius: 10px;
 }
@@ -61,7 +61,7 @@
 
 
 .sidebar .nav-link.active {
-    background-color: rgb(32, 158, 158);
+    background-color: #008080;
     border-radius: 10px;
 }
 
