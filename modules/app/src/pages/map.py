@@ -25,8 +25,8 @@ import geopy
 import yaml
 import time
 from shapely.geometry import Point
-import rasterio
-import rioxarray
+#import rasterio
+#import rioxarray
 import imageio
 import matplotlib.cm as cm
 import base64
@@ -100,6 +100,7 @@ adressList = df['Adress'].tolist()
 adress_options = [{'label':elem, 'value':elem} for elem in adressList]
 
 ###### Import geotiff and extract bounds
+'''
 tif_path = root_path + '/assets/avgMorning_HW.tif'
 tif = rioxarray.open_rasterio(tif_path, masked = True)
 
@@ -151,13 +152,16 @@ colored_data = cmap(normalized_data)
 
 # Save the colored data as a PNG file using imageio
 imageio.imwrite(root_path + '/assets/avgMorning_HW_cropped.png', (colored_data * 255).astype(np.uint8))
+'''
+
+# Ge the overall bound of the gdf
+grid_bounds = gdf['geometry'].total_bounds
 
 
 # Read local image file and convert to Data URL
-with open(root_path + '/assets/avgMorning_HW_cropped.png', 'rb') as file:
+with open(root_path + '/assets/avgMorning_HW_CROPPED.png', 'rb') as file:
     image_data = file.read()
-    data_url = 'data:image/tiff;base64,' + base64.b64encode(image_data).decode()
-
+    data_url = 'data:image/png;base64,' + base64.b64encode(image_data).decode()
 
 
 ####################### Map Element ##########################
@@ -187,10 +191,10 @@ map_element = dl.Map(
         
         [dl.Overlay(
             dl.LayerGroup(
-                [
+                [ 
                     dl.ImageOverlay(
                         url=data_url,  # Path to the georeferenced TIF file
-                        bounds=[[cropped_bounds.bottom, cropped_bounds.left], [cropped_bounds.top, cropped_bounds.right]],  # Specify the bounds of the TIF overlay
+                        bounds=[[grid_bounds[1], grid_bounds[0]], [grid_bounds[3], grid_bounds[2]]],  # Specify the bounds 
                         opacity=0.5,  # Set the opacity of the overlay (adjust as needed)
                         id="tif_overlay"
                     )

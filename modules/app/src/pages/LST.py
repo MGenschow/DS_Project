@@ -35,21 +35,74 @@ dash.register_page(__name__,
                    order = 4
 )
 
+# Read local image file and convert to Data URL
+with open(root_path + '/assets/Hitzeinsel.png', 'rb') as file:
+    image_data = file.read()
+    data_url_1 = 'data:image/png;base64,' + base64.b64encode(image_data).decode()
+
+with open(root_path + '/assets/satelite.png', 'rb') as file:
+    image_data = file.read()
+    data_url_2 = 'data:image/png;base64,' + base64.b64encode(image_data).decode()
+
+md_1 = '''
+# Oberflächentemperatur
+Die städtische Hitzeinsel, auch bekannt als "urbane Hitzeinsel" (UHI), bezieht sich auf ein Phänomen, 
+bei dem städtische Gebiete im Vergleich zu den umliegenden ländlichen Regionen eine höhere Temperatur 
+aufweisen. Diese Hitzeproblematik entsteht durch eine Kombination von städtischen Merkmalen und 
+menschlichen Aktivitäten, die zu einer erhöhten Wärmeabsorption und -speicherung führen.
+'''
+
+md_2 = '''
+Das Phänomen der urbanen Hitzeinsel lässt sich in allen Modernen bebauten Städten beobachten, 
+die sich durch ihre dicht bebauten Innenstädte auszeichnen. Die hohe Konzentration von Gebäuden, 
+Straßen und Betonflächen, die Wärme absorbieren und speichern sind hiermit entscheidende Faktoren 
+der Entwicklung von urbanen Hitzeinseln. Gleichzeitig begrenzen die Gebäudestruktur die Luftzirkulation 
+und verhindern den natürlichen Austausch von Wärme und Feuchtigkeit. Die Verwendung von Materialien 
+wie Beton und Asphalt verstärkt diesen Effekt, da sie dazu neigen, Wärme zu absorbieren und abzugeben.
+'''
+
+md_3 = '''
+Um den Effekt der urbanen Hitzeinsel aufzuzeigen, benötigen wir möglichst granulare bzw. Flächendeckende 
+Temperaturdaten. Eine vergleichsweise hohe Granularität ist mit öffentlich Zugänglichen Wetterdaten 
+(Link DWD) nicht zu erreichen. Aus diesen Gründen haben wir uns in diesem Projekt dazu entschieden die 
+Oberflächentemperatur als Proxy der tatsächlichen Temperatur zu verwenden, die mit einer Genauigkeit von
+einer Temperaturmessung pro 70x70m Quadrant Flächendeckende Messungen ermöglicht. 
+'''
+
+md_4 = '''
+Die Landoberflächentemperatur (Land Surface Temperature, kurz: LST) ist die i.d.R. von Sateltiten gemessene 
+Temperatur der Erdoberfläche. Sie spielt eine entscheidende Rolle für das Verständnis und die Überwachung 
+des Klimasystems der Erde, da sie wertvolle Erkenntnisse über den  Zustand der Umwelt und ihre historische 
+Veränderungen liefert. Die uns von uns verwendeten Variablen beziehen wir vom ECOSTRESS (Ecosystem Spaceborne 
+Thermal Radiometer Experiment on Space Station) Projekt der NASA. Unsere Daten werden im Rohformat bezogen und 
+müssen zur adäquaten Verwendung transformiert und geographisch projiziert werden. Die Auswirkungen der 
+Landoberflächentemperatur sind weitreichend und umfassen verschiedene Aspekte sowohl natürlicher als auch 
+menschlicher Systeme.
+'''
+
+md_5 = '''
+Die im folgenden verwendeten Daten beziehen sich auf den Sommer 2022 (1. Juni 2022 bis 31. August 2023). 
+Unterschieden wird weiter zwischen Messungen, die in Hitzeperioden fallen (Link zu DWD einfügen) und Daten, 
+die im Sommer liegen aber nicht in Hitzeperioden fallen (invertierte Hitzewellen). Diese Unterscheidung 
+verdeutlicht den einschneidenden Effekt von Hitzewellen. Zusätzlich wird zwischen Messungen in den 
+Morgenstunden und nachmittags unterschieden. 
+'''
 
 markdown_explanation = '''
 # Oberflächentemperatur
 Die Landoberflächentemperatur (Land Surface Temperature, kurz: LST) ist die i.d.R. von Sateltiten gemessene 
 Temperatur der Erdoberfläche. Sie spielt eine entscheidende Rolle für das Verständnis und die Überwachung des 
-Klimasystems der Erde, da sie wertvolle Erkenntnisse über den  Zustand der Umwelt und ihre Veränderungen im 
+Klimasystems der Erde, da sie wertvolle Erkenntnisse über den  Zustand der Umwelt und ihre Veränderungen im Hit
 Laufe der Zeit liefert. Die uns von uns verwendeten Variablen beziehen wir vom ECOSTRESS (Ecosystem Spaceborne Thermal 
 Radiometer Experiment on Space Station) Projekt der NASA. Die Daten werden im Rohformat bezogen und müssen zur adäquaten 
 Verwendung transformiert und geographisch projiziert werden. Die Auswirkungen der Landoberflächentemperatur sind 
 weitreichend und umfassen verschiedene Aspekte sowohl natürlicher als auch menschlicher Systeme.
+![alt text](data_url "Title")
 '''
 
 markdown_desciption = '''
 Die im folgenden verwendeten Daten beziehen sich auf den Sommer 2022 (1. Juni 2022 bis 31. August 2023). Unterschieden 
-wird weiter zwischen Messungen, die in [Hitzewellen](/DWD) fallen (Link zu DWD einfügen) und Daten, die im Sommer liegen aber 
+wird weiter zwischen Messungen, die in [Hitzewellen](/Hitzewellen) fallen (Link zu DWD einfügen) und Daten, die im Sommer liegen aber 
 nicht in Hitzeperioden fallen (invertierte Hitzewellen). Diese Unterscheidung verdeutlicht den einschneidenden Effekt von 
 Hitzewellen. Zusätzlich wird zwischen Messungen in den Morgenstunden und nachmittags unterschieden. 
 '''
@@ -60,28 +113,69 @@ layout = dbc.Container(
         html.Div(style={'height': '10vh'}),
         dbc.Row(
             [
-                dbc.Col(
-                    [
-                        #html.H1("Land Surface Temperature"),
-                        #html.P("Land Surface Temperature (LST) refers to the temperature of the Earth's surface as measured from space or from the ground. It plays a crucial role in understanding and monitoring the Earth's climate system, as it provides valuable insights into the state of the environment and its changes over time. The effect of Land Surface Temperature is far-reaching and encompasses various aspects of both natural and human systems."),
-                        dcc.Markdown(markdown_explanation, style={"text-align": "justify"}, dangerously_allow_html=True),
-                        dcc.Markdown(markdown_desciption, style={"text-align": "justify"}, dangerously_allow_html=True),
-                        dcc.Dropdown(
-                            id='time-dropdown',
-                            options=[
-                                {'label': 'Morgens', 'value': 'morning'},
-                                {'label': 'Nachmittags', 'value': 'afternoon'}
-                            ],
-                            value='morning',
-                            clearable=False,
-                            style={'width': '200px'}
-                        )
-                    ],
-                    width=12,
-                    #className="mt-4"
-                ),
+                dcc.Markdown(md_1, style={"text-align": "justify"}, dangerously_allow_html=True)
             ],
             #className="mb-4"
+        ),
+        dbc.Row(
+            [
+                dbc.Col(
+                    [
+                        dcc.Markdown(md_2, style={"text-align": "justify"}, dangerously_allow_html=True)
+                    ],
+                    width={'size':6, 'offset':0},
+                    ),
+                dbc.Col(
+                    [
+                        html.Img(src=data_url_1, style={'width': '100%'}),
+                    ],
+                    width={'size':6, 'offset':0},
+                    ),
+
+            ],
+            #className="mb-4"
+        ),
+        dbc.Row(
+            [
+                dcc.Markdown(md_3, style={"text-align": "justify"}, dangerously_allow_html=True)
+            ],
+        ),
+        dbc.Row(
+            [
+                dbc.Col(
+                    [
+                        html.Img(src=data_url_2, style={'width': '100%'}),
+                    ],
+                    width={'size':5, 'offset':0},
+                    ),
+                dbc.Col(
+                    [
+                        dcc.Markdown(md_4, style={"text-align": "justify"}, dangerously_allow_html=True)
+                    ],
+                    width={'size':7, 'offset':0},
+                    ),
+            ],
+            #className="mb-4"
+        ),
+        dbc.Row(
+            [
+                dcc.Markdown(md_5, style={"text-align": "justify"}, dangerously_allow_html=True)
+            ],
+        ),
+        html.Br(),
+        dbc.Row(
+            [
+                dcc.Dropdown(
+                    id='time-dropdown',
+                    options=[
+                        {'label': 'Morgens', 'value': 'morning'},
+                        {'label': 'Nachmittags', 'value': 'afternoon'}
+                        ],
+                        value='morning',
+                        clearable=False,
+                        style={'width': '200px'}
+                        )
+            ],
         ),
         html.Br(),
         dbc.Row(
@@ -104,20 +198,7 @@ layout = dbc.Container(
             #className="mb-4",
         ),
         html.Br(),
-        dbc.Row(
-            [
-                dbc.Col(
-                    [
-                        html.H1("Temperature Hotspots in München"),
-                        html.P("As the scorching summer sun reaches its zenith, urban areas become veritable hotspots of heat. The combination of dense concrete structures, asphalt roads, and limited green spaces creates unique microclimates that significantly impact the temperature within cities. In this article, we delve into the phenomenon of temperature hotspots in urban areas during the summer season, examining their causes and implications."),
-                    ],
-                    width=12
-                ),
-                 dbc.Col(html.Iframe(src='assets/avgAfterNoon_HW.html', width='100%', height='500px')),
-            ],
-            #className="mb-4",
-        ),
-         html.Div(style={'height': '10vh'}),
+        html.Div(style={'height': '10vh'}),
 
     ],
     style={'height': '100vh', 'overflowY': 'scroll'},
@@ -125,6 +206,69 @@ layout = dbc.Container(
     className="m-1"
 )
 
+'''
+layout = dbc.Container(
+    [
+        html.Div(style={'height': '10vh'}),
+        dbc.Row(
+            [
+                dbc.Col(
+                    [
+                        dcc.Markdown(markdown_explanation, style={"text-align": "justify"}, dangerously_allow_html=True),
+                        dcc.Markdown(markdown_desciption, style={"text-align": "justify"}, dangerously_allow_html=True)
+                    ],
+                    width=12,
+                    #className="mt-4"
+                ),
+                dbc.Col(
+                    [
+                        html.Img(src=data_url, style={'width': '15%'}),
+                    ],
+                    width=12,
+                    #className="mt-4"
+                ),
+            ],
+            #className="mb-4"
+        ),
+        html.Br(),
+        dbc.Row(
+            [
+                dbc.Col(
+                    [
+                        dcc.Dropdown(
+                            id='time-dropdown',
+                            options=[
+                                {'label': 'Morgens', 'value': 'morning'},
+                                {'label': 'Nachmittags', 'value': 'afternoon'}
+                            ],
+                            value='morning',
+                            clearable=False,
+                            style={'width': '200px'}
+                        ),
+                        html.H2("Außerhalb von Hitzewellen"),
+                        html.Iframe(id='map1', width='100%', height='500px'),
+                    ],
+                    width=6,
+                ),
+                dbc.Col(
+                    [
+                        html.H2("Innerhalb von Hitzwellen"),
+                        html.Iframe(id='map2', width='100%', height='500px'),
+                    ],
+                    width=6,
+                ),
+            ],
+            #className="mb-4",
+        ),
+        html.Br(),
+        html.Div(style={'height': '10vh'}),
+
+    ],
+    style={'height': '100vh', 'overflowY': 'scroll'},
+    fluid=True,
+    className="m-1"
+)
+'''
 
 @callback(
     [Output('map1', 'src'), Output('map2', 'src')],
