@@ -33,16 +33,42 @@ options_gif = dict(
     rendererSettings=dict(preserveAspectRatio="xMidYMid slice"),
 )
 
-#To integrate a YouTube video into a Python Dash app, you can use the html.Iframe component to embed the video player. Here's an example of how you can achieve this
-
 # YouTube video URL
 video_url = "https://www.youtube.com/watch?v=0Fksc1kzWz8"
+
+
+introduction = '''
+## Was ist der HeatMapper?
+
+Der HeatMapper ist ein Tool, das den Zusammenhang zwischen Temperatur und Oberflächeneigenschaften analysiert. 
+Hier können Nutzer wahlweise ein 250mx250m Raster auf einer Karte markieren oder eine konkrete Adresse im dafür vorgesehenen Suchfeld eingeben. 
+Es kann dabei zwischen einer Satelliten- und einer klassischen Kartenansicht gewählt werden. Die Oberflächentemperatur für das gesamte Stadtgebiet von München wird bereits beim Start angezeigt.
+Ist eine Adresse oder ein Raster markiert, wird das zugeordnete Raster erfasst und die gemittelte Temperatur für das ausgewählte Gebiet berechnet.
+Neben dem Satellitenbild des ausgewählten Rasters liefert der HeatMapper auch eine Darstellung der klassifizierten Oberflächenelemente, deren Verteilung im Detail in einem zusätzlichen Diagramm dargestellt wird.
+Mittels verschiedener Regler wird dem Nutzer ermöglicht, die Verteilung der einzelnen Elemente zu modifizieren, wobei Temperaturänderungen, von unserem Modell berechnet, sofort sichtbar werden.
+
+'''
+
+
+hitzewellen = '''
+## Hitzewellen und -inseln?
+
+
+
+
+
+Der HeatMapper ist ein Tool, das den Zusammenhang zwischen Temperatur und Oberflächeneigenschaften analysiert. Hier können Nutzer wahlweise ein 250mx250m Raster auf einer Karte markieren oder eine konkrete Adresse im Suchfeld auswählen. 
+Ist eine Adresse ausgewählt, wird das zugeordnete Raster erfasst und die gemittelte Temperatur für das ausgewählte Gebiet berechnet. Zusätzlich stellt der HeatMapper ein Satellitenbild des gewählten Rasters und ein Bild der 
+einzelnen klasssifizierten Elemente dar, deren Verteilung in einem weiteren Diagramm präzise dargestellt wird. 
+Mittels verschiedener Regler wird dem Nutzer ermöglicht, die Verteilung der Oberflächenelemente zu modifizieren, wobei Temperaturänderungen, von unserem Modell berechnet, sofort sichtbar werden.
+
+'''
 
 markdown_background = '''
 ## Projekthintergrund & Zielgruppe
 
-Klimawandel und zunehmende Urbanisierung sorgen für ein extremes Aufheizen innerstädtischer Gebiete im Vergleich zu ländlicheren und 'grüneren' Flächen.
-Insbesondere im Sommer stellt dies nicht nur eine Einschränkung des täglichen Lebens sondern auch eine elementare Bedrohung der eigenen Gesundheit dar (Anderson und Bell, 2009; Basu und Samet, 2002; Basu, 2009).  
+Der Klimawandel und eine zunehmende Urbanisierung sorgen für ein extremes Aufheizen innerstädtischer Gebiete im Vergleich zu ländlicheren Gebieten sowie solchen mit einem hohen Grünflächenateil.
+Insbesondere im Sommer sorgt dies nicht nur für Einschränkungen im täglichen Leben sondern stellt auch eine elementare Bedrohung der eigenen Gesundheit dar (Anderson und Bell, 2009; Basu und Samet, 2002; Basu, 2009).  
 Dieses Projekt soll zum öffentlichen und wissenschaftlichen Diskurs beitragen, indem es einen direkten Zusammenhang zwischen Temperatur und Oberflächenbeschaffenheiten (hauptsächlich abgeleitet aus Landbedeckungs- und Landnutzungsmerkmale) modelliert und visualisiert.
 Dabei wird der Fokus auf die Stadt München gelegt, da diese bereits über eine Vielzahl an Daten verfügt, die für die Modellierung verwendet werden können.
 Insbesondere wollen wir mit einfachen Anpassungsfeatures (z.B. Erhöhung der Vegetation) die Auswirkungen auf die Temperatur für ein ausgewähltes Gebiet darstellen.
@@ -52,7 +78,7 @@ Die App soll besonders Münchner*innen helfen ein Verständnis für die zugrunde
 markdown_approach = '''
 ## Herangehensweise
 
-Wir haben für dieses Projekt Daten zur Landoberflächentemperatur (land surface temperature) von Ecostress und amtliche Liegenschaftsdaten sowie Orthofotos des Bayerischen Landesamtes für Digitalisierung, Breitband und Vermessung verwendet.
+Wir haben für dieses Projekt Daten zur Oberflächentemperatur (land surface temperature) von Ecostress und amtliche Liegenschaftsdaten sowie Orthofotos des Bayerischen Landesamtes für Digitalisierung, Breitband und Vermessung verwendet.
 Die erstgenannte Datenquelle stellt die abhängige Variable in unserer Analyse dar.
 Die beiden letztgenannten Datenquellen wurden zur Extraktion von Merkmalen der Landbedeckung/Landnutzung (LCLU) verwendet, um unsere Einflussfaktoren zu extrahieren, die einen Effekt auf die Temperatur haben sollten.
 Wir nutzen neuronale Netze, um auch Muster zu erkennen, die in offiziellen Daten nicht enthalten sind (z.B. einen Baum).
@@ -63,21 +89,124 @@ markdown_referenzen = '''
 Anderson, B. G. and Bell, M. L. (2009). Weather-related mortality: How heat, cold, and heat waves affect mortality in the United States. *Epidemiology*, 20(2):205.  
 Basu, R. (2009). High ambient temperature and mortality: A review of epidemiologic studies from 2001 to 2008. *Environmental health*, 8:1–13.  
 Basu, R. and Samet, J. M. (2002). Relation between elevated ambient temperature and mortality: A review of the epidemiologic evidence. *Epidemiologic reviews*, 24(2):190–202.
+
+Alle Bilder lizenzfrei von https://pixabay.com.
 '''
 
 
+card_1 =  dbc.Card(
+    [
+        dbc.CardImg(
+            src="/assets/frauenkirche.png",
+            top=True,
+            style={"opacity": 0.4},
+        ),
+        dbc.CardImgOverlay(
+            dbc.CardBody(
+                [
+                    html.H4("Du kannst es nicht abwarten?", className="card-title"),
+                    html.P(
+                        "Dann klicke hier und du gelangst direkt zum HeatMapper.",
+                        className="card-text",
+                        style={"text-align": "left"}, # Make sure text is left-aligned
+                    ),
+            dbc.Button("Teste den HeatMapper", 
+                        className="me-1 custom-btn", 
+                        href="/HeatMapper", active=True)
+                ],
+                style={
+                    'position': 'absolute', 
+                    'left': '0',
+                    'bottom': '0',
+                    'color': 'black',
+                    'font-weight': 'bold',
+                }, 
+            )
+        ),
+    ],
+    style={"width": "100%", "height": "100%"}, # Apply a fixed height and left-align all contents
+)
+
+
+card_2 = dbc.Card(
+    [
+        dbc.CardImg(
+            src="/assets/olympiapark.png",
+            top=True,
+            style={"opacity": 0.6},
+        ),
+        dbc.CardImgOverlay(
+            dbc.CardBody(
+                [
+                    html.H4("Hitzewellen und -inseln", className="card-title"),
+                    html.P(
+                        "Werfe einen Blick auf die Daten zu den Hitzewellen oder -inseln in München.",
+                        className="card-text",
+                        style={"text-align": "right"},
+                    ),
+                    dbc.Button("Hitzewellen", href="/Hitzewellen", className="me-2 custom-btn", active=True),
+                    dbc.Button("Hitzeinseln", href="/Hitzeinseln", className="me-1 custom-btn", active=True),
+                ],
+                style={
+                    'text-align': 'right', # Make sure text is left-aligned
+                    'position': 'absolute', 
+                    'right': '0',
+                    'bottom': '0',
+                    'color': 'white',
+                },
+            ),
+        ),
+    ],
+    style={"width": "100%", "height": "100%"},
+)
+
+
+# Updated layout
 layout = dbc.Container(
     [
         html.Div(style={'height': dis + 'vh'}),
+        html.H1("Willkommen beim HeatMapper!", className="display-5 mx-5"),
         dbc.Row(
             [
                 dbc.Col(
                     [
-                        html.Div(
-                            de.Lottie(options=options_gif, width="10%", height="10%", url=city_gif)
-                        ),
-                        html.Div([
-                        html.H1("My Dash App with YouTube Video"),
+                        card_1
+                    ],
+                    className="mt-4",
+                ),
+                dbc.Col(
+                    [
+                        html.Br(),
+                        dcc.Markdown(introduction, style={"text-align": "justify"}),
+                        #html.Div(de.Lottie(options=options_gif, width="10%", height="10%", url=city_gif)),
+                    ],
+                    className="mt-4",
+                ),
+            ],
+            className="mx-5",
+        ),
+        dbc.Row(
+            [
+                dbc.Col(
+                    [
+                        html.Br(),
+                        dcc.Markdown(hitzewellen, style={"text-align": "justify"}),
+                    ],
+                    className="mt-4",
+                ),
+                dbc.Col(
+                    [
+                        card_2
+                    ],
+                    className="mt-4 mb-4",
+                ),
+            ],
+            className="mx-5",
+        ),
+        dbc.Row(
+            [
+                dbc.Col([html.Div([
+                        html.H1("Schritt-für-Schritt-Anleitung", className="display-9"),
                          player.DashPlayer(
                         id='youtube-player',
                         url=video_url,
@@ -85,19 +214,22 @@ layout = dbc.Container(
                         width='100%',
                         height='600px'
                         )
-                        ]),
-                        html.Br(),
-                        dcc.Markdown(markdown_background, style={"text-align": "justify"}),
-                        dcc.Markdown(markdown_approach, style={"text-align": "justify"}),
-                        dcc.Markdown(markdown_referenzen, style={"text-align": "justify"})
-                    ],
-                    className="mt-4",                
-                    )
-            ],
-        ),
+                        ])], className = "mt-4 mb-4 mx-5")
+            ]),
+            dbc.Row(
+            [   dcc.Markdown(markdown_background, style={"text-align": "justify"}),
+                dcc.Markdown(markdown_approach, style={"text-align": "justify"}),
+            ], className="mx-5"),
+        dbc.Row(dcc.Markdown(markdown_referenzen, style={"text-align": "justify"}), className="mx-5"),
         html.Div(style={'height': dis + 'vh'}),
+
     ],
     style={'height': '100vh', 'overflowY': 'scroll'},
     fluid=True,
     className="m-1"
 )
+
+# Your existing code...
+
+if __name__ == "__main__":
+    app.run_server(debug=True)

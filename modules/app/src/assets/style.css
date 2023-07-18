@@ -142,3 +142,12 @@ html {
 .DayPickerKeyboardShortcuts_buttonReset {
     display: none;
 }
+
+.custom-btn {
+    background-color: #008080 !important;
+    border-radius: 10px !important;
+}
+.custom-btn:hover {
+    background-color: #005757 !important;  /*darkened shade of teal color when hovered*/
+}
+
