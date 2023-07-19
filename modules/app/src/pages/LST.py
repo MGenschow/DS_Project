@@ -115,7 +115,7 @@ layout = dbc.Container(
             [
                 dcc.Markdown(md_1, style={"text-align": "justify"}, dangerously_allow_html=True)
             ],
-            #className="mb-4"
+            className="mx-5"
         ),
         dbc.Row(
             [
@@ -123,22 +123,24 @@ layout = dbc.Container(
                     [
                         dcc.Markdown(md_2, style={"text-align": "justify"}, dangerously_allow_html=True)
                     ],
-                    width={'size':6, 'offset':0},
-                    ),
+                    width={'size': 6, 'offset': 0},
+                ),
                 dbc.Col(
                     [
                         html.Img(src=data_url_1, style={'width': '100%'}),
                     ],
-                    width={'size':6, 'offset':0},
-                    ),
+                    width={'size': 6, 'offset': 0},
+                ),
 
             ],
-            #className="mb-4"
+            className="mx-5",
+            align="center"
         ),
         dbc.Row(
             [
                 dcc.Markdown(md_3, style={"text-align": "justify"}, dangerously_allow_html=True)
             ],
+            className= "mx-5"
         ),
         dbc.Row(
             [
@@ -155,14 +157,15 @@ layout = dbc.Container(
                     width={'size':7, 'offset':0},
                     ),
             ],
-            #className="mb-4"
+            className="mx-5", 
+            align="center"
         ),
         dbc.Row(
             [
                 dcc.Markdown(md_5, style={"text-align": "justify"}, dangerously_allow_html=True)
             ],
+            className= "mx-5 mb-4"
         ),
-        html.Br(),
         dbc.Row(
             [
                 dcc.Dropdown(
@@ -176,26 +179,27 @@ layout = dbc.Container(
                         style={'width': '200px'}
                         )
             ],
+            className= "mx-5"
         ),
         html.Br(),
         dbc.Row(
             [
                 dbc.Col(
                     [
-                        html.H2("Außerhalb von Hitzewellen"),
+                        html.H3("Außerhalb von Hitzewellen"),
                         html.Iframe(id='map1', width='100%', height='500px'),
                     ],
                     width=6,
                 ),
                 dbc.Col(
                     [
-                        html.H2("Innerhalb von Hitzwellen"),
+                        html.H3("Innerhalb von Hitzwellen"),
                         html.Iframe(id='map2', width='100%', height='500px'),
                     ],
                     width=6,
                 ),
             ],
-            #className="mb-4",
+            className="mx-5",
         ),
         html.Br(),
         html.Div(style={'height': '10vh'}),
@@ -205,6 +209,9 @@ layout = dbc.Container(
     fluid=True,
     className="m-1"
 )
+
+
+
 
 '''
 layout = dbc.Container(

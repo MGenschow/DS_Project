@@ -38,8 +38,6 @@ video_url = "https://www.youtube.com/watch?v=0Fksc1kzWz8"
 
 
 introduction = '''
-## Was ist der HeatMapper?
-
 Der HeatMapper ist ein Tool, das den Zusammenhang zwischen Temperatur und Oberflächeneigenschaften analysiert. 
 Hier können Nutzer wahlweise ein 250mx250m Raster auf einer Karte markieren oder eine konkrete Adresse im dafür vorgesehenen Suchfeld eingeben. 
 Es kann dabei zwischen einer Satelliten- und einer klassischen Kartenansicht gewählt werden. Die Oberflächentemperatur für das gesamte Stadtgebiet von München wird bereits beim Start angezeigt.
@@ -47,13 +45,10 @@ Ist eine Adresse oder ein Raster markiert, wird das zugeordnete Raster erfasst u
 
 Neben dem Satellitenbild des ausgewählten Rasters liefert der HeatMapper auch eine Darstellung der klassifizierten Oberflächenelemente, deren Verteilung im Detail in einem zusätzlichen Diagramm dargestellt wird.
 Mittels verschiedener Regler wird dem Nutzer ermöglicht, die Verteilung der einzelnen Elemente zu modifizieren, wobei Temperaturänderungen, von unserem Modell berechnet, sofort sichtbar werden.
-
 '''
 
 
 hitzewellen = '''
-## Hitzewellen und -inseln
-
 Hitzeinseln und Hitzewellen sind zwei Phänomene, die mit steigenden Temperaturen in Zusammenhang stehen.
 
 Eine Hitzewelle bezieht sich auf eine anhaltende Periode extrem hoher Temperaturen, die im Sommer auftreten kann.
@@ -128,7 +123,10 @@ card_1 =  dbc.Card(
             )
         ),
     ],
-    style={"width": "100%", "height": "100%"}, # Apply a fixed height and left-align all contents
+    # choose perfect width for 13 inches screen
+    style={
+                "width": "100%",  # Set the width of the card to 100%
+            }
 )
 
 
@@ -152,7 +150,7 @@ card_2 = dbc.Card(
                     dbc.Button("Hitzeinseln", href="/Hitzeinseln", className="me-1 custom-btn", active=True),
                 ],
                 style={
-                    'text-align': 'right', # Make sure text is left-aligned
+                    'text-align': 'right', # Make sure text is right-aligned
                     'position': 'absolute', 
                     'right': '0',
                     'bottom': '0',
@@ -161,22 +159,24 @@ card_2 = dbc.Card(
             ),
         ),
     ],
-    style={"width": "100%", "height": "100%"},
+    style={"width":"100%"},
 )
 
 
 # Updated layout
+# Updated layout
 layout = dbc.Container(
     [
         html.Div(style={'height': dis + 'vh'}),
-        html.H1("Willkommen beim HeatMapper!", className="display-5 mx-5"),
+        html.H1("Willkommen bei HeatMapper!", className="display-5 mx-5"),
         dbc.Row(
             [
                 dbc.Col(
-                    [
+                    [   html.H2("Was ist der Heatmapper?", className = "mb-4"),
                         card_1
                     ],
                     className="mt-4",
+                    width=6,  # Set the width of the column to take 6 out of 12 columns (50% width)
                 ),
                 dbc.Col(
                     [
@@ -185,32 +185,37 @@ layout = dbc.Container(
                         #html.Div(de.Lottie(options=options_gif, width="10%", height="10%", url=city_gif)),
                     ],
                     className="mt-4",
+                    width=6,  # Set the width of the column to take 6 out of 12 columns (50% width)
                 ),
+
             ],
             className="mx-5",
+            align="center",  # Center the columns horizontally within the row
         ),
         dbc.Row(
             [
                 dbc.Col(
-                    [
-                        html.Br(),
+                    [   html.H2("Hitzewellen und -inseln", className = "mt-4 mb-4"),
                         dcc.Markdown(hitzewellen, style={"text-align": "justify"}),
                     ],
                     className="mt-4",
+                    width=6,  # Set the width of the column to take 6 out of 12 columns (50% width)
                 ),
                 dbc.Col(
                     [
                         card_2
                     ],
                     className="mt-4 mb-4",
+                    width=6,  # Set the width of the column to take 6 out of 12 columns (50% width)
                 ),
             ],
             className="mx-5",
+            align="center",  # Center the columns horizontally within the row
         ),
         dbc.Row(
             [
                 dbc.Col([html.Div([
-                        html.H1("Schritt-für-Schritt-Anleitung", className="display-9"),
+                        html.H1("Schritt-für-Schritt-Anleitung", className="display-9 mb-4"),
                          player.DashPlayer(
                         id='youtube-player',
                         url=video_url,
