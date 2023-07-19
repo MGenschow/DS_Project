@@ -158,6 +158,7 @@ from the realm of computer vision. These deep neural networks necessitate extens
 we opted for a method known as transfer learning. This technique involves utilizing a model designed for one task and repurposing it for another task. By employing 
 this method, we can train a larger model with the available data and then fine-tune it to cater to a specific task for which minimal data is available. In our context, 
 we developed a training pipeline that incorporates a two-stage transfer learning approach.
+
 After evaluating various model architectures, we decided on a DeepLabV3 segmentation model with a ResNet101 backbone. The ResNet101 backbone is initialized with 
 weights that have been trained on COCO.
 In the first stage, we fine-tuned our model utilizing the Land-cOVEr Domain Adaptive semantic segmentation (LoveDA) dataset, comprising 5987 high spatial resolution 
@@ -174,12 +175,13 @@ between 10-40 percentage points depending on the category and an increase in ave
 
 layout = dbc.Container(
     [
-        html.Div(style={'height': '5vh'}),
+        html.Div(style={'height': '10vh'}),
         dbc.Row(
             [
                 dcc.Markdown(md_disclaimer, dangerously_allow_html=True),
                 dcc.Markdown(md_introduction, style={"text-align": "justify"})
-            ]
+            ], 
+            className="mx-5"
         ),
         dbc.Row(
             [
@@ -195,7 +197,8 @@ layout = dbc.Container(
                         ])
                      ], id='toc'
                 ),  
-            ]
+            ], 
+            className="mx-5 mb-4"
         ),
         dbc.Row(
             [
@@ -203,13 +206,15 @@ layout = dbc.Container(
                 html.H3('Heatwave detection', id='subsection-1-1'),
                 dcc.Markdown(md_hw, style={"text-align": "justify"}),
                 dcc.Markdown(md_hw_cit, style={"text-align": "justify"}, dangerously_allow_html=True), 
-            ]
+            ], 
+            className="mx-5 mb-4"
         ),
         dbc.Row(
             [
                 html.H2('Extracting land cover and land use data from orthophotos', id='section-2'),
                 dcc.Markdown(md_segmentation_into, style={"text-align": "justify"})
-            ]
+            ], 
+            className="mx-5 mb-4"
         ),
         dbc.Row(
             [
@@ -244,7 +249,8 @@ layout = dbc.Container(
                     width = {'size':4, 'offset': 0, 'md':'auto'},
                     style = {'display': 'flex', 'align-items': 'center'}  # Center items vertically
                 ),
-            ]
+            ], 
+            className="mx-5 mb-4"
         ),
 
 
@@ -252,7 +258,8 @@ layout = dbc.Container(
         dbc.Row(
             [
                 dcc.Markdown(md_segmentation_model, style={"text-align": "justify"})
-            ]
+            ], 
+            className="mx-5 mb-4"
         ),
         dbc.Row(
             [
@@ -267,7 +274,8 @@ layout = dbc.Container(
                 dcc.Markdown(md_slx_2, style={"text-align": "justify"}),
                 html.H2('References', id='section-ref'),
                 dcc.Markdown(md_ref)
-            ]
+            ], 
+            className="mx-5 mb-4"
         ),
         html.Div(style={'height': '15vh'})
     ],

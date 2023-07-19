@@ -164,7 +164,7 @@ for index, row in meta.iterrows():
 
 layout = dbc.Container(
     [
-        html.Div(style={'height': dis2 + 'vh'}),
+        html.Div(style={'height': '5vh'}),
         dbc.Row(
             [
                 dbc.Col(
@@ -176,7 +176,7 @@ layout = dbc.Container(
                     className="mt-4",
                     )
             ],
-            #className="mb-4"
+            className="mx-5"
         ),
         dbc.Row(
             [
@@ -196,9 +196,9 @@ layout = dbc.Container(
                     width = 6
                 )
             ],
-            className="mb-4"
+            className="mb-4 mx-5"
         ),
-        html.Hr(),
+        html.Hr(className= "mx-5"),
         dbc.Row(
             [   
                 dbc.Col(
@@ -234,7 +234,7 @@ layout = dbc.Container(
                     width = 2
                 ),
             ],
-            className="mb-4"
+            className="mb-4 mx-5"
         ),
         dbc.Row(
             [
@@ -307,9 +307,8 @@ layout = dbc.Container(
                     width = 6
                 ),
             ],
-            className="mb-4"
+            className="mb-4 mx-5"
         ),
-        html.Br(),
         dbc.Row(
             [
                 dbc.Col(
@@ -320,9 +319,9 @@ layout = dbc.Container(
                     className="mt-4",                
                     )
             ],
-            #className="mb-4"
+            className="mx-5"
         ),
-        html.Div(style={'height': dis2 + 'vh'}),
+        html.Div(style={'height': '10vh'}),
     ],
     style={'height': '100vh', 'overflowY': 'scroll'},
     fluid=True,
