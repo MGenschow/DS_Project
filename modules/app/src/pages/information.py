@@ -163,8 +163,7 @@ card_2 = dbc.Card(
 )
 
 
-# Updated layout
-# Updated layout
+# Define new layout 
 layout = dbc.Container(
     [
         html.Div(style={'height': dis + 'vh'}),
@@ -181,7 +180,7 @@ layout = dbc.Container(
                 dbc.Col(
                     [
                         html.Br(),
-                        dcc.Markdown(introduction, style={"text-align": "justify"}),
+                        dcc.Markdown(introduction, className="text-sm text-md text-lg text-xl", style={"text-align": "justify"}),
                         #html.Div(de.Lottie(options=options_gif, width="10%", height="10%", url=city_gif)),
                     ],
                     className="mt-4",
@@ -196,7 +195,7 @@ layout = dbc.Container(
             [
                 dbc.Col(
                     [   html.H2("Hitzewellen und -inseln", className = "mt-4 mb-4"),
-                        dcc.Markdown(hitzewellen, style={"text-align": "justify"}),
+                        dcc.Markdown(hitzewellen, className="text-sm text-md text-lg text-xl", style={"text-align": "justify"}),
                     ],
                     className="mt-4",
                     width=6,  # Set the width of the column to take 6 out of 12 columns (50% width)
@@ -226,8 +225,8 @@ layout = dbc.Container(
                         ])], className = "mt-4 mb-4 mx-5")
             ]),
             dbc.Row(
-            [   dcc.Markdown(markdown_background, style={"text-align": "justify"}),
-                dcc.Markdown(markdown_approach, style={"text-align": "justify"}),
+            [   dcc.Markdown(markdown_background, className="text-sm text-md text-lg text-xl", style={"text-align": "justify"}),
+                dcc.Markdown(markdown_approach, className="text-sm text-md text-lg text-xl", style={"text-align": "justify"}),
             ], className="mx-5"),
         dbc.Row(dcc.Markdown(markdown_referenzen, style={"text-align": "justify"}), className="mx-5"),
         html.Div(style={'height': dis + 'vh'}),

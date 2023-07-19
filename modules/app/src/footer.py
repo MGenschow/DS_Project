@@ -207,7 +207,7 @@ footer = html.Div(
                                             style={"fontSize": 10, 'text_align':"center"},
                                         )
                                     ],
-                                    width={"size": "auto", 'offset':'0'}
+                                    width=3
                                 ),
                     ],
                     className="d-flex justify-content-center",
@@ -217,7 +217,7 @@ footer = html.Div(
             ],
             className="fixed-bottom", style={"background-color": "#1a1a1a",  
                                              "color": "#ffffff", 
-                                             'padding':'0.5rem',
+                                             'padding':'0.5rem 1rem',
                                              "width":"100vw",
                                              "height": "5vh"},
                                              
