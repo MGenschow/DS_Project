@@ -26,6 +26,7 @@ urlcolor=[RGB]{74, 133, 150}
 \usepackage{float} % for table adjustment
 \usepackage{tabularx}
 \usepackage[acronym]{glossaries} % for abbreviation glossary
+\usepackage{caption} % to integrate caption in tabular
 
 % adjust settings
 \bibliographystyle{apalike}
@@ -83,7 +84,9 @@ bmargin=2.5cm
 
 \section{Introduction}
 
-Urban heat islands have become an increasingly important topic given the advent of climate change and increasing urbanisation. High temperatures are not only inevitably associated with negative consequences for human health \citep{anderson2009,basu2002,basu2009} but also considerably restrict people in their daily lifes, whether at work or in their leisure time. This project within the context of the module \emph{DS500 Data Science Project} at the University of Tübingen aims at identifying urban heat islands in the city of Munich and modeling the relationship between urban heat intensity (\acrshort{uhi}) and potential causative factors - mainly derived from land cover and land use characteristics.
+Urban heat islands have become an increasingly important topic given the advent of climate change and increasing urbanisation. High temperatures are not only inevitably associated with negative consequences for human health \citep{anderson2009,basu2002,basu2009} but also considerably restrict people in their daily lifes, whether at work or in their leisure time. This project within the context of the module \emph{DS500 Data Science Project} at the University of Tübingen aims at identifying urban heat islands in the city of Munich and modeling the relationship between urban heat intensity (\acrshort{uhi}) and its causative drivers that we derived from land cover and land use characteristics using data for the city of Munich.
+
+Our contribution lies in detecting granular patterns of land usage land cover (LULC) characteristics and employing a spatial cross-regressive (SLX) model accounting for geospatial dependencies in the data.
 
 
 \section{Urban heat islands}
@@ -128,35 +131,116 @@ There has been several approaches to add some substance to the mere identificati
 \subsection{Urban heat intensity}
 
 The main variable of interest considering our research question is urban heat intensity. Similarly to the vast majority of the literature, we concentrate on surface/skin UHI \citep{deilami2018}. Typically, UHI is defined as the difference of land surface temperature (\acrshort{lst}) between urban/built-up areas and non-urban/rural areas. However, we follow many other research papers by not focusing on the UHI specifically but by exploring the relationship between LST and selected spatial-temporal factors \citep{deilami2018}.\\
-Another potential and somewhat new approach would be to consider the difference between day- and nighttime temperatures as - according to the urban heat island effect - we would expect to see a smaller difference for urban heat islands than elsewhere (as urban heat islands do not cool down at night). Nevertheless, in the end we opted for the former approach as there was too little heterogeneity in the day-nighttime-differential.
+Another potential and somewhat new approach would be to consider the difference between day- and nighttime temperatures as - according to the urban heat island effect - we would expect to see a smaller difference for urban heat islands than elsewhere (as urban heat islands do not cool down at night). Nevertheless, in the end we opted for the former approach as there was too little heterogeneity in the day-nighttime-differential.\\
+For our final estimate of the dependent variable, we use an average across day-time temperatures recorded during heatwaves in 2022.
 
 \subsection{Feature engineering}
 
-One of the key aspects of this data science project is to complement the identification of heat islands with the identification of potential causative factors that drive them. Hence, the extraction of features from official property data and orthophotos provided by the Bavarian State Office for Digitisation, Broadband and Surveying \citep{bayern2018}. The official ready-to-use (i.e. already classified) data is complemented by a deep neural network that was fine-tuned using supervised classification to predict granular land cover and land usage characteristics (\acrshort{lclu}) for the unlabeled Munich data set. The deep learning model was trained using the LoveDA dataset \citep{loveda2021}. The extracted features here are first of all continuous and refer to the proportion of the area occupied by the LCLU pattern. Hence, the values for these features lie in the range between 0 and 1. Classified patterns are roads, trees, water, buildings, low vegetation and impervious surface.\\
+One of the key aspects of this data science project is to complement the identification of heat islands with the identification of potential causative factors that drive them. Hence, the extraction of features from official property data and orthophotos provided by the Bavarian State Office for Digitisation, Broadband and Surveying \citep{bayern2018}. The official ready-to-use (i.e. already classified) data is complemented by a deep neural network that was fine-tuned using supervised classification to predict granular land cover and land usage characteristics (\acrshort{lclu}) for the unlabeled Munich data set. The deep learning model was trained using the LoveDA dataset \citep{loveda2021} and fine-tuned on self-labeled orthophotos. The extracted features here are first of all continuous and refer to the proportion of the area occupied by the LCLU pattern. Hence, the values for these features lie in the range between 0 and 1. Classified patterns are roads, trees, water, buildings, low vegetation and impervious surface.\\
 As a proxy for winds, we have included the average height of buildings as an additional control variable in our model. The data comes from a 3D model provided by the Bavarian State Office for Digitisation, Broadband and Surveying \citep{bayern2018} as well. Accordingly, this variable is not limited upwards by 1.
 
+\newpage
 \subsection{Causal model}
 
-\citet{deilami2018} point out that that in the empirical literature on the relationship of UHI and potential causative factors, OLS is the predominant methodological approach together with the Pearson correlation coefficient. However, we emphasise that both methods are not capable of accounting for all the interactions and nonlinearities that are present in our ecosystem. Furthermore, we are also not interested in a simple treatment effect estimate but rather care about modeling "What If" scenarios (e.g. what would this inner city area would look like if there were more trees).\\
-Still, the dependent/target variable $Y$ in our context is UHI measured by LST. Our feature set $X$ consists of various LCLU characteristics that were thoroughly described in the section above. Unfortunately, our model only incorporates spatial heterogeneity and cannot account for temporal variation, too, as, for instance, done by \citet{seebacher2019}. This is because the orthophotos were only available for a certain point of time, namely tbd. Since a large part of our feature set is based on this data source, we have no temporal heterogeneity here. However, even over a period of several years, we would not expect any major changes here, as a cityscape changes only very slowly and the temporal variation would be minimal anyway.
+Both $Y$ and $X$ are observed for a predefined bounding box around Munich. Thus, we are talking about a very large observation that is limited in granularity by the coarsest pixel resolution. In our case, this refers to the LST data \citep{ecostress2019} where one pixel measures 70m by 70m. Given this constraint, we now divide our one large observation into several small observations by dividing our bounding box around Munich into a grid of several small 250m by 250m sections. This is a procedure that has also been applied in the literature that deals with metereological geospatial data (for instance \citep{kikon2016}). For each grid element, we can now disaggregate our $Y$ and $X$ estimates.\\
+Unfortunately, our model only incorporates spatial heterogeneity and cannot account for temporal variation, too, as, for instance, done by \citet{seebacher2019}. This is because the orthophotos were only available for a certain point of time, namely tbd. However, even over a period of several years, we would not expect any major changes here, as a cityscape changes only very slowly and the temporal variation would be minimal anyway.
 
-Both $Y$ and $X$ are observed for a predefined bounding box around Munich. Thus, we are talking about a very large observation that is limited in granularity by the coarsest pixel resolution. In our case, this refers to the LST data \citep{ecostress2019} where one pixel measures 70m by 70m. Given this constraint, we now divide our one large observation into several small observations by dividing our bounding box around Munich into a grid of several small 100m by 100m sections. For each grid element, we can now disaggregate our $Y$ and $X$ estimates.\\
-Let us now denote a single 100m by 100m grid element by subscript $i$. Our goal is now to best approximate our conditional expectation function $E[ Y \mid X ]$. Put differently, the LST for grid element $i$ can be represented as a function of features $X_i$ and some unobserved error term:
+Let us now denote a single 100m by 100m grid element by subscript $i$. Our goal is now to model the relationship where the LST $Y_i$ for grid element $i$ can be represented as a function of features $X_i$ and some unobserved error term:
 \begin{equation}
-Y_i = f(X_i) + u_i
+Y_i = f(X_i) + \epsilon_i
 \end{equation}
-We can think of $f(\cdot)$ being any (non)-linear prediction function from our Machine Learning toolbox. However, to be able to establish causal interpretations, we employ a linear regression model that incorporates poylnomials and interactions of order 3 for all features to account for non-linearities and interactions.
+
+\citet{deilami2018, ward2016} point out that that in the empirical literature on the relationship of UHI and potential causative factors, OLS is the predominant methodological approach together with the Pearson correlation coefficient. While a Pearson correlation is a bivariate measure, plain OLS typically neglects the spatial dependence of observations. Furthermore, OLS requires that we account for interactions of features specifically.\\
+Many scientific papers with the goal of describing the urban heat island effect rely on Machine Learning approaches \citep{khalil2021,kikon2016,seebacher2019}. However, while the ML toolbox provides high predictive power, the simple comparison of two predictions does not allow us to allege causality. Yet, we are interested in modeling (causal) "What If" scenarios.
+
+Given the geospatial nature of our data, a simple OLS model may not provide the best solution due to its inability to account for spatial dependence. This is where spatial econometric models come into play. They are designed to incorporate spatial dependence, allowing us to leverage the spatial structure of our data. Among the pantheon of spatial econometric models, we have opted for the Spatial Lag of X (SLX) model. The SLX model is a type of spatial cross-regressive model that captures spatial effects on the independent variables by additionally introducing so-called lagged independent variables.
+Formally, the SLX model can be represented as:
+\begin{equation}
+Y = X\beta + WX\gamma + \epsilon
+\end{equation}
+where $W$ is the spatial weight matrix and $WX$ represents the spatially lagged independent variables.\\
+In our application, the spatially lagged independent variables $WX$ refers to the sum of independent variables in the neighbourhood of some observation $i$. More specifically, it amounts to the sum of every feature in the 8 nearest grid elements of some grid $i$. The inclusion of the term $WX\gamma$ allows us to account for spatial spillover effects, i.e. how the land use characteristics of neighboring areas influence the temperature of the area in question. For example, a large water body in a neighboring region might influence the temperature of our area of interest.\\
+The model parameters can then be estimated using OLS. To account for important interactions between the features (building, low vegetation, water, trees and roads), we interacted them in $X$. Additionally, we apply a log transformation to all of our independent variables to allow for decreasing marginal returns. Lastly, we include average height within a grid as a proxy for the urban canyon effect. Interestingly, the coefficient for this variable is both economically and statistically insignificant.\\
+The following table represents the full regression results.
+
+\begin{center}
+\captionof{table}{SLX model results}
+\begin{tabular}{lclc}
+\toprule
+\textbf{Dep. Variable:}          &       LST        & \textbf{  R-squared:         } &     0.806   \\
+\textbf{Model:}                  &       OLS        & \textbf{  Adj. R-squared:    } &     0.806   \\
+\textbf{Method:}                 &  Least Squares   & \textbf{  F-statistic:       } &     2082.   \\
+\textbf{No. Observations:}       &        8528      & \textbf{  Prob (F-statistic):} &     0.00    \\
+\textbf{Df Residuals:}           &        8506      & \textbf{  Log-Likelihood:    } &   -15016.   \\
+\textbf{Df Model:}               &          21      & \textbf{  AIC:               } & 3.008e+04   \\
+\textbf{                     }   &                  & \textbf{  BIC:               } & 3.023e+04   \\
+\bottomrule
+\end{tabular}
+\begin{tabular}{lcccccc}
+                                 & \textbf{coef} & \textbf{std err} & \textbf{z} & \textbf{P$> |$z$|$} & \textbf{[0.025} & \textbf{0.975]}  \\
+\midrule
+\textbf{const}                   &      38.9772  &        0.484     &    80.451  &         0.000        &       38.028    &       39.927     \\
+\textbf{building}                &       1.0562  &        0.143     &     7.380  &         0.000        &        0.776    &        1.337     \\
+\textbf{low\_vegetation}         &      -0.5311  &        0.100     &    -5.298  &         0.000        &       -0.728    &       -0.335     \\
+\textbf{water}                   &      -2.0571  &        0.110     &   -18.669  &         0.000        &       -2.273    &       -1.841     \\
+\textbf{trees}                   &      -1.2352  &        0.107     &   -11.581  &         0.000        &       -1.444    &       -1.026     \\
+\textbf{road}                    &      -0.5575  &        0.109     &    -5.130  &         0.000        &       -0.771    &       -0.345     \\
+\textbf{building low\_vegetation}&      -0.1339  &        0.018     &    -7.559  &         0.000        &       -0.169    &       -0.099     \\
+\textbf{building water}          &       0.1182  &        0.026     &     4.614  &         0.000        &        0.068    &        0.168     \\
+\textbf{building trees}          &      -0.1142  &        0.027     &    -4.173  &         0.000        &       -0.168    &       -0.061     \\
+\textbf{building road}           &      -0.0563  &        0.021     &    -2.709  &         0.007        &       -0.097    &       -0.016     \\
+\textbf{low\_vegetation water}   &       0.1969  &        0.018     &    10.966  &         0.000        &        0.162    &        0.232     \\
+\textbf{low\_vegetation trees}   &       0.1448  &        0.020     &     7.071  &         0.000        &        0.105    &        0.185     \\
+\textbf{low\_vegetation road}    &       0.0875  &        0.018     &     4.917  &         0.000        &        0.053    &        0.122     \\
+\textbf{water trees}             &       0.3304  &        0.023     &    14.121  &         0.000        &        0.285    &        0.376     \\
+\textbf{water road}              &      -0.0325  &        0.027     &    -1.203  &         0.229        &       -0.085    &        0.020     \\
+\textbf{trees road}              &       0.1578  &        0.021     &     7.421  &         0.000        &        0.116    &        0.199     \\
+\textbf{lag\_building}           &       0.9626  &        0.038     &    25.084  &         0.000        &        0.887    &        1.038     \\
+\textbf{lag\_low\_vegetation}    &       0.4486  &        0.021     &    21.807  &         0.000        &        0.408    &        0.489     \\
+\textbf{lag\_water}              &      -0.2052  &        0.032     &    -6.383  &         0.000        &       -0.268    &       -0.142     \\
+\textbf{lag\_trees}              &      -0.9076  &        0.043     &   -21.190  &         0.000        &       -0.992    &       -0.824     \\
+\textbf{lag\_road}               &       0.4512  &        0.042     &    10.819  &         0.000        &        0.369    &        0.533     \\
+\textbf{avg\_height}             &       0.0123  &        0.015     &     0.829  &         0.407        &       -0.017    &        0.042     \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vspace{-0.7cm}
+\begin{center}
+\begin{minipage}[H]{0.9\textwidth}
+\scriptsize
+Notes: [1] Standard Errors are heteroscedasticity robust (HC3)
+\end{minipage}
+\end{center}
+
+Due to high correlation (or multicollinearity) of the features and the many interactions involved, one should be cautious when interpreting the coefficients. As a more intuitive guideline, we calculate average marginal effects that compare changes in OLS predictions across the whole sample while accounting for the fact that a change in one feature is associated with simultaneous changes in the other features.
+
+The results do not surprise and are in line with what one would expect by common sense. Water has the largest effect in absolute terms. Trees, water and low vegetation are associated with a decrease in temperature, while buildings and roads on average have a positive effect on the dependent variable.
+
+\begin{center}
+\captionof{table}{Average marginal effects of SLX model}
+\begin{tabular}{lc}
+\textbf{Feature} & \textbf{Change in LST} \\
+\midrule
+\textbf{building} & $+0.1635$  \\
+\textbf{low\_vegetation} & $-0.01080$  \\
+\textbf{water} & $-0.4135$  \\
+\textbf{trees} & $-0.0643$  \\
+\textbf{road} & $+0.0328$  \\
+\bottomrule
+\end{tabular}
+\end{center}
 
 
 \section{Limitations}
 
-\citet{deilami2018} point to the fact that our world is three-dimensional and features such as tree canopy compared to vegetation area might hold more explanatory power with regard to UHI.
+As already indicated in the section above, our final model only incorporates spatial heterogeneity but cannot account for any temporal variation. Also considering the feature engineering process, \citet{deilami2018} point to the fact that our world is three-dimensional and features such as tree canopy compared to vegetation area might hold more explanatory power with regard to UHI.\\
+Instead of relying on an econometric model, one could also have dived into the world of numerical models that mathematically formulate the behavior of meteorological systems. \citet{bueno2012}, for instance, provides an example of such a numerical model in the context of urban heat islands. However, given the lack of domain knowledge, this was not feasible in the framework of this project. 
 
 Considering the feature engineering, one potential advantageous approach would be to employ a soc-called spectral mixture analysis (\acrshort{sma}) to account for the fact that a single pixel might be partly covered by vegetation and impervious surface at the same time \citep{ridd1995}. However, given the very high 40cm resolution of the orthophotos, this might be negligible here.
 
 \section{Accessibility of Results}
 
-Our statistical analysis as well as the data preparation code can be found in our \href{https://github.com/MGenschow/DS_Project}{Github repository}. The final app that visualises our findings for the city of Munich is available \href{https://github.com/MGenschow/DS_Project}{here}.
+Our statistical analysis as well as the data preparation code can be found in our \href{https://github.com/MGenschow/DS_Project}{Github repository}. The final app that visualises our findings for the city of Munich is available \href{http://193.196.54.113:8050/}{here}.
 
 
 \newpage
