@@ -85,14 +85,14 @@ Meehl, G. A. and Tebaldi, C. (2004). More intense, more frequent, and longer las
 markdown_heatwaves = '''
 # Hitzewellen
 
-Der urbane Hitzeinseleffekt - auf der [Einführungsseite](/) ausführlich beschrieben - ist insbesondere dann problematisch, wenn extreme Temperaturen an aufeinanderfolgenden Tagen auftreten (Gasparrini und Armstrong, 2011).
+Der urbane Hitzeinseleffekt - auf der [Einführungsseite](/) ausführlich beschrieben - ist insbesondere dann problematisch, wenn extreme Temperaturen an direkt aufeinanderfolgenden Tagen auftreten (Gasparrini und Armstrong, 2011).
 Solche Hitzeperioden werden üblicherweise auch als Hitzewellen bezeichnet.
-Wir haben daher unsere gesamte Analyse auf Temperaturdaten ausgerichtet, die zur Zeit einer Hitzewelle aufgezeichnet wurden.
+Daher haben wir unsere gesamte Analyse auf Temperaturdaten ausgerichtet, die zur Zeit einer Hitzewelle aufgezeichnet wurden.
 Ganz konkret wurde für die Berechnung der mittäglichen Oberflächentemperatur ein Mittelwert über Tage berechnet, welche Teil einer Hitzewelle waren.
 Weitere Informationen hierzu finden Sie auch [hier](/Hitzeinseln).  
 Fragt sich bloß noch wie genau eine Hitzeweelle definiert ist.
 Wir sind hierbei der herkömmlichen Definition von Huth et al. (2000) gefolgt,
-welche in der metereologischen Literatur für Mitteleuropa meistens verwendet wird (Meehl und Tebaldi, 2004; Kysely, 2004, 2010).
+welche zumeist in der metereologischen Literatur für Mitteleuropa verwendet wird (Meehl und Tebaldi, 2004; Kysely, 2004, 2010).
 Sie lautet:
 '''
 
@@ -117,7 +117,7 @@ Die darunterliegenden Grafiken sollen einen vertieften Einblick in die Temperatu
 Es können hierbei immer zwei der drei Stationen ausgewählt werden.
 Die Stationsauswahl bezieht sich dann auf beide Grafiken.  
 Unter anderem soll hiermit auf die nicht unbeträchtlichen Temperatur-Unterschiede zwischen Stadt und Land aufmerksam gemacht werden.
-Die linke Darstellung zeigt für einen ausgewählten Tag zwischen dem 01.01.2014 und dem 31.12.2022 die stündlichen Temperaturdaten (in °C) an.
+Die linke Darstellung zeigt für einen ausgewählten Tag zwischen dem 01.01.2014 und dem 15.07.2023 die stündlichen Temperaturdaten (in °C) an.
 Die rechte Grafik visualisiert eine Zeitreihe von Höchsttemperaturen.
 Eine Hitzewelle (nach oben genannter Definition) wird durch einen orange gefärbten Hintergrund angezeigt.
 Bei entsprechender Stationsauswahl wird sehr gut deutlich, dass in Perioden in denen eine Hitzewelle in der Stadt auftritt, nicht zwangsläufig auch eine im ländlichen Umfeld präsent sein muss.
@@ -331,7 +331,6 @@ layout = dbc.Container(
 
 ####################### Callbacks #######################
 
-
 @callback(
     Output('hourly_picker', 'min_date_allowed'),
     Output('hourly_picker', 'max_date_allowed'),
@@ -348,6 +347,7 @@ def update_date_picker(year):
 
 
 ####################### Hourly Plot #######################
+
 colors = ['red', 'blue']
 @callback(
     Output('hourly_plot', 'figure'),
@@ -403,7 +403,7 @@ def update_plot(selected_date, station1, station2):
             hovertemplate=
             '<br><b>Zeit</b>: %{x|%H}:00 Uhr' +
             f'<br><b>{station1name}' + '</b>: %{y}°C' +
-            f'<br><b>{station2name}' + '</b>: %{customdata:.2f}°C<extra></extra>',
+            f'<br><b>{station2name}' + '</b>: %{customdata}°C<extra></extra>',
         )
         traces.append(trace)
     
@@ -464,7 +464,7 @@ def update_plot(month_range, year, station1, station2):
                      station2: meta[meta['STATIONS_ID'] == station2]['STATIONSNAME'].values[0]}
     for i, station_id in enumerate([station2, station1]):
         station_data[station_id] = filtered_df[filtered_df['STATION_ID'] == station_id]
-    # Initialize figure with 2 subplots
+
     fig = make_subplots(rows=2, cols=1, shared_yaxes='rows', y_title='Tägliche Höchsttemperatur (°C)', x_title='Datum')
 
     for i, station_id in enumerate([station1, station2]):
@@ -472,7 +472,7 @@ def update_plot(month_range, year, station1, station2):
         station1name = station_names[station_id]
         station2name = station_names[other_station_id]
         customdata = station_data[other_station_id]['MAX_TEMP']
-        #station_data = filtered_df[filtered_df['STATION_ID'] == station_id]
+
         trace = go.Scatter(
             x=station_data[station_id]['DATE'],
             y=station_data[station_id]['MAX_TEMP'],
@@ -482,10 +482,9 @@ def update_plot(month_range, year, station1, station2):
             hovertemplate=
             '<br><b>Datum</b>: %{x|%d.%m.}' +
             f'<br><b>{station1name}' + '</b>: %{y}°C' +
-            f'<br><b>{station2name}' + '</b>: %{customdata:.2f}°C<extra></extra>',
+            f'<br><b>{station2name}' + '</b>: %{customdata}°C<extra></extra>',
         )
 
-        # Heatwave identification
         heatwave_dates = filtered_df[(filtered_df['HEATWAVE'] == 1) & (filtered_df['STATION_ID'] == station_id)]['DATE'].tolist()
 
         if len(heatwave_dates) > 0:
@@ -502,7 +501,7 @@ def update_plot(month_range, year, station1, station2):
                     hoverinfo='skip',
                     showlegend=False
                 )
-                #heatwave_traces.append(heatwave_trace)
+
                 fig.add_trace(heatwave_trace, row = i+1, col=1)
                 
                 hover_trace = go.Scatter(
@@ -518,16 +517,12 @@ def update_plot(month_range, year, station1, station2):
                 fig.add_trace(hover_trace, row = i+1, col=1)
 
 
-        # Add trace to subplot
         fig.add_trace(trace, row=i+1, col=1)
 
-
-    # Update yaxis properties
     fig.update_xaxes(tickformat="%d.%m", row=1, col=1)
     fig.update_xaxes(tickformat="%d.%m", row=2, col=1)
     fig.update_yaxes(range=[-10, 40], tickvals=[0, 15, 30])
 
-    # Update title and color layout
     fig.update_layout(
         hovermode='closest',
         showlegend=False,
@@ -537,7 +532,7 @@ def update_plot(month_range, year, station1, station2):
 
     fig.layout.annotations[0]["font"] = dict(
         family='"Open Sans", verdana, arial, sans-serif',
-        size=12,
+        size=11,
     )
 
     return fig

@@ -52,20 +52,21 @@ Um hier ein größtmögliches Publikum zu erreichen ist der Blogpost in Englisch
 md_ref = '''
 Gasparrini, A. and Armstrong, B. (2011). The impact of heat waves on mortality. *Epidemiology*, 22(1):68.  
 Huth, R., Kyselyy, J., and Pokorna, L. (2000). A GCM simulation of heat waves, dry spells, and their relationships to circulation. *Climatic Change*, 46(1-2):29–60.  
+Kikon, N., Singh, P., Singh, S. K., and Vyas, A. (2016). Assessment of urban heat islands (UHI) of Noida City, India using multi-temporal satellite data. *Sustainable Cities and Society*, 22:19–28.  
 Kysely, J. (2004). Mortality and displaced mortality during heat waves in the Czech Republic. *International Journal of Biometeorology*, 49:91–97.  
 Kysely, J. (2010). Recent severe heat waves in central Europe: How to view them in a long-term prospect? *International Journal of Climatology: A Journal of the Royal Meteorological Society*, 30(1):89–109.  
 Meehl, G. A. and Tebaldi, C. (2004). More intense, more frequent, and longer lasting heat waves in the 21st century. *Science*, 305(5686):994–997.
 '''
 
 md_introduction = """
-As we experience both rapid urbanization and climate change globally, it is critical to understand the numerous environmental implications it brings.
-A prominent phenomenon resulting from this is Urban Heat Islands (UHIs), urban areas significantly warmer than their rural surroundings due to human activities.
-Among various contributing factors, land cover and land use (LCLU) characteristics of urban landscapes play a significant role in modulating UHI intensity.
-Despite the recognition of this relationship, adequate feature extraction and quantifying the effects of various LCLU characteristics remain a challenging task.
-In this article, we take a data science approach to this complex problem, aiming to develop a model that captures the influence of LCLU characteristics on urban heat intensity.
+As we experience both rapid urbanization and climate change globally, it is critical to understand the numerous environmental implications this brings to urban communities.
+A prominent phenomenon resulting from this are Urban Heat Islands. These can be defined as urban areas that are significantly warmer than their rural surroundings due to human activities.
+Among various contributing factors, land use and land cover (LULC) characteristics of urban landscapes play a significant role in modulating urban heat intensity (UHI).
+Despite the recognition of this relationship, adequate feature extraction and quantifying the effects of various LULC characteristics remains a challenging task.
+In this article, we take a data science approach to this complex problem, aiming to develop a model that captures the influence of LCLU characteristics on urban heat intensity for the city of Munich.
 Our investigation involves rigorous statistical analysis and complex data manipulation, necessitating proficient understanding in both areas.
 
-By leveraging high-quality geospatial data and state-of-the-art statistical modeling techniques, we seek to gain a deeper understanding of the intricate relationship between LCLU and UHI.
+By leveraging high-quality geospatial data and state-of-the-art statistical modeling techniques, we seek to gain a deeper understanding of the intricate relationship between LULC and UHI.
 In doing so, we hope to provide a comprehensive account of urban heat phenomena and its potential mitigating factors.
 It is our hope that this will not only stimulate further academic research but also inform urban planning policies for mitigating the impacts of urban heat islands.
 
@@ -92,12 +93,15 @@ Having now both granular temperature data and classified land cover and land use
 The purpose of this phase is to establish a causal relationship between these features and the observed urban heat intensity.
 As a first step, the data needs to be disaggregated to have some distinct observations to work with.
 We do this by laying a grid over the city of Munich and its surrounding aggregating the data within each grid cell.
-This allows us to have a large number of observations to work with, while still retaining the spatial structure of the data.
+Note that this is not an uncommon approach in spatial econometrics (Kikon et al., 2016).
+This allows us to have a sample of 8,528 observations to work with, while still retaining the spatial structure of the data.
 The value of our dependent variable is calculated using a weighted average of all pixels that fall within a grid cell.
-The independent variables are calculated by the share of surface that is covered by a certain land cover and land use class.
+The independent variables are calculated by the share of surface that is covered by a certain LULC class.
+The following chart visualizes this process:
 """
 
 md_slx_2 = """
+But how can we now use our sample to estimate the causal effect of our LULC characteristics on urban heat intensity (measured by the LST)?
 Given the geospatial nature of our data, traditional linear regression models may not provide the best solution due to their inability to account for spatial dependence.
 This is where spatial econometric models come into play.
 They are designed to incorporate spatial dependence, allowing us to leverage the spatial structure of our data.
@@ -111,29 +115,44 @@ Y = Xβ + WXγ + ε
 
 Where:
 
-- `Y` is the dependent variable (in our case, temperature)
-- `X` is a matrix of our explanatory variables (our land cover and land use features)
-- `β` and `γ` are parameters to be estimated
-- `W` is the spatial weight matrix
-- `WX` represents the spatially lagged independent variables
-- `ε` is the error term
+- `Y` is the dependent variable (here: LST))
+- `X` is a matrix of our explanatory variables (here: LULC characteristics)
+- `W` is a spatial weight matrix
+- `WX` represents spatially lagged independent variables
 
 The inclusion of the term `WXγ` allows us to account for spatial spillover effects, i.e., how the land use characteristics of neighboring areas influence the temperature of the area in question.
 For example, a large water body in a neighboring region might influence the temperature of our area of interest.
 In practice, the lagged term consists of the the sum of the independent variables of all neighboring areas where neighboring areas refer to all grid elements that enclose the grid of interest.
-The model parameter can then be estimated using ordinary least squares.
+What we mean as neighbouring areas can also be nicely seen from the chart above (refering to the orange surrounded part of the grid).
 
 To account for important interactions between the features (building, low vegetation, water, trees and roads), we interacted them in `X`.
 Additionally, we apply a log transformation to all of our independent variables to allow for decreasing marginal returns.
-Lastly, we include average height within a grid as a proxy for the urban canyon effect.
-Interestingly, the coefficient for this variable is both economically and statistically insignificant.
+Lastly, we include average building height which we als calculated from data of the cadastral office as a proxy for the urban canyon effect.
+
+The model parameter can then be straight-forwardly estimated using ordinary least squares.
+The following table represents the full regression results:
+"""
+
+md_slx_3 = """
+First of all, it is noteworthy that we achieve a very high model fit (i.e. R squared of 0.8).
+Except the previously mentioned average height proxy and the water road interaction, all coefficients are statistically significant.
+Due to high correlation (or multicollinearity) of the features and the many interactions involved, one should be cautious when interpreting the coefficients.
+As a more intuitive guideline, we calculate average marginal effects that compare changes in OLS predictions across the whole sample
+while accounting for the fact that a change in one feature is associated with simultaneous changes in the other features.
+
+Generally, the results are in line with past literature and with what one would expect intuitively.
+Water has the largest effect in absolute terms.
+An increase in the share of water, trees or low vegetation is associated with a decrease in temperature, while buildings and roads are positively correlated with the dependent variable.
+
+So much for the technical project background.
+If you are now eager to see our causal model in action, the [HeatMapper](/HeatMapper) page is the place to go. Have fun!
 """
 
 md_segmentation_into = """
-Drawing on existing literature pertaining to the drivers and mitigating elements of urban heat, we utilize land cover and land use (LCLU) attributes to pinpoint key 
+Drawing on existing literature pertaining to the drivers and mitigating elements of urban heat, we utilize land use and land cover (LULC) attributes to pinpoint key 
 variables contributing to the Urban Heat Island (UHI) phenomenon. To translate this problem into the realm of data science, we design data pipelines that leverage
- official data in combination with state-of-the-art deep learning algorithms. Our main objective is to address the critical question: what proportion of the surface 
- area in a given neighborhood is occupied by diverse entities such as trees, bodies of water, buildings, low vegetation, or impervious surfaces?
+official data in combination with state-of-the-art deep learning algorithms. Our main objective is to address the critical question: what proportion of the surface
+area in a given neighborhood is occupied by diverse entities such as trees, bodies of water, buildings, low vegetation, or impervious surfaces?
 Each of these elements has a distinct role in influencing the urban heat, and understanding their individual and collective impact is integral to our analysis. 
 This allows us to not just understand, but also visualize the intricate influence of these features on urban temperature patterns.
 """
@@ -191,7 +210,7 @@ layout = dbc.Container(
                         html.Ul([
                             html.Li(html.A('Extracting land surface temperature data from ECOSTRESS', href='#section-1')),
                             html.Li(html.A('Heatwave detection', href='#subsection-1-1')),
-                            html.Li(html.A('Extracting land cover and land use data from orthophotos', href='#section-2')),
+                            html.Li(html.A('Extracting land usage and land cover data from orthophotos', href='#section-2')),
                             html.Li(html.A('Econometrics: Modeling LST using a SLX model', href='#section-3')),
                             html.Li(html.A('References', href='#section-ref'))
                         ])
@@ -211,7 +230,7 @@ layout = dbc.Container(
         ),
         dbc.Row(
             [
-                html.H2('Extracting land cover and land use data from orthophotos', id='section-2'),
+                html.H2('Extracting land usage and land cover data from orthophotos', id='section-2'),
                 dcc.Markdown(md_segmentation_into, style={"text-align": "justify"})
             ], 
             className="mx-5 mb-4"
@@ -267,13 +286,20 @@ layout = dbc.Container(
                 dcc.Markdown(md_slx_1, style={"text-align": "justify"}),
                 html.Div(
                     [
-                    html.Img(src='assets/grid_element_all.JPG', alt='Grid plot', width='60%'),
+                    html.Img(src='assets/disaggregation.jpg', alt='Disaggregation chart', width='520px'),
                     ],
                     style={'text-align': 'center'}
                 ),
                 dcc.Markdown(md_slx_2, style={"text-align": "justify"}),
+                html.Div(
+                    [
+                    html.Img(src='assets/slx_results.jpg', alt='SLX results', width='480px'),
+                    ],
+                    style={'text-align': 'center'}
+                ),
+                dcc.Markdown(md_slx_3, style={"text-align": "justify"}),
                 html.H2('References', id='section-ref'),
-                dcc.Markdown(md_ref)
+                dcc.Markdown(md_ref),
             ], 
             className="mx-5 mb-4"
         ),
