@@ -375,7 +375,7 @@ def update_plot(selected_date, station1, station2):
                         'yref': 'paper',
                         'showarrow': False,
                         'font': {
-                            'size': 20
+                            'size': 12
                         }
                     }
                 ]
@@ -452,7 +452,7 @@ def update_plot(month_range, year, station1, station2):
                         'yref': 'paper',
                         'showarrow': False,
                         'font': {
-                            'size': 20
+                            'size': 12
                         }
                     }
                 ]
