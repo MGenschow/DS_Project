@@ -455,7 +455,7 @@ def update_grid_id(click_feature):
     if click_feature is not None:
         return click_feature['properties']['id']
     else:
-        return 1000001
+        return 1003816
 
 
 

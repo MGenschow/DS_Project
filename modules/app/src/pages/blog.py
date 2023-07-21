@@ -50,12 +50,16 @@ Um hier ein größtmögliches Publikum zu erreichen ist der Blogpost in Englisch
 """
 
 md_ref = '''
+Chen, L. C., Papandreou, G., Schroff, F., & Adam, H. (2017). Rethinking atrous convolution for semantic image segmentation. arXiv preprint arXiv:1706.05587. 
+
 Gasparrini, A. and Armstrong, B. (2011). The impact of heat waves on mortality. *Epidemiology*, 22(1):68.  
 Huth, R., Kyselyy, J., and Pokorna, L. (2000). A GCM simulation of heat waves, dry spells, and their relationships to circulation. *Climatic Change*, 46(1-2):29–60.  
 Kikon, N., Singh, P., Singh, S. K., and Vyas, A. (2016). Assessment of urban heat islands (UHI) of Noida City, India using multi-temporal satellite data. *Sustainable Cities and Society*, 22:19–28.  
 Kysely, J. (2004). Mortality and displaced mortality during heat waves in the Czech Republic. *International Journal of Biometeorology*, 49:91–97.  
 Kysely, J. (2010). Recent severe heat waves in central Europe: How to view them in a long-term prospect? *International Journal of Climatology: A Journal of the Royal Meteorological Society*, 30(1):89–109.  
 Meehl, G. A. and Tebaldi, C. (2004). More intense, more frequent, and longer lasting heat waves in the 21st century. *Science*, 305(5686):994–997.
+
+Wang, J., Zheng, Z., Ma, A., Lu, X., & Zhong, Y. (2021). LoveDA: A Remote Sensing Land-Cover Dataset for Domain Adaptive Semantic Segmentation. Zenodo. https://doi.org/10.5281/zenodo.5706578
 '''
 
 md_introduction = """
@@ -178,9 +182,9 @@ we opted for a method known as transfer learning. This technique involves utiliz
 this method, we can train a larger model with the available data and then fine-tune it to cater to a specific task for which minimal data is available. In our context, 
 we developed a training pipeline that incorporates a two-stage transfer learning approach.
 
-After evaluating various model architectures, we decided on a DeepLabV3 segmentation model with a ResNet101 backbone. The ResNet101 backbone is initialized with 
+After evaluating various model architectures, we decided on a DeepLabV3 (Chen, 2017) segmentation model with a ResNet101 backbone. The ResNet101 backbone is initialized with 
 weights that have been trained on COCO.
-In the first stage, we fine-tuned our model utilizing the Land-cOVEr Domain Adaptive semantic segmentation (LoveDA) dataset, comprising 5987 high spatial resolution 
+In the first stage, we fine-tuned our model utilizing the Land-cOVEr Domain Adaptive semantic segmentation (LoveDA) (Wang, 2021) dataset, comprising 5987 high spatial resolution 
 (0.3 m) remote sensing images taken from Chinese cities and rural areas, along with their corresponding pixel-wise annotations. The primary goal of this stage was 
 to equip our model with the ability to learn the general feature extraction layers for a semantic segmentation task from satellite imagery. Hence, both the backbone 
 and the classification head were trained.
@@ -194,11 +198,11 @@ between 10-40 percentage points depending on the category and an increase in ave
 
 md_segmentation_results = """
 #### Results
-To assess, whether the finetuning of the model actually improved our model performance, we composed a test set from out manually labeled images of Munich. We then compared
+To assess whether the finetuning of the model actually improved our model performance, we composed a test set from our manually labelled images of Munich. We then compared
 the accuracy of the model on the test set after the pretraining stage to the accuracy after the finetuning stage. As can be seen in the table below, finetuning the model led
-an in crease in the overall pixel-wise accuracy of ~9 percentage points and an increase in the mean accuracy of ~11 percentage points. The most important improvement could
+an increase in the overall pixel-wise accuracy of ~9 percentage points and an increase in the mean accuracy of ~11 percentage points. The most important improvement could
 be seen in the accuracy of the low vegetation class, which increased by 33 percentage points. This is especially important, as low vegetation is a key factor in mitigating 
-urban heat. Additionally, also the accuracy of the building class and the accuracy of trees increase while the accuracy of impervious surfaces slightly decreased. As impervious 
+urban heat. Additionally, also the accuracy of the building class and the accuracy of trees increased while the accuracy of impervious surfaces slightly decreased. As impervious 
 surface is considered more of a "background" class, we do not consider this a major drawback.
 """
 
