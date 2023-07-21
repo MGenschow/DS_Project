@@ -116,7 +116,7 @@ navbar = html.Div(
             ],
             className="fixed-top",
             style={
-                "background-color": "#1a1a1a",
+                "background-color": "#303E4F",
                 "color": "#ffffff",
                 "padding": "0.5rem",
                 "width": "100vw",

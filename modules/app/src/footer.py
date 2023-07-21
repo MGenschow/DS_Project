@@ -199,7 +199,7 @@ footer = html.Div(
                                                     "Data Science in Business and Economics",
                                                     href="https://uni-tuebingen.de/fakultaeten/wirtschafts-und-sozialwissenschaftliche-fakultaet/faecher/fachbereich-wirtschaftswissenschaft/wirtschaftswissenschaft/studium/studiengaenge/master/msc-data-science-in-business-and-economics/",
                                                     underline=False,
-                                                    style={'transition': 'color 0.2s'},
+                                                    style={'transition': 'color 0.2s', "color": "#008080"},
                                                     className='link-hover',
                                                 ),
                                                 " an der Universität Tübingen.",
@@ -215,7 +215,7 @@ footer = html.Div(
                 )
                 
             ],
-            className="fixed-bottom", style={"background-color": "#1a1a1a",  
+            className="fixed-bottom", style={"background-color": "#303E4F",  
                                              "color": "#ffffff", 
                                              'padding':'0.5rem 1rem',
                                              "width":"100vw",

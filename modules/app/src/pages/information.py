@@ -63,32 +63,8 @@ Dieses Phänomen wird durch eine Vielzahl von Faktoren verursacht, einschließli
 Unsere App ermöglicht es dem Nutzer, die Auswirkungen von Hitzeinseln und Hitzewellen auf die Temperatur in München zu untersuchen und zu verstehen.
 '''
 
-markdown_background = '''
-## Projekthintergrund & Zielgruppe
-
-Der Klimawandel und eine zunehmende Urbanisierung sorgen für ein extremes Aufheizen innerstädtischer Gebiete im Vergleich zu ländlicheren Gebieten sowie solchen mit einem hohen Grünflächenateil.
-Insbesondere im Sommer sorgt dies nicht nur für Einschränkungen im täglichen Leben sondern stellt auch eine elementare Bedrohung der eigenen Gesundheit dar (Anderson und Bell, 2009; Basu und Samet, 2002; Basu, 2009).  
-Dieses Projekt soll zum öffentlichen und wissenschaftlichen Diskurs beitragen, indem es einen direkten Zusammenhang zwischen Temperatur und Oberflächenbeschaffenheiten (hauptsächlich abgeleitet aus Landbedeckungs- und Landnutzungsmerkmale) modelliert und visualisiert.
-Dabei wird der Fokus auf die Stadt München gelegt, da diese bereits über eine Vielzahl an Daten verfügt, die für die Modellierung verwendet werden können.
-Insbesondere wollen wir mit einfachen Anpassungsfeatures (z.B. Erhöhung der Vegetation) die Auswirkungen auf die Temperatur für ein ausgewähltes Gebiet darstellen.
-Die App soll besonders Münchner*innen helfen ein Verständnis für die zugrundeliegenden Effekte und die direkten Auswirkungen von zunehmender Oberflächenversiegelung zu entwickeln. Hinsichtlich der spärlichen wissenschaftlichen Literatur in diesem Gebiet kann das Projekte auch als Grundlage für weitere Forschung dienen.
-'''
-
-markdown_approach = '''
-## Herangehensweise
-
-Wir haben für dieses Projekt Daten zur Oberflächentemperatur (land surface temperature) von Ecostress und amtliche Liegenschaftsdaten sowie Orthofotos des Bayerischen Landesamtes für Digitalisierung, Breitband und Vermessung verwendet.
-Die erstgenannte Datenquelle stellt die abhängige Variable in unserer Analyse dar.
-Die beiden letztgenannten Datenquellen wurden zur Extraktion von Merkmalen der Landbedeckung/Landnutzung (LCLU) verwendet, um unsere Einflussfaktoren zu extrahieren, die einen Effekt auf die Temperatur haben sollten.
-Wir nutzen neuronale Netze, um auch Muster zu erkennen, die in offiziellen Daten nicht enthalten sind (z.B. einen Baum).
-'''
 
 markdown_referenzen = '''
-## Referenzen
-Anderson, B. G. and Bell, M. L. (2009). Weather-related mortality: How heat, cold, and heat waves affect mortality in the United States. *Epidemiology*, 20(2):205.  
-Basu, R. (2009). High ambient temperature and mortality: A review of epidemiologic studies from 2001 to 2008. *Environmental health*, 8:1–13.  
-Basu, R. and Samet, J. M. (2002). Relation between elevated ambient temperature and mortality: A review of the epidemiologic evidence. *Epidemiologic reviews*, 24(2):190–202.
-
 Alle Bilder lizenzfrei von https://pixabay.com.
 '''
 
@@ -224,10 +200,6 @@ layout = dbc.Container(
                         )
                         ])], className = "mt-4 mb-4 mx-5")
             ]),
-            dbc.Row(
-            [   dcc.Markdown(markdown_background, className="text-sm text-md text-lg text-xl", style={"text-align": "justify"}),
-                dcc.Markdown(markdown_approach, className="text-sm text-md text-lg text-xl", style={"text-align": "justify"}),
-            ], className="mx-5"),
         dbc.Row(dcc.Markdown(markdown_referenzen, style={"text-align": "justify"}), className="mx-5"),
         html.Div(style={'height': dis + 'vh'}),
 
