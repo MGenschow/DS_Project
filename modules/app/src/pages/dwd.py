@@ -370,7 +370,7 @@ def update_plot(selected_date, station1, station2):
                 },
                 'annotations': [
                     {
-                        'text': 'Für dieses Datum sind noch keine Daten in die App integriert worden.',
+                        'text': 'Für dieses Datum sind noch keine Daten <br> in die App integriert worden.',
                         'xref': 'paper',
                         'yref': 'paper',
                         'showarrow': False,
@@ -447,7 +447,7 @@ def update_plot(month_range, year, station1, station2):
                 },
                 'annotations': [
                     {
-                        'text': 'Für den ausgewählten Zeitraum sind noch keine Daten in die App integriert worden.',
+                        'text': 'Für den ausgewählten Zeitraum sind noch keine Daten <br> in die App integriert worden.',
                         'xref': 'paper',
                         'yref': 'paper',
                         'showarrow': False,
