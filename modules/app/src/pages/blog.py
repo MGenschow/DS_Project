@@ -171,7 +171,7 @@ This helps us create an extremely precise image of land cover characteristics fo
 """
 
 md_segmentation_model = """
-#### Segmentation Model
+#### Segmentation Pipeline
 In order to achieve the high precision evident in our classification model, primarily featured in this application, we employ cutting-edge deep learning techniques 
 from the realm of computer vision. These deep neural networks necessitate extensive data for training, and since no labeled data for Munich was accessible to us, 
 we opted for a method known as transfer learning. This technique involves utilizing a model designed for one task and repurposing it for another task. By employing 
@@ -278,6 +278,12 @@ layout = dbc.Container(
             [
                 dcc.Markdown(md_segmentation_model, style={"text-align": "justify"})
             ], 
+            className="mx-5 mb-4"
+        ),
+        dbc.Row(
+            [
+                html.Img(src='assets/segmentation_pipeline.png', alt='Segmentation model', width='70%'),
+            ],
             className="mx-5 mb-4"
         ),
         dbc.Row(
