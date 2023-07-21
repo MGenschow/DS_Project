@@ -5,6 +5,7 @@ from dash import dcc, html, dash_table, dcc, Input, Output, State
 import dash_bootstrap_components as dbc
 
 
+
 footer = html.Div(
     [
         dbc.Container(
@@ -21,7 +22,10 @@ footer = html.Div(
                                                 dmc.HoverCardDropdown(
                                                     [
                                                         dmc.Group(
-                                                            [
+                                                            [   dmc.Avatar(
+                                                                        src="/assets/Malte_Genschow.png",
+                                                                        radius="xl",
+                                                                    ),
                                                                 dmc.Anchor(
                                                                     DashIconify(
                                                                         icon="bi:linkedin",
@@ -58,7 +62,10 @@ footer = html.Div(
                                                 dmc.HoverCardDropdown(
                                                     [
                                                         dmc.Group(
-                                                            [
+                                                            [   dmc.Avatar(
+                                                                        src="/assets/stefan_glaisner.jpg",
+                                                                        radius="xl",
+                                                                    ),
                                                                 dmc.Anchor(
                                                                     DashIconify(
                                                                         icon="bi:linkedin",
@@ -95,7 +102,10 @@ footer = html.Div(
                                                 dmc.HoverCardDropdown(
                                                     [
                                                         dmc.Group(
-                                                            [
+                                                            [   dmc.Avatar(
+                                                                        src="/assets/Stefan Bild3.jpg",
+                                                                        radius="xl",
+                                                                    ),
                                                                 dmc.Anchor(
                                                                     DashIconify(
                                                                         icon="bi:linkedin",
@@ -132,7 +142,10 @@ footer = html.Div(
                                                         dmc.HoverCardDropdown(
                                                             [
                                                                 dmc.Group(
-                                                                    [
+                                                                    [   dmc.Avatar(
+                                                                        src="/assets/Aaron Lay.jpg",
+                                                                        radius="xl",
+                                                                    ),
                                                                         dmc.Anchor(
                                                                             DashIconify(
                                                                                 icon="bi:linkedin",
@@ -199,7 +212,7 @@ footer = html.Div(
                                                     "Data Science in Business and Economics",
                                                     href="https://uni-tuebingen.de/fakultaeten/wirtschafts-und-sozialwissenschaftliche-fakultaet/faecher/fachbereich-wirtschaftswissenschaft/wirtschaftswissenschaft/studium/studiengaenge/master/msc-data-science-in-business-and-economics/",
                                                     underline=False,
-                                                    style={'transition': 'color 0.2s', "color": "#008080"},
+                                                    style={'transition': 'color 0.2s', "color": "#FFFFFF","textDecoration": "underline"},
                                                     className='link-hover',
                                                 ),
                                                 " an der Universität Tübingen.",
