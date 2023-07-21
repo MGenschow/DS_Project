@@ -192,6 +192,29 @@ adjust the classification head to accurately classify pixels in our images. The 
 between 10-40 percentage points depending on the category and an increase in average pixel-wise accuracy of 12 percentage points.
 """
 
+md_segmentation_results = """
+#### Results
+To assess, whether the finetuning of the model actually improved our model performance, we composed a test set from out manually labeled images of Munich. We then compared
+the accuracy of the model on the test set after the pretraining stage to the accuracy after the finetuning stage. As can be seen in the table below, finetuning the model led
+an in crease in the overall pixel-wise accuracy of ~9 percentage points and an increase in the mean accuracy of ~11 percentage points. The most important improvement could
+be seen in the accuracy of the low vegetation class, which increased by 33 percentage points. This is especially important, as low vegetation is a key factor in mitigating 
+urban heat. Additionally, also the accuracy of the building class and the accuracy of trees increase while the accuracy of impervious surfaces slightly decreased. As impervious 
+surface is considered more of a "background" class, we do not consider this a major drawback.
+"""
+
+table_results = """
+| Category          | Pretraining | Finetuning | Improvement |
+|-------------------|------------------|------------------|-------------|
+| Impervious        | 80.49            | 72.67            | -7.82       |
+| Building          | 64.17            | 71.48            | 7.31        |
+| Low Vegetation    | 43.71            | 77.22            | 33.51       |
+| Trees             | 78.55            | 88.07            | 9.52        |
+|-------------------|------------------|------------------|-------------|
+| **Mean Accuracy**     | 66.73            | 77.36            | 10.63       |
+| **Average Accuracy**  | 69.78            | 78.67            | 8.89        |
+"""
+
+
 layout = dbc.Container(
     [
         html.Div(style={'height': '10vh'}),
@@ -283,6 +306,18 @@ layout = dbc.Container(
         dbc.Row(
             [
                 html.Img(src='assets/segmentation_pipeline.png', alt='Segmentation model', width='70%'),
+            ],
+            className="mx-5 mb-4"
+        ),
+        dbc.Row(
+            [
+                dcc.Markdown(md_segmentation_results, style={"text-align": "juytify"})
+            ],
+            className="mx-5 mb-4"
+        ),
+        dbc.Row(
+            [
+                html.Div(dcc.Markdown(table_results), style={"margin": "0 auto", "max-width": "800px"})
             ],
             className="mx-5 mb-4"
         ),
