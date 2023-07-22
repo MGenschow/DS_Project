@@ -156,38 +156,42 @@ for k in keys:
         print(f'There are no tiff files for the key {k}')
         print([f for f in raw_files if k in f])
 
-'''
-# %% Create a loop that creates and stores a mean tif for each first and second half of a month
 
-# Split period
-period = [{'start': '2022-01-01 00:00:00', 'end': '2023-01-01 00:00:00'}]
-periods = split_period(period, split_half=False)
+# %% 
+dataQ = dataQualityOverview(inverted_HW,0,15,config)
 
-# %% Plot all 12 tiff files in one plot
-path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/meanTiff/'
+# %% Get LST and Cloud by orbit key
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 
-tiff_files = [file for file in os.listdir(path) if file.endswith('.tif')]
-tiff_files.sort()
+key = '22241_007'
 
-rows, cols = 4, 3
+files = [f for f in listdir(config['data']['ES_tiffs']) if key in f]
 
-# Create the subplot
-fig, axes = plt.subplots(rows, cols, figsize=(12, 12))
 
-# Loop through the TIFF files and plot them in the subplot
-for i, file in enumerate(tiff_files):
-    row = i // cols
-    col = i % cols
-    tif = rasterio.open(os.path.join(path, file))
-    axes[row, col].imshow(tif.read()[0],'jet') #, vmin=-15, vmax=45)
-    axes[row, col].set_title(file)
+path = config['data']['ES_tiffs'] + files[2]
 
-# Adjust the spacing between subplots
-plt.tight_layout()
+# %%
+# Read the image using matplotlib.image.imread
+img = mpimg.imread(path)
 
-# Display the subplot
+# Plot the image
+plt.imshow(img)
+plt.axis('off')  # Turn off axis ticks and labels
 plt.show()
-'''
+
+# %%
+# Read the TIFF image using rasterio
+with rasterio.open(path) as src:
+    # Read the image data (bands) as a NumPy array
+    img = src.read()
+
+# Plot the image
+plt.imshow(img[0])  # Use 'viridis' colormap for better visualization
+#plt.colorbar()  # Add a colorbar to the plot
+plt.axis('off')  # Turn off axis ticks and labels
+plt.show()
+
 
 # %% Create mean tiffs for inside and outside the heatwaves for 
 # Morning and afternoon 
@@ -236,66 +240,8 @@ plt.imshow(cropped[0],'jet')
 plt.colorbar(label = "Temperature in Celsius")
 plt.show()
 
-# %% Get value for weather station Oberhaching-Laufzorn
-# Open the GeoTIFF file
-with rasterio.open(path) as src:
-    # Transform the coordinate to the pixel location
-    row, col = src.index(11.5524, 48.0130)
-
-    # Read the pixel value at the specified location
-    value = src.read(1, window=((row, row+1), (col, col+1)))
-
-# %% 
-data = tif.read()[0]
-# %%Create a 10x10 array filled with random numbers between 0 and 99
-import random
-data = np.array([[random.random() for _ in range(500)] for _ in range(500)])
-
-
-# %% 
-import numpy as np
-#arr = np.array([[1, 2, 3],
-#                [4, 5, 6],
-#                [7, 8, 9]])
-
-
-# def custom_filter(image):
-#    return np.amax(image) - np.amin(image)
-
-kernel = (3,3)
-nPixel = kernel[0]*kernel[1]
-
-from scipy.ndimage import generic_filter
-result = generic_filter(cropped[0], np.mean, size=kernel, mode='constant', cval=15)
-
-
-result = np.subtract(result,cropped[0]/nPixel)*(nPixel/(nPixel-1))
-
-# 
-difference = np.subtract(cropped[0],result)
-
-# 
-plt.imshow(cropped[0],'jet')
-plt.colorbar(label = "Temperature in Celsius")
-
-# Plot red dots for True values in the boolean array
-y, x = np.where((difference > 1.5)) # &(difference < 4))
-plt.scatter(x, y, color='green', marker='X', s=5)
-
-
-plt.show()
-
-
-
 
 # %%
-plt.imshow(tif.read()[0],'jet',vmin=value)
-plt.colorbar(label = "Temperature in Celsius")
-plt.show()
-
-# %%
-#plt.show()
-
 map_afternoon = tiffs_to_foliumMap(
     path,
     pixelated=False,
@@ -376,216 +322,4 @@ plt.imshow(diff_NoonMorning,'jet_r', vmin=0, vmax=19)
 plt.colorbar(label = "Temperature in Celsius")
 
 plt.show()
-
-
-
-# %% Create an address searching fiel and select the respective grid
-import geopandas
-import geopy
-import folium
-from shapely.geometry import Point, Polygon
-import pickle
-
-# %%
-def check_coordinates_in_bbox(latitude, longitude, bounding_box):
-    point = Point(longitude, latitude)
-    bbox_polygon = Polygon([(bounding_box[0], bounding_box[1]), (bounding_box[0], bounding_box[3]),
-                            (bounding_box[2], bounding_box[3]), (bounding_box[2], bounding_box[1])])
-    return bbox_polygon.contains(point)
-
-# %% Load the grid
-with open('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/uhi_model/grid/grid_250_a.pkl', 'rb') as file:
-    grid = pickle.load(file)
-
-# %% Search an adress
-
-adress = input("Input your adress in the follwing format (Dorfstraße 5, Tübingen): ")
-
-try:
-    locator = geopy.geocoders.Nominatim(user_agent='myGeocoder')
-    location = locator.geocode(adress + ', Germany')
-except:
-    print('Invalid adress')
-
-if check_coordinates_in_bbox(location.latitude, location.longitude, bbox):
-    is_inside = False
-    i = 0
-
-    while not is_inside and i < grid.shape[0]:
-    
-        polygon_coords = Polygon(grid.geometry[i])
-
-        point_coordinates = (location.longitude, location.latitude)
-        point = Point(point_coordinates)
-    
-        is_inside = polygon_coords.contains(point)
-
-        i+=1
-
-    if is_inside:
-    
-        polygon = Polygon(polygon_coords)
-
-        # Calculate the centroid of the polygon for centering the map
-        centroid = polygon.centroid
-
-        # Create a folium map centered on the centroid
-        m = folium.Map(location=[centroid.y, centroid.x], zoom_start=12)
-
-        # Convert the polygon coordinates to a format compatible with folium
-        polygon_coords = list(polygon.exterior.coords)
-        polygon_coords = [[coord[1], coord[0]] for coord in polygon_coords]
-
-        # Create a folium polygon and add it to the map
-        folium.Polygon(locations=polygon_coords, color='blue', fill_color='blue', fill_opacity=0.4).add_to(m)
-
-        # Add a marker for the point to the map
-        folium.Marker(location=[location.latitude, location.longitude], popup="Point").add_to(m)
-
-        # Display the map
-        display(m)
-    
-    else:
-        print('Adress doesnt fall into defined grid.')
-
-else:
-    print('Your adress doesnt fall into the defined area.')
-
-
-# %% Create an mean tiff for all months
-'''
-path = '/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/meanTiff/'
-
-for period in periods:
-
-    month = datetime.strptime(periods[0]['start'], '%Y-%m-%d %H:%M:%S').month
-
-    minTemp, maxTemp = tempRange[month]
-    
-    dataOverview = dataQualityOverview([period], minTemp, 25, config)
-
-    dataOverview = dataOverview[
-        (pd.to_datetime(dataOverview['dateTime']).dt.hour >= 6) & 
-        (pd.to_datetime(dataOverview['dateTime']).dt.hour <= 19) & 
-        dataOverview.qualityFlag]
-    
-    # print(dataOverview)
-
-    #for orbits in dataOverview['orbitNumber']:
-    #    plot_by_key(orbits,'LSTE', config)
-    #    plot_by_key(orbits,'Cloud', config)
-
-    # print(dataOverview[dataOverview.qualityFlag].shape[0])
-
-    # Store orbit numbers
-    orbitNumbers = dataOverview['orbitNumber'] 
-
-    name = path + period['start'].split(' ')[0] + '.tif'
-
-    if dataOverview.shape[0] == 0: 
-        continue
-    
-    elif dataOverview.shape[0] < 2:
-        files = [
-            f 
-            for f in os.listdir(config['data']['ES_tiffs']) if orbitNumbers.iloc[0] in f
-            ]
-        # Extract path of lst and cloud
-        lst=rasterio.open(
-            os.path.join(config['data']['ES_tiffs'], [f for f in files if "LSTE" in f and f.endswith(".tif")][0])
-            )
-        cld=rasterio.open(
-            os.path.join(config['data']['ES_tiffs'], [f for f in files if "Cloud" in f and f.endswith(".tif")][0])
-            )
-
-        # masked_array = np.ma.masked_array(lst.read()[0], mask=(cld.read()[0].astype(bool) | np.isnan(lst.read()[0])),fill_value=np.NaN)
-        masked_array = np.where(cld.read()[0].astype(bool),np.NaN,lst.read()[0])
-
-        tifffile.imwrite(name, masked_array)
-    #    print('There are not enogh files to create a high quality mean tif!')
-    #    continue
-    else:
-        # Create and store mean tiff
-        meanTiff, maList = mergeTiffs(orbitNumbers, name, config)
-'''
-
-
-# %% TODO: The following could would be only necessary if we would use heatdays
-# in addition to heatwaves
-'''
-dwd = pd.read_csv(config['data']['dwd']+'/dwd.csv')
-
-# %% Extract id for munich central
-id = 3379
-# Reduce the data to munich central
-mCentral = dwd[dwd['STATIONS_ID'] == id].reset_index(drop=True)
-# Convert the date column to datetime
-mCentral['MESS_DATUM'] = mCentral['MESS_DATUM'].astype('datetime64[ns]')
-# %%
-mCentral_Summer = mCentral[(mCentral['MESS_DATUM'].dt.month >= 6) & (mCentral['MESS_DATUM'].dt.month <= 8)]
-
-# %%
-print(np.mean(mCentral_Summer.loc[mCentral_Summer.groupby(mCentral_Summer['MESS_DATUM'].dt.date)['TT_TU'].idxmin()].MESS_DATUM.dt.hour))
-
-print(np.mean(mCentral_Summer.loc[mCentral_Summer.groupby(mCentral_Summer['MESS_DATUM'].dt.date)['TT_TU'].idxmax()].MESS_DATUM.dt.hour))
-
-# %%
-
-# %% Identify tropical days
-tropicalDays = pd.to_datetime(mCentral[mCentral['TT_TU']>=30]['MESS_DATUM'].dt.date)
-# %% Reduce to tropical days from last year
-tropicalDays = set(tropicalDays[tropicalDays.dt.year > 2020])
-
-# %%
-from datetime import datetime, time, timedelta
-tropicalPeriods = []
-
-for dates in tropicalDays:
-    tropicalPeriods.append(
-        {'start': str(dates),
-        'end': str(dates+ timedelta(days=1))
-        })
-
-
-
-# %%
-mCentral['tropicalNight'] = False
-# 
-i = 0
-while i < len(mCentral):
-    
-    if 6 < mCentral.iloc[i].MESS_DATUM.hour < 18:
-        i+=1 
-        continue
-
-    else:
-        temps=[]
-        idxs=[]
-        while 18 <= mCentral.iloc[i].MESS_DATUM.hour or mCentral.iloc[i].MESS_DATUM.hour <= 6:
-            temps.append(mCentral.iloc[i].TT_TU)
-            idxs.append(i)
-            i+=1
-
-            if i == len(mCentral):
-                break
-        
-        if np.min(temps) >= 20:
-            for index in idxs:
-                mCentral.loc[index, 'tropicalNight'] = True
-
-# %%
-lastyear = mCentral[mCentral.MESS_DATUM.dt.year > 2020]
-
-lastyear[lastyear['tropicalNight']]
-
-# %%
-tropicalPeriods.append({'start': '2021-06-18 18:00:00', 'end': '2021-06-19 06:00:00'})
-tropicalPeriods.append({'start': '2021-06-19 18:00:00', 'end': '2021-06-20 06:00:00'})
-tropicalPeriods.append({'start': '2022-06-19 18:00:00', 'end': '2022-06-20 06:00:00'})
-tropicalPeriods.append({'start': '2022-07-13 18:00:00', 'end': '2022-07-14 06:00:00'})
-# %%
-import pickle
-with open('/pfs/work7/workspace/scratch/tu_zxmav84-ds_project/data/ECOSTRESS/tropicalPeriods.pkl', 'wb') as f:
-    pickle.dump(tropicalPeriods, f)
-'''
 
