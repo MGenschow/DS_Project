@@ -34,7 +34,7 @@ options_gif = dict(
 )
 
 # YouTube video URL
-video_url = "https://www.youtube.com/watch?v=0Fksc1kzWz8"
+video_url = "https://youtu.be/hZQ38zNvRsY"
 
 
 introduction = '''
