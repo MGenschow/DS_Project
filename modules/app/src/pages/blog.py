@@ -32,6 +32,40 @@ dash.register_page(__name__,
                    order=5
 )
 
+
+with open(root_path + '/assets/Swath_picture.png', 'rb') as file:
+    image_data = file.read()
+    img_swath = 'data:image/png;base64,' + base64.b64encode(image_data).decode()
+
+with open(root_path + '/assets/geo.png', 'rb') as file:
+    image_data = file.read()
+    img_geo = 'data:image/png;base64,' + base64.b64encode(image_data).decode()
+
+with open(root_path + '/assets/lst.png', 'rb') as file:
+    image_data = file.read()
+    img_lst = 'data:image/png;base64,' + base64.b64encode(image_data).decode()
+
+with open(root_path + '/assets/cloud.png', 'rb') as file:
+    image_data = file.read()
+    img_cloud = 'data:image/png;base64,' + base64.b64encode(image_data).decode()
+
+with open(root_path + '/assets/LST_1.png', 'rb') as file:
+    image_data = file.read()
+    img_QC_LST_1 = 'data:image/png;base64,' + base64.b64encode(image_data).decode()
+
+with open(root_path + '/assets/Cloud_1.png', 'rb') as file:
+    image_data = file.read()
+    img_QC_CLD_1 = 'data:image/png;base64,' + base64.b64encode(image_data).decode()
+
+with open(root_path + '/assets/LST_2.png', 'rb') as file:
+    image_data = file.read()
+    img_QC_LST_2 = 'data:image/png;base64,' + base64.b64encode(image_data).decode()
+
+with open(root_path + '/assets/Cloud_2.png', 'rb') as file:
+    image_data = file.read()
+    img_QC_CLD_2 = 'data:image/png;base64,' + base64.b64encode(image_data).decode()
+
+
 with open(root_path + '/assets/cadastral_data.png', 'rb') as file:
     image_data = file.read()
     img_comparison1 = 'data:image/png;base64,' + base64.b64encode(image_data).decode()
@@ -39,6 +73,17 @@ with open(root_path + '/assets/cadastral_data.png', 'rb') as file:
 with open(root_path + '/assets/comparison_cadastral.png', 'rb') as file:
     image_data = file.read()
     img_comparison2 = 'data:image/png;base64,' + base64.b64encode(image_data).decode()
+
+# Custom styles for the caption and arrow icons
+caption_style = {
+    "color": "red",  # Change the caption text color to red
+    "font-weight": "bold",  # Optionally, you can make the text bold
+}
+
+arrow_style = {
+    "filter": "invert(100%)",  # Invert the color of the arrow icons (e.g., from black to white)
+    "background-color": "blue",  # Optionally, you can change the background color of the arrows on hover
+}
 
 
 md_disclaimer = """
@@ -90,6 +135,49 @@ md_hw_cit = """
 A heatwave is declared when a temperature of 30°C is exceeded for at least three consecutive days. The heatwave continues as long as the average maximum temperature remains above 30°C throughout the entire period, and the maximum temperature does not fall below 25°C on any single day.
 </blockquote>
 """
+
+md_ecostress_intro = """
+To measure the impact of heatwaves on urban heat intensity with greater precision, we undertook an extensive search for data sources with a high 
+spatial resolution that could effectively cover the entirety of Munich, Germany. However, as is common in many urban areas, obtaining temperature data 
+from conventional air temperature measuring stations at such a fine scale proved challenging due to limited coverage and spatial granularity.
+To overcome this limitation, we turned to an alternative: Land surface temperature data (LST), which serves as a valuable proxy for air temperature in urban 
+environments. LST represents the temperature of the Earth's surface as measured from satellite-based sensors, and it offers an excellent substitute for air temperature in urban 
+settings due to the close relationship between land surface and atmospheric temperatures.Thereby, the ECOSTRESS (Ecosystem Spaceborne Thermal Radiometer Experiment on Space Station) 
+mission and the related LST data emerges as a powerful tool to detect and understand the impact of heatwaves in urban settings.
+"""
+
+md_ecostress_data = """
+We access the ECOSTRESS in swaths via the USGS API. The swath itself is a rectangular area of the earth's surface that is covered by the satellite's sensor and has a typical size of 400 km x 400 km.
+The swaths itself have a spatial resolution of 70m x 70m. The data from the year 2022, which is the data that we use, is only available in the raw format, therefore we havbe to process it first to 
+create geoTIFF files. For each swath we access three diffrent data types:
+"""
+
+md_swath_to_grid = """
+In order to be able to project the data correctly on our map with the WGS84 projection, we have to perform a swath to grid transformation. This transformation is also stronlgy recommended by the USGS.
+For the implementaiton of the transformation we mainly used the python package pyproj and GDAL. To implement the transformation we follow the steps described in the following:
+
+Firstly, the transformation begins with obtaining the latitude-longitude bounding box of the satellite swath. This defines the geographic area covered by the data and serves as a reference for subsequent processing.
+Next, the width and height of the bounding box are measured in the Azimuthal equidistant projection (AEQD). This projection is chosen for its ability to preserve area, ensuring accurate spatial 
+relationships during subsequent calculations. Width and height are then divided by the desired pixel size to obtain the number of columns and rows in the final projection. With the AEQD projection established, a grid 
+is created based on the desired number of columns and rows in the final projection, typically using the widely-used World Geodetic System (WGS 84). This structured grid forms the foundation for organizing the temperature 
+data systematically. To achieve uniformity and consistency, the pixel size is adapted to create squared pixels. This adjustment simplifies computations and standardizes the representation of data across the grid.The final 
+step involves mapping the temperature data from the original swath onto the newly created grid. K-D (K-dimensional) nearest neighbor resampling is employed for this purpose. Through K-D nearest neighbor resampling, each 
+grid cell receives temperature values based on its proximity to the corresponding points in the original swath data. This process ensures that the temperature data is accurately represented at each grid cell, forming a 
+comprehensive and precise gridded dataset.
+"""
+
+md_ecostress_data_quality = """
+To ensure precise and high quality land surface temperature data, we came up with some various quality measures. Even when the data quality is observed easily by the human eye, this of course isnt applicable for a large
+amount of data. Among others, the key quality measure is the cloud coverage. The cloud coverage is, as described above, a binary mask for each pixel indicating whether the pixel is covered by clouds. The cloud coverage is 
+also provided by the USGS. The threshold for the cloud coverage is set to 25%, meaning that if all pixles in the defined area are covered by clouds, the data is not used for further analysis. The following pictures show the
+cloud coverage for two different swaths. The first one is a swath with a cloud coverage of 36.18 % and the second one is a swath with a cloud coverage of 50.07 %. The white ares you can see in the LST pictures are the areas
+with values that already exceed or are below certain temperature thresholds. This strongly correlates with the cloud coverage but doesn't apply for all areas. These areas are also not used for further analysis.
+"""
+
+md_ecostress_lst = """
+
+"""
+
 
 # <img src='https://github.com/MGenschow/DS_Project/blob/main/figures/grid_element_all.JPG?raw=true' width='70%' />
 md_slx_1 = """
@@ -251,10 +339,134 @@ layout = dbc.Container(
                 html.H2('Extracting land surface temperature data from ECOSTRESS', id='section-1'),
                 html.H3('Heatwave detection', id='subsection-1-1'),
                 dcc.Markdown(md_hw, style={"text-align": "justify"}),
-                dcc.Markdown(md_hw_cit, style={"text-align": "justify"}, dangerously_allow_html=True), 
+                dcc.Markdown(md_hw_cit, style={"text-align": "justify"}, dangerously_allow_html=True)
             ], 
             className="mx-5 mb-4"
         ),
+        dbc.Row(
+                [
+                html.H3('The ECOSTRESS Data', id='subsection-1-2'),
+                dbc.Col(
+                    [
+                        dcc.Markdown(md_ecostress_intro, style={"text-align": "justify"}),
+                    ],
+                    width={'size': 6, 'offset': 0},
+                ),
+                dbc.Col(
+                    [
+                        html.Img(src=img_swath, style={'width': '100%'}),
+                    ],
+                    width={'size': 6, 'offset': 0},
+                ),
+                html.H3('The ECOSTRESS Data', id='subsection-1-2'),
+                dcc.Markdown(md_ecostress_data, style={"text-align": "justify"}, dangerously_allow_html=True),
+                html.Div(
+                    [
+                        html.Div(
+                                [
+                                html.Img(src=img_geo, style={'width': '100%'}),
+                                html.P('GEO data which contains a latitude and longitude reference for each pixel')
+                                ],
+                            style={'width': '30%', 'display': 'inline-block', 'text-align': 'center', 'margin': '10px'}
+                            ),
+                        html.Div(
+                                [
+                                html.Img(src=img_lst, style={'width': '100%'}),
+                                html.P('LST data which contains the actual land surface temperature for each pixel')
+                                ],
+                            style={'width': '30%', 'display': 'inline-block', 'text-align': 'center', 'margin': '10px'}
+                            ),
+                        html.Div(
+                                [
+                                html.Img(src=img_cloud, style={'width': '100%'}),
+                                html.P('A binary cloud mask that indicates whether the pixel is covered by clouds')
+                                ],
+                            style={'width': '30%', 'display': 'inline-block', 'text-align': 'center', 'margin': '10px'}
+                            )
+                            ],
+                            style={'width': '100%'}
+                            ),
+                html.H3('Swath-to-grid Transformation', id='subsection-1-3'),
+                dcc.Markdown(md_swath_to_grid, style={"text-align": "justify"}),
+                html.H3('Data Quality Measurement', id='subsection-1-4'),
+                dcc.Markdown(md_ecostress_data_quality, style={"text-align": "justify"}),
+                dbc.Col(
+                    [   html.H3("Cloudcoverage 36.18%:"),
+                        dbc.Carousel(
+                            id="carousel_comp_1",
+                            items=[
+                                {
+                                    "key": "1",
+                                    "src": img_QC_LST_1,
+                                    "header": "",
+                                    "caption": "",
+                                    "imgClassName": "carousel-image"
+                                },
+                                {
+                                    "key": "2",
+                                    "src": img_QC_CLD_1,
+                                    "header": "",
+                                    "caption": "",
+                                    "imgClassName": "carousel-image"
+                                },
+                            ],
+                            controls=False,
+                            indicators=False,
+                            interval=None,
+                        ),
+                        dbc.RadioItems(
+                            id="comp-number_1",
+                            options=[
+                                {"label": "LST", "value": 0},
+                                {"label": "Cloud", "value": 1}
+                                ],
+                            value=0,
+                            inline=True,
+                            )
+                    ], width = {'size':6, 'offset': 0, 'md':'auto'},
+                ),
+                dbc.Col(
+                    [
+                        html.H3("Cloudcoverage 50.07%:"),
+                        dbc.Carousel(
+                            id="carousel_comp_2",
+                            items=[
+                                {
+                                    "key": "1",
+                                    "src": img_QC_LST_2,
+                                    "header": "",
+                                    "caption": "",
+                                    "imgClassName": "carousel-image"
+                                },
+                                {
+                                    "key": "2",
+                                    "src": img_QC_CLD_2,
+                                    "header": "",
+                                    "caption": "",
+                                    "imgClassName": "carousel-image"
+                                },
+                            ],
+                            controls=False,
+                            indicators=False,
+                            interval=None,
+                        ),
+                        dbc.RadioItems(
+                            id="comp-number_2",
+                            options=[
+                                {"label": "LST", "value": 0},
+                                {"label": "Cloud", "value": 1}
+                                ],
+                            value=0,
+                            inline=True,
+                            )
+                    ], width = {'size':6, 'offset': 0, 'md':'auto'},
+                ),
+                html.H3('Observing Land Surface Temperature', id='subsection-1-5'),
+                dcc.Markdown(md_ecostress_lst, style={"text-align": "justify"}),
+            ], 
+            className="mx-5 mb-4"
+        ),
+
         dbc.Row(
             [
                 html.H2('Extracting land usage and land cover data from orthophotos', id='section-2'),
@@ -354,3 +566,19 @@ layout = dbc.Container(
     fluid=True,
     className="m-1"
 )
+
+
+
+@callback(
+    Output("carousel_comp_1", "active_index"),
+    Input("comp-number_1", "value"),
+)
+def select_slide(idx):
+    return idx
+
+@callback(
+    Output("carousel_comp_2", "active_index"),
+    Input("comp-number_2", "value"),
+)
+def select_slide(idx):
+    return idx
