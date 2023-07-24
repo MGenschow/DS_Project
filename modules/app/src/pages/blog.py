@@ -142,7 +142,7 @@ spatial resolution that could effectively cover the entirety of Munich, Germany.
 from conventional air temperature measuring stations at such a fine scale proved challenging due to limited coverage and spatial granularity.
 To overcome this limitation, we turned to an alternative: Land surface temperature data (LST), which serves as a valuable proxy for air temperature in urban 
 environments. LST represents the temperature of the Earth's surface as measured from satellite-based sensors, and it offers an excellent substitute for air temperature in urban 
-settings due to the close relationship between land surface and atmospheric temperatures.Thereby, the ECOSTRESS (Ecosystem Spaceborne Thermal Radiometer Experiment on Space Station) 
+settings due to the close relationship between land surface and atmospheric temperatures. Thereby, the ECOSTRESS (Ecosystem Spaceborne Thermal Radiometer Experiment on Space Station) 
 mission and the related LST data emerges as a powerful tool to detect and understand the impact of heatwaves in urban settings.
 """
 
@@ -175,7 +175,12 @@ with values that already exceed or are below certain temperature thresholds. Thi
 """
 
 md_ecostress_lst = """
-
+The land surface temperate data you can explore on your tab about [urban heatislands](/Hitzeinseln) is not a single observation, but rather an average of all observations during both heatwave and non-heatwave periods.
+When we refer to "outside the heatwave," it implies that a given day falls within the meteorological summer of 2022 (from June 1, 2022, to August 31, 2022) but does not fall into any of our defined heatwaves. 
+It is crucial to clarify that the LST data for a specific period consists of mean pixels. To obtain these mean pixels, we initially subject the LST data to a data quality measurement process, during which all pixels 
+below a certain quality threshold are masked out. This step ensures that only reliable and accurate data remains for further analysis. After the quality measurement process, the remaining geoTIFF files are stacked on 
+top of each other. From this stack of geoTIFF files, we calculate the mean pixel value for each specific pixel.  The availability of reliable LST data for both heatwave and non-heatwave periods provides valuable insights 
+into temperature variations, helping us create more sustainable and resilient urban spaces.
 """
 
 
@@ -358,7 +363,7 @@ layout = dbc.Container(
                     ],
                     width={'size': 6, 'offset': 0},
                 ),
-                html.H3('The ECOSTRESS Data', id='subsection-1-2'),
+                # html.H3('The ECOSTRESS Data', id='subsection-1-2'),
                 dcc.Markdown(md_ecostress_data, style={"text-align": "justify"}, dangerously_allow_html=True),
                 html.Div(
                     [
@@ -391,7 +396,7 @@ layout = dbc.Container(
                 html.H3('Data Quality Measurement', id='subsection-1-4'),
                 dcc.Markdown(md_ecostress_data_quality, style={"text-align": "justify"}),
                 dbc.Col(
-                    [   html.H3("Cloudcoverage 36.18%:"),
+                    [   html.H4("Cloudcoverage 36.18%:"),
                         dbc.Carousel(
                             id="carousel_comp_1",
                             items=[
@@ -427,7 +432,7 @@ layout = dbc.Container(
                 ),
                 dbc.Col(
                     [
-                        html.H3("Cloudcoverage 50.07%:"),
+                        html.H4("Cloudcoverage 50.07%:"),
                         dbc.Carousel(
                             id="carousel_comp_2",
                             items=[
@@ -461,7 +466,8 @@ layout = dbc.Container(
                             )
                     ], width = {'size':6, 'offset': 0, 'md':'auto'},
                 ),
-                html.H3('Observing Land Surface Temperature', id='subsection-1-5'),
+                html.Br(),
+                html.H3('Land Surface Temperature data', id='subsection-1-5'),
                 dcc.Markdown(md_ecostress_lst, style={"text-align": "justify"}),
             ], 
             className="mx-5 mb-4"

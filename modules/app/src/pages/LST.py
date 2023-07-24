@@ -63,8 +63,8 @@ wie Beton und Asphalt verstärkt diesen Effekt, da sie dazu neigen, Wärme zu ab
 
 md_3 = '''
 Um den Effekt der urbanen Hitzeinsel aufzuzeigen, benötigen wir möglichst granulare bzw. Flächendeckende 
-Temperaturdaten. Eine vergleichsweise hohe Granularität ist mit öffentlich Zugänglichen Wetterdaten 
-(Link DWD) nicht zu erreichen. Aus diesen Gründen haben wir uns in diesem Projekt dazu entschieden die 
+Temperaturdaten. Eine vergleichsweise hohe Granularität ist mit öffentlich Zugänglichen [Wetterdaten](/Hitzewellen) nicht 
+zu erreichen. Aus diesen Gründen haben wir uns in diesem Projekt dazu entschieden die 
 Oberflächentemperatur als Proxy der tatsächlichen Temperatur zu verwenden, die mit einer Genauigkeit von
 einer Temperaturmessung pro 70x70m Quadrant Flächendeckende Messungen ermöglicht. 
 '''
@@ -81,7 +81,7 @@ menschlicher Systeme.
 '''
 
 md_5 = '''
-Die im folgenden verwendeten Daten beziehen sich auf den Sommer 2022 (1. Juni 2022 bis 31. August 2023). 
+Die im folgenden verwendeten Daten beziehen sich auf den Sommer 2022 (1. Juni 2022 bis 31. August 2022). 
 Unterschieden wird weiter zwischen Messungen, die in Hitzeperioden fallen (Link zu DWD einfügen) und Daten, 
 die im Sommer liegen aber nicht in Hitzeperioden fallen (invertierte Hitzewellen). Diese Unterscheidung 
 verdeutlicht den einschneidenden Effekt von Hitzewellen. Zusätzlich wird zwischen Messungen in den 
@@ -128,6 +128,7 @@ layout = dbc.Container(
                 dbc.Col(
                     [
                         html.Img(src=data_url_1, style={'width': '100%'}),
+                        html.Div('Credits to: https://community.wmo.int/en/activity-areas/urban/urban-heat-island', style={"text-align": "center", "font-size": "12px"}),  
                     ],
                     width={'size': 6, 'offset': 0},
                 ),
@@ -136,6 +137,7 @@ layout = dbc.Container(
             className="mx-5",
             align="center"
         ),
+        html.Br(),
         dbc.Row(
             [
                 dcc.Markdown(md_3, style={"text-align": "justify"}, dangerously_allow_html=True)
@@ -147,6 +149,7 @@ layout = dbc.Container(
                 dbc.Col(
                     [
                         html.Img(src=data_url_2, style={'width': '100%'}),
+                        html.Div('https://www.jpl.nasa.gov/missions/ecosystem-spaceborne-thermal-radiometer-experiment-on-space-station-ecostress', style={"text-align": "center", "font-size": "12px"}),
                     ],
                     width={'size':5, 'offset':0},
                     ),
@@ -160,6 +163,7 @@ layout = dbc.Container(
             className="mx-5", 
             align="center"
         ),
+        html.Br(),
         dbc.Row(
             [
                 dcc.Markdown(md_5, style={"text-align": "justify"}, dangerously_allow_html=True)
