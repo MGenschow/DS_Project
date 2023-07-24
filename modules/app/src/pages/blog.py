@@ -475,7 +475,7 @@ layout = dbc.Container(
 
         dbc.Row(
             [
-                html.H2('Extracting land usage and land cover data from orthophotos', id='section-2'),
+                html.H2('Land Cover Classification', id='section-2'),
                 dcc.Markdown(md_segmentation_into, style={"text-align": "justify"})
             ], 
             className="mx-5 mb-4"
