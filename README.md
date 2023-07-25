@@ -1,7 +1,7 @@
 # **HeatMapper:** Modeling urban heat intensity
 
 <p align="center">
-    <img src="figures/lst_munich.JPG" alt="drawing"  width="1000"/>
+    <img src="literature/figures/lst_munich.JPG" alt="drawing"  width="1000"/>
     <br>
     &copy; OpenStreetMap
 </p>
@@ -12,24 +12,23 @@ Increasing urbanisation and climate change have led to the evolving and intensif
 
 ## Approach
 
-This project uses land surface temperature data from Ecostress and official property data as well as orthophotos from the Bavarian State Office for Digitisation, Broadband and Surveying. The former data source denotes the dependent variable in our analysis. The latter two data sources were used to extract land cover / land usage (LCLU) characteristics forming the basis of our feature set. We used pre-trained and fine-tuned neural networks to reach a granular segregation of land cover to also detect patterns that are not stored in official data.
+This project uses land surface temperature data from Ecostress and official property data as well as orthophotos from the Bavarian State Office for Digitisation, Broadband and Surveying. The former data source denotes the dependent variable in our analysis. The latter two data sources were used to extract land usage / land cover (LULC) characteristics forming the basis of our feature set. We used pre-trained and fine-tuned neural networks to reach a granular segregation of land cover to also detect patterns that are not stored in official data.
 
 <p align="center">
-    <img src="figures/grid_element_all.JPG" alt="drawing"  width="800"/>
+    <img src="literature/figures/disaggregation.jpg" alt="drawing"  width="800"/>
     <br>
     &copy; OpenStreetMap
 </p>
 
-A linear regression was then used to model the relationship between a neighbourhood's temperature and its surface.
-
-More details on the scientific background including academic references that we followed along can be found [here](https://ds-project-modeling-urban-heat-intensity.tiiny.site/).
+We disaggregated the data by dividing the city and surrounding of Munich into 250m by 250m squares and then fitted a spatial cross-regressive model to numerically estimate the relationship of urban heat intensity and LULC characteristics. The model accounts for geospatial dependencies by incorporating spatial lags into the feature set (i.e. accounting for the neighborhood of an observation).
 
 ### App
 
-We provide an [interative application](https://github.com/MGenschow/DS_Project) that identifies urban heat islands in the city of Munich and also demonstrates the impact of potential heat mitigating effects by hypothetically changing the surfaces of an urban area. In addition, more extensive information about our project is presented there.
+This econometric model is at the core of our application which can be found [here](http://193.196.54.113:8050/). The website also provides a [blog article](http://193.196.54.113:8050/Hintergrund) focusing on the technical details of this project.
 
-### Code 
-We have only used the programming language Python in the context of this research project. This Github repository hosts all the code from data acquisition to statistical modeling to app source code. 
+### Code
+
+We have only used the programming language Python in the context of this research project. This GitHub repository hosts all the code from data acquisition to statistical modeling to app source code. 
 
 <br>
 
