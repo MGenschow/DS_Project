@@ -53,27 +53,27 @@ menschlichen Aktivitäten, die zu einer erhöhten Wärmeabsorption und -speicher
 '''
 
 md_2 = '''
-Das Phänomen der urbanen Hitzeinsel lässt sich in allen Modernen bebauten Städten beobachten, 
+Das Phänomen der urbanen Hitzeinsel lässt sich in allen modernen Städten beobachten, 
 die sich durch ihre dicht bebauten Innenstädte auszeichnen. Die hohe Konzentration von Gebäuden, 
 Straßen und Betonflächen, die Wärme absorbieren und speichern sind hiermit entscheidende Faktoren 
-der Entwicklung von urbanen Hitzeinseln. Gleichzeitig begrenzen die Gebäudestruktur die Luftzirkulation 
-und verhindern den natürlichen Austausch von Wärme und Feuchtigkeit. Die Verwendung von Materialien 
+der Entwicklung von urbanen Hitzeinseln. Gleichzeitig begrenzt die Gebäudestruktur die Luftzirkulation 
+und verhindert den natürlichen Austausch von Wärme und Feuchtigkeit. Die Verwendung von Materialien 
 wie Beton und Asphalt verstärkt diesen Effekt, da sie dazu neigen, Wärme zu absorbieren und abzugeben.
 '''
 
 md_3 = '''
-Um den Effekt der urbanen Hitzeinsel aufzuzeigen, benötigen wir möglichst granulare bzw. Flächendeckende 
+Um den Effekt der urbanen Hitzeinsel aufzuzeigen, benötigen wir möglichst granulare bzw. flächendeckende 
 Temperaturdaten. Eine vergleichsweise hohe Granularität ist mit öffentlich Zugänglichen [Wetterdaten](/Hitzewellen) nicht 
-zu erreichen. Aus diesen Gründen haben wir uns in diesem Projekt dazu entschieden die 
+zu erreichen. Aus diesen Gründen haben wir uns in diesem Projekt dazu entschieden, die 
 Oberflächentemperatur als Proxy der tatsächlichen Temperatur zu verwenden, die mit einer Genauigkeit von
-einer Temperaturmessung pro 70x70m Quadrant Flächendeckende Messungen ermöglicht. 
+einer Temperaturmessung pro 70x70m Quadrant flächendeckende Messungen ermöglicht. 
 '''
 
 md_4 = '''
-Die Landoberflächentemperatur (Land Surface Temperature, kurz: LST) ist die i.d.R. von Sateltiten gemessene 
+Die Landoberflächentemperatur (Land Surface Temperature, kurz: LST) ist die i.d.r. von Satelliten gemessene 
 Temperatur der Erdoberfläche. Sie spielt eine entscheidende Rolle für das Verständnis und die Überwachung 
 des Klimasystems der Erde, da sie wertvolle Erkenntnisse über den  Zustand der Umwelt und ihre historische 
-Veränderungen liefert. Die uns von uns verwendeten Variablen beziehen wir vom ECOSTRESS (Ecosystem Spaceborne 
+Veränderungen liefert. Die von uns verwendeten Variablen beziehen wir vom ECOSTRESS (Ecosystem Spaceborne 
 Thermal Radiometer Experiment on Space Station) Projekt der NASA. Unsere Daten werden im Rohformat bezogen und 
 müssen zur adäquaten Verwendung transformiert und geographisch projiziert werden. Die Auswirkungen der 
 Landoberflächentemperatur sind weitreichend und umfassen verschiedene Aspekte sowohl natürlicher als auch 
@@ -83,7 +83,7 @@ menschlicher Systeme.
 md_5 = '''
 Die im folgenden verwendeten Daten beziehen sich auf den Sommer 2022 (1. Juni 2022 bis 31. August 2022). 
 Unterschieden wird weiter zwischen Messungen, die in Hitzeperioden fallen (Link zu DWD einfügen) und Daten, 
-die im Sommer liegen aber nicht in Hitzeperioden fallen (invertierte Hitzewellen). Diese Unterscheidung 
+die im Sommer liegen aber nicht in Hitzeperioden fallen (außerhalb von Hitzewellen). Diese Unterscheidung 
 verdeutlicht den einschneidenden Effekt von Hitzewellen. Zusätzlich wird zwischen Messungen in den 
 Morgenstunden und nachmittags unterschieden. 
 '''
