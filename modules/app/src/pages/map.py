@@ -200,7 +200,7 @@ map_element = dl.Map(
                     )
                 ]
             ),
-            name="LST",
+            name="Temperatur",
             checked=True
         )]
     ),
