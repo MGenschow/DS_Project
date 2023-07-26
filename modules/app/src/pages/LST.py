@@ -197,7 +197,7 @@ layout = dbc.Container(
                 ),
                 dbc.Col(
                     [
-                        html.H3("Innerhalb von Hitzwellen"),
+                        html.H3("Innerhalb von Hitzewellen"),
                         html.Iframe(id='map2', width='100%', height='500px'),
                     ],
                     width=6,
@@ -214,72 +214,6 @@ layout = dbc.Container(
     className="m-1"
 )
 
-
-
-
-'''
-layout = dbc.Container(
-    [
-        html.Div(style={'height': '10vh'}),
-        dbc.Row(
-            [
-                dbc.Col(
-                    [
-                        dcc.Markdown(markdown_explanation, style={"text-align": "justify"}, dangerously_allow_html=True),
-                        dcc.Markdown(markdown_desciption, style={"text-align": "justify"}, dangerously_allow_html=True)
-                    ],
-                    width=12,
-                    #className="mt-4"
-                ),
-                dbc.Col(
-                    [
-                        html.Img(src=data_url, style={'width': '15%'}),
-                    ],
-                    width=12,
-                    #className="mt-4"
-                ),
-            ],
-            #className="mb-4"
-        ),
-        html.Br(),
-        dbc.Row(
-            [
-                dbc.Col(
-                    [
-                        dcc.Dropdown(
-                            id='time-dropdown',
-                            options=[
-                                {'label': 'Morgens', 'value': 'morning'},
-                                {'label': 'Nachmittags', 'value': 'afternoon'}
-                            ],
-                            value='morning',
-                            clearable=False,
-                            style={'width': '200px'}
-                        ),
-                        html.H2("Außerhalb von Hitzewellen"),
-                        html.Iframe(id='map1', width='100%', height='500px'),
-                    ],
-                    width=6,
-                ),
-                dbc.Col(
-                    [
-                        html.H2("Innerhalb von Hitzwellen"),
-                        html.Iframe(id='map2', width='100%', height='500px'),
-                    ],
-                    width=6,
-                ),
-            ],
-            #className="mb-4",
-        ),
-        html.Br(),
-        html.Div(style={'height': '10vh'}),
-
-    ],
-    style={'height': '100vh', 'overflowY': 'scroll'},
-    fluid=True,
-    className="m-1"
-)
-'''
 
 @callback(
     [Output('map1', 'src'), Output('map2', 'src')],

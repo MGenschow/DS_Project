@@ -95,16 +95,14 @@ Um hier ein größtmögliches Publikum zu erreichen ist der Blogpost in Englisch
 """
 
 md_ref = '''
-Chen, L. C., Papandreou, G., Schroff, F., & Adam, H. (2017). Rethinking atrous convolution for semantic image segmentation. arXiv preprint arXiv:1706.05587. 
-
-Gasparrini, A. and Armstrong, B. (2011). The impact of heat waves on mortality. *Epidemiology*, 22(1):68.  
+Chen, L. C., Papandreou, G., Schroff, F., & Adam, H. (2017). Rethinking atrous convolution for semantic image segmentation. *arXiv preprint arXiv:1706.05587*.  
+Gasparrini, A. and Armstrong, B. (2011). The impact of heat waves on mortality. *Epidemiology*, 22(1):68.    
 Huth, R., Kyselyy, J., and Pokorna, L. (2000). A GCM simulation of heat waves, dry spells, and their relationships to circulation. *Climatic Change*, 46(1-2):29–60.  
 Kikon, N., Singh, P., Singh, S. K., and Vyas, A. (2016). Assessment of urban heat islands (UHI) of Noida City, India using multi-temporal satellite data. *Sustainable Cities and Society*, 22:19–28.  
 Kysely, J. (2004). Mortality and displaced mortality during heat waves in the Czech Republic. *International Journal of Biometeorology*, 49:91–97.  
 Kysely, J. (2010). Recent severe heat waves in central Europe: How to view them in a long-term prospect? *International Journal of Climatology: A Journal of the Royal Meteorological Society*, 30(1):89–109.  
-Meehl, G. A. and Tebaldi, C. (2004). More intense, more frequent, and longer lasting heat waves in the 21st century. *Science*, 305(5686):994–997.
-
-Wang, J., Zheng, Z., Ma, A., Lu, X., & Zhong, Y. (2021). LoveDA: A Remote Sensing Land-Cover Dataset for Domain Adaptive Semantic Segmentation. Zenodo. https://doi.org/10.5281/zenodo.5706578
+Meehl, G. A. and Tebaldi, C. (2004). More intense, more frequent, and longer lasting heat waves in the 21st century. *Science*, 305(5686):994–997.  
+Wang, J., Zheng, Z., Ma, A., Lu, X., & Zhong, Y. (2021). LoveDA: A Remote Sensing Land-Cover Dataset for Domain Adaptive Semantic Segmentation. *Zenodo*.  
 '''
 
 md_introduction = """
@@ -123,6 +121,7 @@ This post will guide you through our data gathering, processing, and modeling st
 """
 
 md_hw = """
+#### Heatwave Identification
 The urban heat island effect is particularly problematic when extreme temperatures occur on consecutive days (Gasparrini and Armstrong, 2011).
 These periods of extreme heat are typically referred to as heatwaves.
 Consequently, our entire analysis is focused on temperature data recorded during a heatwave.
@@ -137,6 +136,7 @@ A heatwave is declared when a temperature of 30°C is exceeded for at least thre
 """
 
 md_ecostress_intro = """
+#### ECOSTRESS DATA
 To measure the impact of heatwaves on urban heat intensity with greater precision, we undertook an extensive search for data sources with a high 
 spatial resolution that could effectively cover the entirety of Munich, Germany. However, as is common in many urban areas, obtaining temperature data 
 from conventional air temperature measuring stations at such a fine scale proved challenging due to limited coverage and spatial granularity.
@@ -328,8 +328,7 @@ layout = dbc.Container(
                     [
                         #html.H1('Table of Contents'),
                         html.Ul([
-                            html.Li(html.A('Extracting land surface temperature data from ECOSTRESS', href='#section-1')),
-                            html.Li(html.A('Heatwave detection', href='#subsection-1-1')),
+                            html.Li(html.A('Land Surface Temperature', href='#section-1')),
                             html.Li(html.A('Extracting land usage and land cover data from orthophotos', href='#section-2')),
                             html.Li(html.A('Econometrics: Modeling LST using a SLX model', href='#section-3')),
                             html.Li(html.A('References', href='#section-ref'))
@@ -341,8 +340,7 @@ layout = dbc.Container(
         ),
         dbc.Row(
             [
-                html.H2('Extracting land surface temperature data from ECOSTRESS', id='section-1'),
-                html.H3('Heatwave detection', id='subsection-1-1'),
+                html.H2('Land Surface Temperature', id='section-1', className= 'mb-3'),
                 dcc.Markdown(md_hw, style={"text-align": "justify"}),
                 dcc.Markdown(md_hw_cit, style={"text-align": "justify"}, dangerously_allow_html=True)
             ], 
@@ -350,7 +348,6 @@ layout = dbc.Container(
         ),
         dbc.Row(
                 [
-                html.H3('The ECOSTRESS Data', id='subsection-1-2'),
                 dbc.Col(
                     [
                         dcc.Markdown(md_ecostress_intro, style={"text-align": "justify"}),
@@ -363,7 +360,6 @@ layout = dbc.Container(
                     ],
                     width={'size': 6, 'offset': 0},
                 ),
-                # html.H3('The ECOSTRESS Data', id='subsection-1-2'),
                 dcc.Markdown(md_ecostress_data, style={"text-align": "justify"}, dangerously_allow_html=True),
                 html.Div(
                     [
@@ -391,9 +387,9 @@ layout = dbc.Container(
                             ],
                             style={'width': '100%'}
                             ),
-                html.H3('Swath-to-grid Transformation', id='subsection-1-3'),
+                html.H3('Swath-to-grid Transformation', id='subsection-1-3', className = 'mt-3'),
                 dcc.Markdown(md_swath_to_grid, style={"text-align": "justify"}),
-                html.H3('Data Quality Measurement', id='subsection-1-4'),
+                html.H3('Data Quality Measurement', id='subsection-1-4', className = 'mt-3'),
                 dcc.Markdown(md_ecostress_data_quality, style={"text-align": "justify"}),
                 dbc.Col(
                     [   html.H4("Cloudcoverage 36.18%:"),
@@ -466,8 +462,7 @@ layout = dbc.Container(
                             )
                     ], width = {'size':6, 'offset': 0, 'md':'auto'},
                 ),
-                html.Br(),
-                html.H3('Land Surface Temperature data', id='subsection-1-5'),
+                html.H3('Land Surface Temperature data', id='subsection-1-5', className = 'mt-3'),
                 dcc.Markdown(md_ecostress_lst, style={"text-align": "justify"}),
             ], 
             className="mx-5 mb-4"
